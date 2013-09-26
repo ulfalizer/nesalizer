@@ -22,6 +22,9 @@ See the <b>Makefile</b> for other options.
 Controls are currently hardcoded (in <b>input.cpp</b>) to the arrow keys and <b>X</b> and <b>Z</b> for
 <b>A</b> and <b>B</b>.
 
-## iNES mappers (support circuitry inside cartridges) supported so far ##
+## Compatibility ##
 
-0, 1, 2, 3, 4, 7, 9, 11, 71
+iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 7, 9, 11, 71.
+
+No PAL support yet. PAL support will likely never be as good as NTSC support in any emulator due to much
+trickier and less explored timing (plus you lose 10 FPS).
