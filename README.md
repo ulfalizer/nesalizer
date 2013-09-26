@@ -24,7 +24,7 @@ Controls are currently hardcoded (in <b>input.cpp</b>) to the arrow keys and <b>
 
 A set of test ROMs listed in <b>test.cpp</b> can be run automatically with
 
-> $ make TEST=1
+> $ make TEST=1  
 > $ ./nes
 
 This requires https://github.com/christopherpow/nes-test-roms to first be cloned into a directory
