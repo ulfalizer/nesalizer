@@ -10,7 +10,7 @@ unique features later on. :)
 Linux-only so far. Dependencies are <b>readline</b> and <b>SDL 1.2</b>. For Ubuntu, the following
 should work:
 
-    $ apt-get install libreadline-dev libsdl1.2-dev  
+    $ apt-get install libreadline-dev libsdl1.2-dev
     $ make CONF=release
 
 See the <b>Makefile</b> for other options.
@@ -29,9 +29,11 @@ Controls are currently hardcoded (in <b>input.cpp</b>) as follows:
   <tr><td>Select</td><td>Right shift</td></tr>
 </table>
 
+### Automatic testing ###
+
 A set of test ROMs listed in <b>test.cpp</b> can be run automatically with
 
-    $ make TEST=1  
+    $ make TEST=1
     $ ./nes
 
 This requires https://github.com/christopherpow/nes-test-roms to first be cloned into a directory
