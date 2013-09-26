@@ -10,14 +10,14 @@ unique features later on. :)
 Linux-only so far. Dependencies are <b>readline</b> and <b>SDL 1.2</b>. For Ubuntu, the following
 should work:
 
-> $ apt-get install libreadline-dev libsdl1.2-dev  
-> $ make CONF=release
+    $ apt-get install libreadline-dev libsdl1.2-dev  
+    $ make CONF=release
 
 See the <b>Makefile</b> for other options.
 
 ## Running ##
 
-> $ ./nes \<rom file\>
+    $ ./nes <rom file>
 
 Controls are currently hardcoded (in <b>input.cpp</b>) as follows:
 
@@ -31,8 +31,8 @@ Controls are currently hardcoded (in <b>input.cpp</b>) as follows:
 
 A set of test ROMs listed in <b>test.cpp</b> can be run automatically with
 
-> $ make TEST=1  
-> $ ./nes
+    $ make TEST=1  
+    $ ./nes
 
 This requires https://github.com/christopherpow/nes-test-roms to first be cloned into a directory
 called <i>tests</i>.
