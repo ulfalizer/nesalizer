@@ -19,8 +19,15 @@ See the <b>Makefile</b> for other options.
 
 > $ ./nes \<rom file\>
 
-Controls are currently hardcoded (in <b>input.cpp</b>) to the arrow keys and <b>X</b> and <b>Z</b> for
-<b>A</b> and <b>B</b>.
+Controls are currently hardcoded (in <b>input.cpp</b>) as follows:
+
+<table>
+  <tr><td>D-pad </td><td>Arrow keys </td></tr>
+  <tr><td>A     </td><td>X          </td></tr>
+  <tr><td>B     </td><td>Z          </td></tr>
+  <tr><td>Start </td><td>Return     </td></tr>
+  <tr><td>Select</td><td>Right shift</td></tr>
+</table>
 
 A set of test ROMs listed in <b>test.cpp</b> can be run automatically with
 
