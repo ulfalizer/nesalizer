@@ -19,6 +19,9 @@ See the <b>Makefile</b> for other options.
 
 > $ ./nes \<rom file\>
 
+Controls are currently hardcoded (in <b>input.cpp</b>) to the arrow keys and <b>X</b> and <b>Z</b> for
+<b>A</b> and <b>B</b>.
+
 ## iNES mappers (support circuitry inside cartridges) supported so far ##
 
 0, 1, 2, 3, 4, 7, 9, 11, 71
