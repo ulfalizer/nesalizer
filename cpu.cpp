@@ -132,6 +132,9 @@ uint8_t read(uint16_t addr) {
 }
 
 void write(uint8_t value, uint16_t addr) {
+    // TODO: The write probably takes effect earlier than after the three PPU
+    // ticks and the one APU tick
+
     write_tick();
 
     cpu_data_bus = value;
