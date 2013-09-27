@@ -59,15 +59,9 @@ static bool overflow_flag;
 // saves logic.
 static uint8_t op_1;
 
-// Used by the APU and DMA circuitry, parts of which tick at half the CPU
-// frequency. Whether the initial tick is high or low seems to be random. The
-// name apu_clk1 is from Visual 2A03.
-static bool apu_clk1_is_high;
-
 // Current CPU read/write and DMA state. Needed to get the timing for APU DMC
 // sample loading right (tested by the sprdma_and_dmc_dma tests).
 bool cpu_is_reading;
-OAM_DMA_state oam_dma_state;
 
 // }}}
 
@@ -78,8 +72,7 @@ void tick() {
     tick_ppu();
     tick_ppu();
 
-    apu_clk1_is_high = !apu_clk1_is_high;
-    tick_apu(apu_clk1_is_high);
+    tick_apu();
 
 #ifdef RUN_TESTS
     if (ticks_till_reset > 0 && --ticks_till_reset == 0)
@@ -109,7 +102,7 @@ static void poll_for_interrupt();
 // Currently only used to implement open bus reads
 uint8_t cpu_data_bus;
 
-static uint8_t read(uint16_t addr) {
+uint8_t read(uint16_t addr) {
     read_tick();
 
     uint8_t res;
@@ -138,7 +131,7 @@ static uint8_t read(uint16_t addr) {
     return res;
 }
 
-static void write(uint8_t value, uint16_t addr) {
+void write(uint8_t value, uint16_t addr) {
     write_tick();
 
     cpu_data_bus = value;
@@ -175,50 +168,11 @@ static void write(uint8_t value, uint16_t addr) {
     case 0x4012: write_dmc_reg_2(value); break;
     case 0x4013: write_dmc_reg_3(value); break;
 
-    // OAM DMA
-    case 0x4014:
-        {
-        LOG_PPU_MEM("Sprite DMA: Load 256 bytes from $%04x\n", 0x100 * value);
-        // We get either WDTTT... or WDDTTT... where W is the write cycle, D a
-        // dummy cycle, and T a transfer cycle (there's 512 of them). The extra
-        // dummy cycle occurs if the write cycle has apu_clk1 low.
+    case 0x4014: do_oam_dma(value); break;
 
-        // The current OAM DMA state influences the timing for APU DMC sample
-        // loads, so we need to keep track of it
-
-        oam_dma_state = OAM_DMA_IN_PROGRESS;
-
-        // Dummy cycles
-        if (!apu_clk1_is_high) tick();
-        tick();
-
-        unsigned const start_addr = 0x100*value;
-        for (size_t i = 0; i < 254; ++i) {
-            // Do it like this to get open bus right. Could be that it's not
-            // visible in any way though.
-            cpu_data_bus = read(start_addr + i);
-            tick();
-            write_oam_data_reg(cpu_data_bus);
-        }
-
-        cpu_data_bus = read(start_addr + 254);
-        oam_dma_state = OAM_DMA_IN_PROGRESS_3RD_TO_LAST_TICK;
-        tick();
-        write_oam_data_reg(cpu_data_bus);
-        oam_dma_state = OAM_DMA_IN_PROGRESS;
-
-        cpu_data_bus = read(start_addr + 255);
-        oam_dma_state = OAM_DMA_IN_PROGRESS_LAST_TICK;
-        tick();
-        write_oam_data_reg(cpu_data_bus);
-
-        oam_dma_state = OAM_DMA_NOT_IN_PROGRESS;
-
-        break;
-        }
-    case 0x4015: write_apu_status(value);                      break;
-    case 0x4016: write_controller_strobe(value & 1);           break;
-    case 0x4017: write_frame_counter(value, apu_clk1_is_high); break;
+    case 0x4015: write_apu_status(value);            break;
+    case 0x4016: write_controller_strobe(value & 1); break;
+    case 0x4017: write_frame_counter(value);         break;
 
     case 0x6000 ... 0x7FFF:
 #ifdef RUN_TESTS
@@ -1755,13 +1709,10 @@ static void set_cpu_cold_boot_state() {
     irq_disable_flag   = false; // Later set by reset
     carry_flag         = false;
 
-    apu_clk1_is_high = false;
-
     irq_line     = pending_irq = cart_irq = false;
     nmi_asserted = pending_nmi = false;
 
     cpu_is_reading = true;
-    oam_dma_state  = OAM_DMA_NOT_IN_PROGRESS;
 
     // TODO: Might be better to do this in conjunction with loading a new ROM
 #ifdef LOG_INSTRUCTIONS

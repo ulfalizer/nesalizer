@@ -1,8 +1,8 @@
+extern bool apu_clk1_is_high;
+
 void init_apu();
 void set_apu_cold_boot_state();
 void reset_apu();
-
-extern unsigned apu_clock;
 
 void write_pulse_reg_0(unsigned n, uint8_t value);
 void write_pulse_reg_1(unsigned n, uint8_t value);
@@ -25,6 +25,8 @@ void write_dmc_reg_3(uint8_t value);
 uint8_t read_apu_status();
 void write_apu_status(uint8_t value);
 
-void write_frame_counter(uint8_t value, bool even_tick);
+void write_frame_counter(uint8_t value);
 
-void tick_apu(bool even_tick);
+void do_oam_dma(uint8_t addr);
+
+void tick_apu();

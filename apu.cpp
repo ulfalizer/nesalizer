@@ -4,7 +4,63 @@
 #include "audio.h"
 #include "cpu.h"
 #include "mapper.h"
+#include "ppu.h"
 #include "rom.h"
+
+// Clock used by the APU and DMA circuitry, parts of which tick at half the CPU
+// frequency. Whether the initial tick is high or low seems to be random. The
+// name apu_clk1 is from Visual 2A03.
+bool apu_clk1_is_high;
+
+//
+// OAM DMA
+//
+// Put here since it uses the APU clock and has interactions with DMC DMA
+
+static enum OAM_DMA_state {
+    OAM_DMA_IN_PROGRESS = 0,
+    OAM_DMA_IN_PROGRESS_3RD_TO_LAST_TICK,
+    OAM_DMA_IN_PROGRESS_LAST_TICK,
+    OAM_DMA_NOT_IN_PROGRESS
+} oam_dma_state;
+
+void do_oam_dma(uint8_t addr) {
+    // We get either WDTTT... or WDDTTT... where W is the write cycle, D a
+    // dummy cycle, and T a transfer cycle (there's 512 of them). The extra
+    // dummy cycle occurs if the write cycle has apu_clk1 low.
+
+    // The current OAM DMA state influences the timing for APU DMC sample
+    // loads, so we need to keep track of it
+
+    oam_dma_state = OAM_DMA_IN_PROGRESS;
+
+    // Dummy cycles
+    if (!apu_clk1_is_high) tick();
+    tick();
+
+    unsigned const start_addr = 0x100*addr;
+    for (size_t i = 0; i < 254; ++i) {
+        // Do it like this to get open bus right. Could be that it's not
+        // visible in any way though.
+        cpu_data_bus = read(start_addr + i);
+        tick();
+        write_oam_data_reg(cpu_data_bus);
+    }
+
+    cpu_data_bus = read(start_addr + 254);
+    oam_dma_state = OAM_DMA_IN_PROGRESS_3RD_TO_LAST_TICK;
+    tick();
+    write_oam_data_reg(cpu_data_bus);
+    oam_dma_state = OAM_DMA_IN_PROGRESS;
+
+    cpu_data_bus = read(start_addr + 255);
+    oam_dma_state = OAM_DMA_IN_PROGRESS_LAST_TICK;
+    tick();
+    write_oam_data_reg(cpu_data_bus);
+
+    oam_dma_state = OAM_DMA_NOT_IN_PROGRESS;
+}
+
 
 // Set when the output level of any channel changes. Lets us skip the mixing
 // step most of the time.
@@ -518,7 +574,7 @@ static void clock_len_and_sweep() {
 }
 
 // $4017
-void write_frame_counter(uint8_t value, bool apu_clk1_is_high) {
+void write_frame_counter(uint8_t value) {
     frame_counter_mode = (Frame_counter_mode)(value >> 7);
     if ((inhibit_frame_irq = value & 0x40)) {
         frame_irq = false;
@@ -693,7 +749,9 @@ void init_apu() {
 }
 
 
-void tick_apu(bool apu_clk1_is_high) {
+void tick_apu() {
+    apu_clk1_is_high = !apu_clk1_is_high;
+
     clock_frame_counter();
 
     if (!apu_clk1_is_high)
@@ -759,6 +817,9 @@ void tick_apu(bool apu_clk1_is_high) {
 void reset_apu() {
     // Things explicitly initialized by the reset signal, derived from tracing
     // the _res node in Visual 2A03
+
+    apu_clk1_is_high = false;
+    oam_dma_state  = OAM_DMA_NOT_IN_PROGRESS;
 
     // Pulse channels
 
