@@ -59,8 +59,8 @@ static bool overflow_flag;
 // saves logic.
 static uint8_t op_1;
 
-// Current CPU read/write and DMA state. Needed to get the timing for APU DMC
-// sample loading right (tested by the sprdma_and_dmc_dma tests).
+// Current CPU read/write state. Needed to get the timing for APU DMC sample
+// loading right (tested by the sprdma_and_dmc_dma tests).
 bool cpu_is_reading;
 
 // }}}

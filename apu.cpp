@@ -17,6 +17,8 @@ bool apu_clk1_is_high;
 //
 // Put here since it uses the APU clock and has interactions with DMC DMA
 
+// Current OAM DMA state. Needed to get the timing for APU DMC sample loading
+// right (tested by the sprdma_and_dmc_dma tests).
 static enum OAM_DMA_state {
     OAM_DMA_IN_PROGRESS = 0,
     OAM_DMA_IN_PROGRESS_3RD_TO_LAST_TICK,
