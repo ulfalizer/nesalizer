@@ -41,7 +41,7 @@ called <i>tests</i>.
 
 ## Compatibility ##
 
-iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 7, 9, 11, 71.
+iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 7, 9, 11, 71, 232.
 
 Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, and Battletoads.
 

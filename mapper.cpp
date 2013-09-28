@@ -45,6 +45,10 @@ void mapper_71_write(uint8_t, uint16_t);
 
 // Camerica/Capcom mapper used by the Quattro * games
 
+void mapper_232_init();
+void mapper_232_write(uint8_t, uint16_t);
+
+
 static void nop_write(uint8_t, uint16_t) {}
 static void nop_ppu_tick_callback() {}
 
@@ -60,15 +64,16 @@ void init_mappers() {
       mapper_functions[n].write = write_fn;                       \
       mapper_functions[n].ppu_tick_callback = _ppu_tick_callback;
 
-    MAPPER(0 , nop_write      , nop_ppu_tick_callback )
-    MAPPER(1 , mapper_1_write , nop_ppu_tick_callback )
-    MAPPER(2 , mapper_2_write , nop_ppu_tick_callback )
-    MAPPER(3 , mapper_3_write , nop_ppu_tick_callback )
-    MAPPER(4 , mapper_4_write , mmc3_ppu_tick_callback)
-    MAPPER(7 , mapper_7_write , nop_ppu_tick_callback )
-    MAPPER(9 , mapper_9_write , mmc2_ppu_tick_callback)
-    MAPPER(11, mapper_11_write, nop_ppu_tick_callback )
-    MAPPER(71, mapper_71_write, nop_ppu_tick_callback )
+    MAPPER(0  , nop_write       , nop_ppu_tick_callback )
+    MAPPER(1  , mapper_1_write  , nop_ppu_tick_callback )
+    MAPPER(2  , mapper_2_write  , nop_ppu_tick_callback )
+    MAPPER(3  , mapper_3_write  , nop_ppu_tick_callback )
+    MAPPER(4  , mapper_4_write  , mmc3_ppu_tick_callback)
+    MAPPER(7  , mapper_7_write  , nop_ppu_tick_callback )
+    MAPPER(9  , mapper_9_write  , mmc2_ppu_tick_callback)
+    MAPPER(11 , mapper_11_write , nop_ppu_tick_callback )
+    MAPPER(71 , mapper_71_write , nop_ppu_tick_callback )
+    MAPPER(232, mapper_232_write, nop_ppu_tick_callback )
 
     #undef MAPPER
 }
