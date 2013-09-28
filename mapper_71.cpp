@@ -16,6 +16,8 @@ void mapper_71_init() {
     set_prg_16k_bank(0, 0);
 }
 
-void mapper_71_write(uint8_t value, uint16_t) {
-    set_prg_16k_bank(0, value);
+void mapper_71_write(uint8_t value, uint16_t addr) {
+    if (!(~addr & 0xC000))
+        // $C000-$FFFF
+        set_prg_16k_bank(0, value);
 }

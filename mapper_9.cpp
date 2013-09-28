@@ -39,6 +39,8 @@ void mapper_9_init() {
 }
 
 void mapper_9_write(uint8_t value, uint16_t addr) {
+    if (!(addr & 0x8000)) return;
+
     switch ((addr >> 12) & 7) {
     case 2: // 0xA000
         set_prg_8k_bank(0, value & 0x0F);

@@ -194,10 +194,10 @@ void write(uint8_t value, uint16_t addr) {
         if (prg_ram) prg_ram[addr & 0x1FFF] = value;
         break;
 
-    case 0x8000 ... 0xFFFF:
-        write_mapper(value, addr);
-        break;
+    case 0x8000 ... 0xFFFF: break;
     }
+
+    write_mapper(value, addr);
 }
 
 // }}}

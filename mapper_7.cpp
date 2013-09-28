@@ -13,7 +13,9 @@ void mapper_7_init() {
     set_prg_32k_bank(0);
 }
 
-void mapper_7_write(uint8_t value, uint16_t) {
+void mapper_7_write(uint8_t value, uint16_t addr) {
+    if (!(addr & 0x8000)) return;
+
     set_mirroring(value & 0x10 ? ONE_SCREEN_HIGH : ONE_SCREEN_LOW);
     set_prg_32k_bank(value & 7);
 }

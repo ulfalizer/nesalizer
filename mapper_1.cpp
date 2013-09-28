@@ -59,6 +59,8 @@ void mapper_1_write(uint8_t value, uint16_t addr) {
 
     LOG_MAPPER("MMC1: Writing $%02X to $%04X\n", value, addr);
 
+    if (!(addr & 0x8000)) return;
+
     // Writes after the first write are ignored for writes on consecutive CPU
     // cycles. Bill & Ted's Excellent Adventure needs this.
     // TODO: This breaks the Polynes demo. Investigate if it runs on the real

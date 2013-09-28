@@ -59,6 +59,8 @@ void mapper_4_init() {
 void mapper_4_write(uint8_t value, uint16_t addr) {
     LOG_MAPPER("MMC3: Writing %02X to $%04X, at (%u,%u)\n", value, addr, scanline, dot);
 
+    if (!(addr & 0x8000)) return;
+
     switch (((addr >> 12) & 6) | (addr & 1)) {
 
     case 0: // 0x8000

@@ -28,6 +28,8 @@ void mapper_232_init() {
 }
 
 void mapper_232_write(uint8_t value, uint16_t addr) {
+    if (!(addr & 0x8000)) return;
+
     if (!((addr >> 13) & 3))
         // 0x8000-0x9FFF
         block = (value & 0x18) >> 1;

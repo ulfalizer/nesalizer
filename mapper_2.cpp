@@ -14,6 +14,8 @@ void mapper_2_init() {
     set_prg_16k_bank(0, 0);
 }
 
-void mapper_2_write(uint8_t value, uint16_t) {
+void mapper_2_write(uint8_t value, uint16_t addr) {
+    if (!(addr & 0x8000)) return;
+
     set_prg_16k_bank(0, value);
 }
