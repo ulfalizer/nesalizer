@@ -137,12 +137,14 @@ void set_prg_32k_bank(unsigned bank) {
 }
 
 void set_prg_16k_bank(unsigned n, unsigned bank) {
+    assert(n < 2);
     uint8_t *const bank_ptr = prg_base + 0x4000*(bank & (prg_16k_banks - 1));
     for (unsigned i = 0; i < 2; ++i)
         prg_pages[2*n + i] = bank_ptr + 0x2000*i;
 }
 
 void set_prg_8k_bank(unsigned n, unsigned bank) {
+    assert(n < 4);
     prg_pages[n] = prg_base + 0x2000*(bank & (2*prg_16k_banks - 1));
 }
 
@@ -153,18 +155,21 @@ void set_chr_8k_bank(unsigned bank) {
 }
 
 void set_chr_4k_bank(unsigned n, unsigned bank) {
+    assert(n < 2);
     uint8_t *const bank_ptr = chr_base + 0x1000*(bank & (2*chr_8k_banks - 1));
     for (unsigned i = 0; i < 4; ++i)
         chr_pages[4*n + i] = bank_ptr + 0x400*i;
 }
 
 void set_chr_2k_bank(unsigned n, unsigned bank) {
+    assert(n < 4);
     uint8_t *const bank_ptr = chr_base + 0x800*(bank & (4*chr_8k_banks - 1));
     for (unsigned i = 0; i < 2; ++i)
         chr_pages[2*n + i] = bank_ptr + 0x400*i;
 }
 
 void set_chr_1k_bank(unsigned n, unsigned bank) {
+    assert(n < 8);
     chr_pages[n] = chr_base + 0x400*(bank & (8*chr_8k_banks - 1));
 }
 
