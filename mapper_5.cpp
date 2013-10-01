@@ -48,7 +48,7 @@ static unsigned prg_banks[4];
 static unsigned sprite_chr_banks[8];
 static unsigned bg_chr_banks[4];
 
-static unsigned high_chr_bits; // $5130
+static unsigned high_chr_bits; // $5130, pre-shifted by 6
 
 // Built-in multiplier in $5205/$5206
 static unsigned multiplicand, multiplier;
@@ -239,14 +239,14 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
         break;
 
     case 0x5120 ... 0x5127:
-        sprite_chr_banks[addr - 0x5120] = value;
+        sprite_chr_banks[addr - 0x5120] = high_chr_bits | value;
         break;
 
     case 0x5128 ... 0x512B:
-        bg_chr_banks[addr - 0x5128] = value;
+        bg_chr_banks[addr - 0x5128] = high_chr_bits | value;
         break;
 
-    case 0x5130: high_chr_bits = value & 3; break;
+    case 0x5130: high_chr_bits = (value & 3) << 6; break;
 
     case 0x5200: /* Vertical split mode   */ break;
     case 0x5201: /* Vertical split scroll */ break;
@@ -282,7 +282,7 @@ uint8_t mapper_5_read_nt(uint16_t addr) {
             unsigned const coarse_x = addr & 0x1F;
             unsigned const coarse_y = (addr >> 5) & 0x1F;
             exram_val = exram[32*coarse_y + coarse_x];
-            unsigned const four_k_bank = (high_chr_bits << 6) | (exram_val & 0x3F);
+            unsigned const four_k_bank = high_chr_bits | (exram_val & 0x3F);
             // The bank gets mirrored across two 4 KB banks
             set_chr_4k_bank(0, four_k_bank);
             set_chr_4k_bank(1, four_k_bank);
