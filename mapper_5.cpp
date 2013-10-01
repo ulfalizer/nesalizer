@@ -66,6 +66,14 @@ static bool    in_frame;
 static uint8_t fill_tile;
 static uint8_t fill_attrib;
 
+// Extended attribute mode
+
+// Somehow the MMC5 "remembers" the previous non-attribute nametable fetch and
+// is able to supply the corresponding attribute byte for the subsequent
+// attribute fetch. Use this to keep track of the previously fetched
+// non-attribute value from exram so we can do the same.
+static uint8_t exram_val;
+
 
 static void switch_to_bg_chr() {
     switch (chr_mode) {
@@ -154,8 +162,11 @@ static void make_effective() {
     default: UNREACHABLE
     }
 
-    if (dot <= 256 || dot >= 321)
-        switch_to_bg_chr();
+    if (dot <= 256 || dot >= 321) {
+        // The BG CHR bank registers are not used in extended attribute mode
+        if (exram_mode != 1)
+            switch_to_bg_chr();
+    }
     else
         switch_to_sprite_chr();
 }
@@ -262,6 +273,31 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
 }
 
 uint8_t mapper_5_read_nt(uint16_t addr) {
+    if (exram_mode == 1) {
+        // Extended attribute mode
+        if (~addr & 0x3C0) {
+            // Non-attribute nametable fetch. Fetch a byte from exram, switch
+            // CHR banks according to its lower 6 bits, and remember it for the
+            // following attribute byte fetch.
+            unsigned const coarse_x = addr & 0x1F;
+            unsigned const coarse_y = (addr >> 5) & 0x1F;
+            exram_val = exram[32*coarse_y + coarse_x];
+            unsigned const four_k_bank = (high_chr_bits << 6) | (exram_val & 0x3F);
+            // The bank gets mirrored across two 4 KB banks
+            set_chr_4k_bank(0, four_k_bank);
+            set_chr_4k_bank(1, four_k_bank);
+        }
+        else {
+            // Use the remembered value from the previous non-attribute
+            // nametable fetch. Duplicate the attribute bits in each of the
+            // four attribute positions to make sure they get used regardless
+            // of where we are in the nametable (might be what the real thing
+            // does too).
+            unsigned const attrib_bits = exram_val >> 6;
+            return (attrib_bits << 6) | (attrib_bits << 4) | (attrib_bits << 2) | attrib_bits;
+        }
+    }
+
     unsigned bits;
     // Maps $2000 to bits 1-0, $2400 to bits 3-2, etc.
     unsigned const bit_offset = (addr >> 9) & 6;
@@ -290,18 +326,20 @@ void mapper_5_write_nt(uint16_t addr, uint8_t value) {
     // Internal nametable B
     case 1: ciram[0x0400 | (addr & 0x03FF)] = value; break;
     // Use ExRAM as nametable
-    case 2: if (exram_mode <= 1) exram[addr & 0x03FF] = value;
+    case 2: if (exram_mode <= 1) exram[addr & 0x03FF] = value; break;
     // Assume the fill tile and attribute can't be written through the PPU in
     // mode 3
     }
 }
 
 void mmc5_ppu_tick_callback() {
-    // It is not known exactly how the MMC5 detects scanlines, so cheat by
-    // looking at the current rendering position
+    // It is not known exactly how the MMC5 detects scanlines. Cheat by looking
+    // at the current rendering position and status.
 
-    if (!rendering_enabled)
+    if (!rendering_enabled) {
         in_frame = false;
+        return;
+    }
 
     if (dot == 257)
         switch_to_sprite_chr();
