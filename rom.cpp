@@ -147,7 +147,8 @@ void load_rom(char const*filename, bool print_info) {
     read_mapper       = mapper_functions[mapper].read;
     write_mapper      = mapper_functions[mapper].write;
     ppu_tick_callback = mapper_functions[mapper].ppu_tick_callback;
-    mapper_nt_ref     = mapper_functions[mapper].mapper_nt_ref;
+    mapper_read_nt    = mapper_functions[mapper].read_nt;
+    mapper_write_nt   = mapper_functions[mapper].write_nt;
 }
 
 void unload_rom() {

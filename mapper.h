@@ -3,13 +3,15 @@ void init_mappers();
 typedef void write_fn(uint8_t value, uint16_t addr);
 typedef uint8_t read_fn(uint16_t addr);
 typedef void ppu_tick_callback_fn();
-typedef uint8_t &nt_ref_fn(uint16_t addr);
+typedef uint8_t read_nt_fn(uint16_t addr);
+typedef void write_nt_fn(uint16_t addr, uint8_t value);
 
 struct Mapper_fns {
     void (*init)();
     read_fn *read;
     write_fn *write;
-    nt_ref_fn *mapper_nt_ref;
+    read_nt_fn *read_nt;
+    write_nt_fn *write_nt;
     ppu_tick_callback_fn *ppu_tick_callback;
 };
 
@@ -48,4 +50,5 @@ extern Mapper_fns mapper_functions[256];
 extern read_fn  *read_mapper;
 extern write_fn *write_mapper;
 extern ppu_tick_callback_fn *ppu_tick_callback;
-extern nt_ref_fn *mapper_nt_ref;
+extern read_nt_fn *mapper_read_nt;
+extern write_nt_fn *mapper_write_nt;

@@ -242,18 +242,32 @@ static uint8_t &chr_ref(unsigned chr_addr) {
     return chr_pages[(chr_addr >> 10) & 7][chr_addr & 0x03FF];
 }
 
-static uint8_t &ciram_ref(uint16_t reg) {
-    uint16_t addr;
+// Nametable reading and writing
+// Could factor out the address determination, but keep it straightforward and
+// fast.
+
+static uint8_t read_nt(uint16_t addr) {
     switch (mirroring) {
-    case VERTICAL:        addr = reg & 0x07FF;                           break;
-    case HORIZONTAL:      addr = ((reg >> 1) & 0x0400) | (reg & 0x03FF); break;
-    case ONE_SCREEN_LOW:  addr = reg & 0x03FF;                           break;
-    case ONE_SCREEN_HIGH: addr = 0x0400 | (reg & 0x03FF);                break;
-    case FOUR_SCREEN:     addr = reg & 0x0FFF;                           break;
-    case SPECIAL:         return mapper_nt_ref(reg);                     break;
+    case VERTICAL:        return ciram[addr & 0x07FF];                            break;
+    case HORIZONTAL:      return ciram[((addr >> 1) & 0x0400) | (addr & 0x03FF)]; break;
+    case ONE_SCREEN_LOW:  return ciram[addr & 0x03FF];                            break;
+    case ONE_SCREEN_HIGH: return ciram[0x0400 | (addr & 0x03FF)];                 break;
+    case FOUR_SCREEN:     return ciram[addr & 0x0FFF];                            break;
+    case SPECIAL:         return mapper_read_nt(addr);                            break;
     default: UNREACHABLE
     }
-    return ciram[addr];
+}
+
+static void write_nt(uint16_t addr, uint8_t value) {
+    switch (mirroring) {
+    case VERTICAL:        ciram[addr & 0x07FF]                            = value; break;
+    case HORIZONTAL:      ciram[((addr >> 1) & 0x0400) | (addr & 0x03FF)] = value; break;
+    case ONE_SCREEN_LOW:  ciram[addr & 0x03FF]                            = value; break;
+    case ONE_SCREEN_HIGH: ciram[0x0400 | (addr & 0x03FF)]                 = value; break;
+    case FOUR_SCREEN:     ciram[addr & 0x0FFF]                            = value; break;
+    case SPECIAL:         mapper_write_nt(addr, value);                            break;
+    default: UNREACHABLE
+    }
 }
 
 static void bump_horiz() {
@@ -309,7 +323,7 @@ static void do_bg_fetches() {
         break;
 
     case 1:
-        nt_byte = ciram_ref(ppu_addr_bus);
+        nt_byte = read_nt(ppu_addr_bus);
         break;
 
     case 2:
@@ -320,7 +334,7 @@ static void do_bg_fetches() {
         break;
 
     case 3:
-        at_byte = ciram_ref(ppu_addr_bus);
+        at_byte = read_nt(ppu_addr_bus);
         break;
 
     case 4:
@@ -819,7 +833,7 @@ uint8_t read_ppu() {
         LOG_PPU_MEM("(Nametables, $2000-$3EFF)");
         ppu_open_bus = ppu_data_reg;
         open_bus_refreshed();
-        ppu_data_reg = ciram_ref(v);
+        ppu_data_reg = read_nt(v);
         break;
 
     case 0x3F00 ... 0x3FFF:
@@ -827,7 +841,7 @@ uint8_t read_ppu() {
         ppu_open_bus = get_open_bus_bits_7_to_6() |
           (palettes[v & 0x1F] & grayscale_color_mask);
         open_bus_bits_5_to_0_refreshed();
-        ppu_data_reg = ciram_ref(v);
+        ppu_data_reg = read_nt(v);
         break;
 
     // GCC doesn't seem to infer this
@@ -856,7 +870,7 @@ void write_ppu(uint8_t value) {
     case 0x2000 ... 0x3EFF:
         {
         LOG_PPU_MEM("(Nametables, $2000-$3EFF)\n");
-        ciram_ref(v) = value;
+        write_nt(v, value);
         break;
         }
 

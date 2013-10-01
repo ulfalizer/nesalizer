@@ -261,31 +261,38 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
     make_effective();
 }
 
-uint8_t &mapper_5_nt_ref(uint16_t addr) {
-    static uint8_t dummy_zero;
-
+uint8_t mapper_5_read_nt(uint16_t addr) {
     unsigned bits;
     // Maps $2000 to bits 1-0, $2400 to bits 3-2, etc.
     unsigned const bit_offset = (addr >> 9) & 6;
     switch ((mmc5_mirroring >> bit_offset) & 3) {
-    case 0:
-        // NES internal nametable A
-        return ciram[addr & 0x03FF];
-
-    case 1:
-        // NES internal nametable B
-        return ciram[0x0400 | (addr & 0x03FF)];
-
-    case 2:
-        // Use ExRAM as nametable
-        return (exram_mode <= 1) ? exram[addr & 0x03FF] : dummy_zero;
-
+    // Internal nametable A
+    case 0: return ciram[addr & 0x03FF];
+    // Internal nametable B
+    case 1: return ciram[0x0400 | (addr & 0x03FF)];
+    // Use ExRAM as nametable
+    case 2: return (exram_mode <= 1) ? exram[addr & 0x03FF] : 0;
+    // Fill mode
     case 3:
-        // Fill mode
-
         // If the nametable index is in the range 0x3C0-0x3FF, we're fetching
         // an attribute byte
         return (~addr & 0x3C0) ? fill_tile : fill_attrib;
+    }
+}
+
+void mapper_5_write_nt(uint16_t addr, uint8_t value) {
+    unsigned bits;
+    // Maps $2000 to bits 1-0, $2400 to bits 3-2, etc.
+    unsigned const bit_offset = (addr >> 9) & 6;
+    switch ((mmc5_mirroring >> bit_offset) & 3) {
+    // Internal nametable A
+    case 0: ciram[addr & 0x03FF]            = value; break;
+    // Internal nametable B
+    case 1: ciram[0x0400 | (addr & 0x03FF)] = value; break;
+    // Use ExRAM as nametable
+    case 2: if (exram_mode <= 1) exram[addr & 0x03FF] = value;
+    // Assume the fill tile and attribute can't be written through the PPU in
+    // mode 3
     }
 }
 

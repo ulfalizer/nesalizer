@@ -32,7 +32,8 @@ void mapper_5_init();
 uint8_t mapper_5_read(uint16_t);
 void mapper_5_write(uint8_t, uint16_t);
 void mmc5_ppu_tick_callback();
-uint8_t &mapper_5_nt_ref(uint16_t);
+uint8_t mapper_5_read_nt(uint16_t);
+void mapper_5_write_nt(uint16_t, uint8_t);
 
 // AxROM - Rare games often use this one
 void mapper_7_init();
@@ -67,7 +68,8 @@ Mapper_fns mapper_functions[256];
 read_fn *read_mapper;
 write_fn *write_mapper;
 ppu_tick_callback_fn *ppu_tick_callback;
-nt_ref_fn *mapper_nt_ref;
+read_nt_fn *mapper_read_nt;
+write_nt_fn *mapper_write_nt;
 
 void init_mappers() {
     // Mapper that only reacts to writes
@@ -86,24 +88,25 @@ void init_mappers() {
 
     // Mapper that reacts to reads, writes, PPU events, and has special
     // (n)ametable mirroring (e.g. MMC5)
-    #define MAPPER_RWPN(n, write_fn, _ppu_tick_callback, read_fn, nt_ref_fn) \
-      mapper_functions[n].init  = mapper_##n##_init;                         \
-      mapper_functions[n].read  = read_fn;                                   \
-      mapper_functions[n].write = write_fn;                                  \
-      mapper_functions[n].ppu_tick_callback = _ppu_tick_callback;            \
-      mapper_functions[n].mapper_nt_ref = nt_ref_fn;
+    #define MAPPER_RWPN(n, write_fn, _ppu_tick_callback, read_fn, read_nt_fn, write_nt_fn) \
+      mapper_functions[n].init  = mapper_##n##_init;                                       \
+      mapper_functions[n].read  = read_fn;                                                 \
+      mapper_functions[n].write = write_fn;                                                \
+      mapper_functions[n].ppu_tick_callback = _ppu_tick_callback;                          \
+      mapper_functions[n].read_nt = read_nt_fn;                                            \
+      mapper_functions[n].write_nt = write_nt_fn;
 
-    MAPPER_W(     0, nop_write                                                               )
-    MAPPER_W(     1, mapper_1_write                                                          )
-    MAPPER_W(     2, mapper_2_write                                                          )
-    MAPPER_W(     3, mapper_3_write                                                          )
-    MAPPER_WP(    4, mapper_4_write  , mmc3_ppu_tick_callback                                )
-    MAPPER_RWPN(  5, mapper_5_write  , mmc5_ppu_tick_callback, mapper_5_read, mapper_5_nt_ref)
-    MAPPER_W(     7, mapper_7_write                                                          )
-    MAPPER_WP(    9, mapper_9_write  , mmc2_ppu_tick_callback                                )
-    MAPPER_W(    11, mapper_11_write                                                         )
-    MAPPER_W(    71, mapper_71_write                                                         )
-    MAPPER_W(   232, mapper_232_write                                                        )
+    MAPPER_W(     0, nop_write                                                                                   )
+    MAPPER_W(     1, mapper_1_write                                                                              )
+    MAPPER_W(     2, mapper_2_write                                                                              )
+    MAPPER_W(     3, mapper_3_write                                                                              )
+    MAPPER_WP(    4, mapper_4_write  , mmc3_ppu_tick_callback                                                    )
+    MAPPER_RWPN(  5, mapper_5_write  , mmc5_ppu_tick_callback, mapper_5_read, mapper_5_read_nt, mapper_5_write_nt)
+    MAPPER_W(     7, mapper_7_write                                                                              )
+    MAPPER_WP(    9, mapper_9_write  , mmc2_ppu_tick_callback                                                    )
+    MAPPER_W(    11, mapper_11_write                                                                             )
+    MAPPER_W(    71, mapper_71_write                                                                             )
+    MAPPER_W(   232, mapper_232_write                                                                            )
 
     #undef MAPPER_W
     #undef MAPPER_WP
