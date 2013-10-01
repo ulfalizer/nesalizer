@@ -1,11 +1,15 @@
 void init_mappers();
 
 typedef void write_fn(uint8_t value, uint16_t addr);
+typedef uint8_t read_fn(uint16_t addr);
 typedef void ppu_tick_callback_fn();
+typedef uint8_t &nt_ref_fn(uint16_t addr);
 
 struct Mapper_fns {
     void (*init)();
+    read_fn *read;
     write_fn *write;
+    nt_ref_fn *mapper_nt_ref;
     ppu_tick_callback_fn *ppu_tick_callback;
 };
 
@@ -31,6 +35,7 @@ enum Mirroring {
     ONE_SCREEN_LOW  = 2,
     ONE_SCREEN_HIGH = 3,
     FOUR_SCREEN     = 4,
+    SPECIAL         = 5, // Mapper-specific special mirroring
 
     N_MIRRORING_MODES
 };
@@ -40,5 +45,7 @@ void set_mirroring(Mirroring m);
 
 extern Mapper_fns mapper_functions[256];
 
+extern read_fn  *read_mapper;
 extern write_fn *write_mapper;
 extern ppu_tick_callback_fn *ppu_tick_callback;
+extern nt_ref_fn *mapper_nt_ref;

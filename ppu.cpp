@@ -128,7 +128,7 @@ static bool    show_bg;              // $2001:3
 static bool    show_sprites;         // $2001:4
 
 // Optimization - always equals show_bg || show_sprites
-static bool rendering_enabled;
+bool rendering_enabled;
 // Optimizations - if bg/sprites are disabled, a value is set that causes
 // comparisons to always fail. If the leftmost 8 pixels are clipped, the
 // comparison will fail for those pixels. Otherwise, the comparison will never
@@ -250,7 +250,8 @@ static uint8_t &ciram_ref(uint16_t reg) {
     case ONE_SCREEN_LOW:  addr = reg & 0x03FF;                           break;
     case ONE_SCREEN_HIGH: addr = 0x0400 | (reg & 0x03FF);                break;
     case FOUR_SCREEN:     addr = reg & 0x0FFF;                           break;
-    default:              UNREACHABLE
+    case SPECIAL:         return mapper_nt_ref(reg);                     break;
+    default: UNREACHABLE
     }
     return ciram[addr];
 }

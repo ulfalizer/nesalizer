@@ -118,6 +118,10 @@ uint8_t read(uint16_t addr) {
     case 0x4016: res = read_controller(0); break;
     case 0x4017: res = read_controller(1); break;
 
+    case 0x4018 ... 0x5FFF:
+        res = read_mapper(addr); // General enough?
+        break;
+
     case 0x6000 ... 0x7FFF:
         res = prg_ram ? prg_ram[addr & 0x1FFF] : cpu_data_bus;
         break;

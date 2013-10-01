@@ -29,7 +29,8 @@ char const*const mirroring_to_str[N_MIRRORING_MODES] =
     "vertical",
     "one-screen, low",
     "one-screen, high",
-    "four-screen" };
+    "four-screen",
+    "special (internal error - should never get this here)" };
 
 void load_rom(char const*filename, bool print_info) {
     size_t rom_buf_size;
@@ -143,8 +144,10 @@ void load_rom(char const*filename, bool print_info) {
     fail_if(!mapper_functions[mapper].init, "mapper %u not supported\n", mapper);
 
     mapper_functions[mapper].init();
+    read_mapper       = mapper_functions[mapper].read;
     write_mapper      = mapper_functions[mapper].write;
     ppu_tick_callback = mapper_functions[mapper].ppu_tick_callback;
+    mapper_nt_ref     = mapper_functions[mapper].mapper_nt_ref;
 }
 
 void unload_rom() {

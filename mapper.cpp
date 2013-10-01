@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "cpu.h"
 #include "mapper.h"
 #include "rom.h"
 
@@ -26,6 +27,13 @@ void mapper_4_init();
 void mapper_4_write(uint8_t, uint16_t);
 void mmc3_ppu_tick_callback();
 
+// MMC5/ExROM - Used by Castlevania III
+void mapper_5_init();
+uint8_t mapper_5_read(uint16_t);
+void mapper_5_write(uint8_t, uint16_t);
+void mmc5_ppu_tick_callback();
+uint8_t &mapper_5_nt_ref(uint16_t);
+
 // AxROM - Rare games often use this one
 void mapper_7_init();
 void mapper_7_write(uint8_t, uint16_t);
@@ -49,33 +57,57 @@ void mapper_232_init();
 void mapper_232_write(uint8_t, uint16_t);
 
 
+static uint8_t nop_read(uint16_t) { return cpu_data_bus; } // Return open bus by default
 static void nop_write(uint8_t, uint16_t) {}
 static void nop_ppu_tick_callback() {}
 
 // Implicitly zero-initialized
 Mapper_fns mapper_functions[256];
 
+read_fn *read_mapper;
 write_fn *write_mapper;
 ppu_tick_callback_fn *ppu_tick_callback;
+nt_ref_fn *mapper_nt_ref;
 
 void init_mappers() {
-    #define MAPPER(n, write_fn, _ppu_tick_callback)               \
+    // Mapper that only reacts to writes
+    #define MAPPER_W(n, write_fn)                                    \
+      mapper_functions[n].init  = mapper_##n##_init;                 \
+      mapper_functions[n].read  = nop_read;                          \
+      mapper_functions[n].write = write_fn;                          \
+      mapper_functions[n].ppu_tick_callback = nop_ppu_tick_callback;
+
+    // Mapper that reacts to writes and (P)PU events
+    #define MAPPER_WP(n, write_fn, _ppu_tick_callback)            \
       mapper_functions[n].init  = mapper_##n##_init;              \
+      mapper_functions[n].read  = nop_read;                       \
       mapper_functions[n].write = write_fn;                       \
       mapper_functions[n].ppu_tick_callback = _ppu_tick_callback;
 
-    MAPPER(0  , nop_write       , nop_ppu_tick_callback )
-    MAPPER(1  , mapper_1_write  , nop_ppu_tick_callback )
-    MAPPER(2  , mapper_2_write  , nop_ppu_tick_callback )
-    MAPPER(3  , mapper_3_write  , nop_ppu_tick_callback )
-    MAPPER(4  , mapper_4_write  , mmc3_ppu_tick_callback)
-    MAPPER(7  , mapper_7_write  , nop_ppu_tick_callback )
-    MAPPER(9  , mapper_9_write  , mmc2_ppu_tick_callback)
-    MAPPER(11 , mapper_11_write , nop_ppu_tick_callback )
-    MAPPER(71 , mapper_71_write , nop_ppu_tick_callback )
-    MAPPER(232, mapper_232_write, nop_ppu_tick_callback )
+    // Mapper that reacts to reads, writes, PPU events, and has special
+    // (n)ametable mirroring (e.g. MMC5)
+    #define MAPPER_RWPN(n, write_fn, _ppu_tick_callback, read_fn, nt_ref_fn) \
+      mapper_functions[n].init  = mapper_##n##_init;                         \
+      mapper_functions[n].read  = read_fn;                                   \
+      mapper_functions[n].write = write_fn;                                  \
+      mapper_functions[n].ppu_tick_callback = _ppu_tick_callback;            \
+      mapper_functions[n].mapper_nt_ref = nt_ref_fn;
 
-    #undef MAPPER
+    MAPPER_W(     0, nop_write                                                               )
+    MAPPER_W(     1, mapper_1_write                                                          )
+    MAPPER_W(     2, mapper_2_write                                                          )
+    MAPPER_W(     3, mapper_3_write                                                          )
+    MAPPER_WP(    4, mapper_4_write  , mmc3_ppu_tick_callback                                )
+    MAPPER_RWPN(  5, mapper_5_write  , mmc5_ppu_tick_callback, mapper_5_read, mapper_5_nt_ref)
+    MAPPER_W(     7, mapper_7_write                                                          )
+    MAPPER_WP(    9, mapper_9_write  , mmc2_ppu_tick_callback                                )
+    MAPPER_W(    11, mapper_11_write                                                         )
+    MAPPER_W(    71, mapper_71_write                                                         )
+    MAPPER_W(   232, mapper_232_write                                                        )
+
+    #undef MAPPER_W
+    #undef MAPPER_WP
+    #undef MAPPER_RWPN
 }
 
 //

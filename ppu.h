@@ -12,6 +12,8 @@ extern uint8_t *ciram;
 
 extern uint64_t ppu_cycle;
 
+extern bool rendering_enabled;
+
 uint8_t read_ppu_reg(unsigned n);
 void write_ppu_reg(uint8_t value, unsigned n);
 
