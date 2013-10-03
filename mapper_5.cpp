@@ -61,6 +61,10 @@ static uint8_t irq_scanline;
 static uint8_t scanline_cnt;
 static bool    in_frame;
 
+// 'true' if the background CHR mappings are currently active. Only an
+// optimization at the moment.
+static bool using_bg_chr;
+
 // Fill mode
 
 static uint8_t fill_tile;
@@ -74,8 +78,21 @@ static uint8_t fill_attrib;
 // non-attribute value from exram so we can do the same.
 static uint8_t exram_val;
 
+// Vertical split mode
 
-static void switch_to_bg_chr() {
+// $5200
+static bool     split_enabled;
+static bool     split_on_right;
+static unsigned split_tile_nr;
+// $5201
+static unsigned split_y_scroll;
+// $5202
+static unsigned split_chr_page;
+
+
+static void use_bg_chr() {
+    using_bg_chr = true;
+
     switch (chr_mode) {
     case 0:
         set_chr_8k_bank(bg_chr_banks[3]);
@@ -108,7 +125,9 @@ static void switch_to_bg_chr() {
     }
 }
 
-static void switch_to_sprite_chr() {
+static void use_sprite_chr() {
+    using_bg_chr = false;
+
     switch (chr_mode) {
     case 0:
         set_chr_8k_bank(sprite_chr_banks[7]);
@@ -162,13 +181,14 @@ static void make_effective() {
     default: UNREACHABLE
     }
 
-    if (dot <= 256 || dot >= 321) {
+    // Update the currently active CHR mapping
+    if (using_bg_chr) {
         // The BG CHR bank registers are not used in extended attribute mode
         if (exram_mode != 1)
-            switch_to_bg_chr();
+            use_bg_chr();
     }
     else
-        switch_to_sprite_chr();
+        use_sprite_chr();
 }
 
 void mapper_5_init() {
@@ -186,6 +206,9 @@ void mapper_5_init() {
     irq_pending = irq_enabled = in_frame = false;
 
     fill_tile = fill_attrib = 0;
+
+    // Assume the sprite CHR banks are used at startup
+    using_bg_chr = false;
 
     make_effective();
 }
@@ -248,9 +271,13 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
 
     case 0x5130: high_chr_bits = (value & 3) << 6; break;
 
-    case 0x5200: /* Vertical split mode   */ break;
-    case 0x5201: /* Vertical split scroll */ break;
-    case 0x5202: /* Vertical split bank   */ break;
+    case 0x5200:
+        split_enabled  = value & 0x80;
+        split_on_right = value & 0x40;
+        split_tile_nr  = value & 0x1F;
+        break;
+    case 0x5201: split_y_scroll = value; break;
+    case 0x5202: split_chr_page = value; break;
 
     case 0x5203: irq_scanline = value; break;
     case 0x5204:
@@ -263,9 +290,12 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
     case 0x5206: multiplier   = value; break;
 
     case 0x5C00 ... 0x5FFF:
-        // TODO: Only writeable during rendering for modes 0 and 1
-        if (exram_mode != 3)
-            exram[addr - 0x5C00] = value;
+        // In ExRAM modes 0 and 1, ExRAM is only writeable during rendering.
+        // Outside of rendering, 0 gets written instead.
+        switch (exram_mode) {
+        case 0: case 1: exram[addr - 0x5C00] = in_frame ? value : 0; break;
+        case 2:         exram[addr - 0x5C00] = value;                break;
+        }
         break;
     }
 
@@ -298,6 +328,66 @@ uint8_t mapper_5_read_nt(uint16_t addr) {
         }
     }
 
+    // Vertical split mode can only be used in exram modes 0 and 1
+    if (split_enabled && exram_mode <= 1) {
+        // Assume the board is wired in CL mode
+        // (http://wiki.nesdev.com/w/index.php/MMC5), meaning only the coarse
+        // portion of the split's scroll value matters. This is true for the
+        // only known game to use split screen mode (Uchuu Keibitai SDF).
+
+        // The x coordinate of the tile on the screen. We need to account for
+        // the first two tiles being pre-fetched at the end of the preceding
+        // scanline (http://wiki.nesdev.com/w/images/4/4f/Ppu.svg).
+        unsigned const tile_nr = (dot/8 + 2) % 40;
+
+        if (( split_on_right && tile_nr >= split_tile_nr) ||
+            (!split_on_right && tile_nr < split_tile_nr)) {
+                // We're in the split area. The nametable data fetched is
+                // determined purely by the screen position, which MMC5 keeps
+                // track of; the coarse scroll we get from the address is
+                // ignored.
+                //
+                // For reference, nametable addresses have the following
+                // layout:
+                //
+                // y = fine y scroll
+                // N = nametable select
+                // Y = coarse Y scroll
+                // X = coarse X scroll
+                //   Non-attribute fetch: yyy NNYY YYYX XXXX
+                //   Attribute fetch:      10 NN11 11<Y4><Y3> <Y2><X4><X3><X2>
+
+                set_chr_4k_bank(0, split_chr_page);
+                set_chr_4k_bank(1, split_chr_page);
+
+                unsigned coarse_scroll = split_y_scroll >> 3;
+
+                // If the split's scroll is set to less than 240 (or 30 for
+                // when looking at the coarse scroll only), wrapping will skip
+                // the attribute portion of the nametable. If it isn't, we wrap
+                // at 256 (32) and interpret the initial attribute bytes as
+                // tile indices. This works like ordinary nametables in the
+                // PPU. The real MMC5 probably updates the scroll as it draws
+                // the screen, meaning we might miss some odd corner cases
+                // here. That'd be a PITA to emulate though, and isn't needed
+                // for the only screen of the only game that uses this.
+                unsigned coarse_y = (scanline/8 + coarse_scroll) % (coarse_scroll < 30 ? 30 : 32);
+
+                if (dot & 2)
+                    // Non-attribute fetch. Tile vs. attribute is probably
+                    // position-based in the real MMC5, and determined by
+                    // counting nametable accesses.
+                    addr = ((coarse_y << 5) & 0x03E0) | tile_nr;
+                else
+                    // Attribute fetch
+                    addr = 0x23C0 | ((coarse_y << 1) & 0x38) | (tile_nr >> 2);
+                return exram[addr & 0x03FF];
+        }
+        else
+            // Outside split area
+            use_bg_chr();
+    }
+
     unsigned bits;
     // Maps $2000 to bits 1-0, $2400 to bits 3-2, etc.
     unsigned const bit_offset = (addr >> 9) & 6;
@@ -322,7 +412,7 @@ void mapper_5_write_nt(uint16_t addr, uint8_t value) {
     unsigned const bit_offset = (addr >> 9) & 6;
     switch ((mmc5_mirroring >> bit_offset) & 3) {
     // Internal nametable A
-    case 0: ciram[addr & 0x03FF]            = value; break;
+    case 0: ciram[addr & 0x03FF] = value; break;
     // Internal nametable B
     case 1: ciram[0x0400 | (addr & 0x03FF)] = value; break;
     // Use ExRAM as nametable
@@ -336,15 +426,19 @@ void mmc5_ppu_tick_callback() {
     // It is not known exactly how the MMC5 detects scanlines. Cheat by looking
     // at the current rendering position and status.
 
-    if (!rendering_enabled) {
+    if (!rendering_enabled || (scanline >= 240 && scanline != 261)) {
         in_frame = false;
+        // Uchuu Keibitai SDF reads nametable data from CHR and seems to expect
+        // this.
+        if (using_bg_chr)
+            use_sprite_chr();
         return;
     }
 
     if (dot == 257)
-        switch_to_sprite_chr();
+        use_sprite_chr();
     else if (dot == 321)
-        switch_to_bg_chr();
+        use_bg_chr();
     // 336 here shakes up Laser Invasion
     else if (dot == 337) {
         switch (scanline) {
@@ -362,11 +456,6 @@ void mmc5_ppu_tick_callback() {
                     update_irq_status();
                 }
             }
-
-            if (scanline == 239)
-                in_frame = false;
-
-            break;
         }
     }
 }
