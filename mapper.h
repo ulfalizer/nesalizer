@@ -16,10 +16,26 @@ struct Mapper_fns {
 };
 
 extern uint8_t *prg_pages[4];
+extern bool prg_page_is_ram[4];
+extern uint8_t *prg_ram_6000_page;
+
+inline uint8_t read_prg(uint16_t addr) {
+    return prg_pages[(addr >> 13) & 3][addr & 0x1FFF];
+}
+
+// MMC5 can put PRG RAM into the $8000+ range
+inline void write_prg(uint16_t addr, uint8_t value) {
+    if (prg_page_is_ram[(addr >> 13) & 3])
+        prg_pages[(addr >> 13) & 3][addr & 0x1FFF] = value;
+}
 
 void set_prg_32k_bank(unsigned bank);
-void set_prg_16k_bank(unsigned n, unsigned bank);
-void set_prg_8k_bank(unsigned n, unsigned bank);
+// MMC5 can map writeable PRG RAM into the $8000+ range - hence the 'is_rom'
+// argument
+void set_prg_16k_bank(unsigned n, unsigned bank, bool is_rom = true);
+void set_prg_8k_bank(unsigned n, unsigned bank, bool is_rom = true);
+// PRG RAM mapped at $6000-$7FFF
+void set_prg_6000_bank(unsigned bank);
 
 extern uint8_t *chr_pages[8];
 

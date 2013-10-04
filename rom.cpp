@@ -12,6 +12,9 @@ static uint8_t *rom_buf;
 uint8_t *prg_base;
 unsigned prg_16k_banks;
 
+uint8_t *prg_ram_base;
+unsigned prg_ram_8k_banks;
+
 uint8_t *chr_base;
 bool uses_chr_ram;
 unsigned chr_8k_banks;
@@ -52,12 +55,29 @@ void load_rom(char const*filename, bool print_info) {
     chr_8k_banks  = rom_buf[5];
     PRINT_INFO("PRG ROM size: %u KB\nCHR ROM size: %u KB\n", 16*prg_16k_banks, 8*chr_8k_banks);
 
-    // TODO: This makes sense for iNES 2.0
-    fail_if(prg_16k_banks == 0,
+    fail_if(prg_16k_banks == 0, // TODO: This makes sense for iNES 2.0
       "the iNES header specifies zero banks of PRG ROM (program storage), which makes no sense");
-
     fail_if(!is_pow_2_or_0(prg_16k_banks) || !is_pow_2_or_0(chr_8k_banks),
       "non-power-of-two PRG and CHR sizes are not supported yet");
+
+    // Possibly updated with the high nibble below
+    mapper = rom_buf[6] >> 4;
+
+    bool const in_ines_2_0_format = (rom_buf[7] & 0x0C) == 0x08;
+    PRINT_INFO(in_ines_2_0_format ? "in iNES 2.0 format\n" : "not in iNES 2.0 format\n");
+    // Assume we're dealing with a corrupted header (e.g. one containing
+    // "DiskDude!" in bytes 7-15) if the ROM is not in iNES 2.0 format and
+    // bytes 12-15 are not all zero
+    if (!in_ines_2_0_format && memcmp(rom_buf + 12, "\0\0\0\0", 4))
+        PRINT_INFO("header looks corrupted (bytes 12-15 not all zero) - ignoring byte 7\n");
+    else {
+        is_vs_unisystem  = rom_buf[7] & 1;
+        is_playchoice_10 = rom_buf[7] & 2;
+        mapper |= (rom_buf[7] & 0xF0);
+    }
+
+    PRINT_INFO("mapper: %u\n", mapper);
+
 
     // If bit 3 of flag byte 6 is set, the cart contains 2 KB of additional
     // CIRAM (nametable memory) and uses four-screen (linear) addressing
@@ -66,15 +86,21 @@ void load_rom(char const*filename, bool print_info) {
         ciram = alloc_array_init<uint8_t>(0x1000, 0xFF);
         // Assume no PRG RAM when four-screen, per
         // http://wiki.nesdev.com/w/index.php/INES_Mapper_004
-        prg_ram = 0;
+        prg_ram_base = prg_ram_6000_page = 0;
     }
     else {
         mirroring = rom_buf[6] & 1 ? VERTICAL : HORIZONTAL;
         ciram = alloc_array_init<uint8_t>(0x800, 0xFF);
-        // Original iNES assumes all carts have 8 KB of PRG RAM. Assume
-        // zero-initialization in the factory (in case it's battery-backed).
-        fail_if(!(prg_ram = alloc_array_init<uint8_t>(0x2000, 0)),
-                "failed to allocate 8 KB of PRG RAM");
+
+        // Original iNES assumes all carts have 8 KB of PRG RAM. For MMC5,
+        // assume the cart has 64 KB.
+        prg_ram_8k_banks = (mapper == 5) ? 8 : 1;
+
+        fail_if(!(prg_ram_base = alloc_array_init<uint8_t>(0x2000*prg_ram_8k_banks, 0xFF)),
+                "failed to allocate %u KB of PRG RAM", 8*prg_ram_8k_banks);
+        // Default to mapping the first page to $6000-$7FFF, which will do the right thing
+        // in the usual case of there only being a single page
+        prg_ram_6000_page = prg_ram_base;
     }
     fail_if(!ciram,
             "failed to allocate %u bytes of nametable memory",
@@ -112,24 +138,6 @@ void load_rom(char const*filename, bool print_info) {
     }
     else chr_base = prg_base + 16*1024*prg_16k_banks;
 
-    // Possibly updated with the high nibble below
-    mapper = rom_buf[6] >> 4;
-
-    bool const in_ines_2_0_format = (rom_buf[7] & 0x0C) == 0x08;
-    PRINT_INFO(in_ines_2_0_format ? "in iNES 2.0 format\n" : "not in iNES 2.0 format\n");
-    // Assume we're dealing with a corrupted header (e.g. one containing
-    // "DiskDude!" in bytes 7-15) if the ROM is not in iNES 2.0 format and
-    // bytes 12-15 are not all zero
-    if (!in_ines_2_0_format && memcmp(rom_buf + 12, "\0\0\0\0", 4))
-        PRINT_INFO("header looks corrupted (bytes 12-15 not all zero) - ignoring byte 7\n");
-    else {
-        is_vs_unisystem  = rom_buf[7] & 1;
-        is_playchoice_10 = rom_buf[7] & 2;
-        mapper |= (rom_buf[7] & 0xF0);
-    }
-
-    PRINT_INFO("mapper: %u\n", mapper);
-
     #undef PRINT_INFO
 
     if (in_ines_2_0_format) {
@@ -156,5 +164,5 @@ void unload_rom() {
     free_array_set_null(ciram);
     if (uses_chr_ram)
         free_array_set_null(chr_base);
-    free_array_set_null(prg_ram);
+    free_array_set_null(prg_ram_base);
 }

@@ -120,10 +120,10 @@ void init_mappers() {
 // Each PRG page is 8 KB to account for the finest granularity switched by any
 // mapper
 uint8_t *prg_pages[4];
+bool prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
+uint8_t *prg_ram_6000_page; // 8 KB page mapped at $6000-$7FFF. MMC5 can remap this.
 // Each 1 KB big
 uint8_t *chr_pages[8];
-
-uint8_t *prg_ram;
 
 void set_prg_32k_bank(unsigned bank) {
     if (prg_16k_banks == 1) {
@@ -134,21 +134,54 @@ void set_prg_32k_bank(unsigned bank) {
     }
     else {
         uint8_t *const bank_ptr = prg_base + 0x8000*(bank & (prg_16k_banks/2 - 1));
-        for (unsigned i = 0; i < 4; ++i)
-            prg_pages[i] = bank_ptr + 0x2000*i;
+        for (unsigned i = 0; i < 4; ++i) {
+            prg_pages[i]       = bank_ptr + 0x2000*i;
+            prg_page_is_ram[i] = false;
+        }
     }
 }
 
-void set_prg_16k_bank(unsigned n, unsigned bank) {
+void set_prg_16k_bank(unsigned n, unsigned bank, bool is_rom /* = true */) {
     assert(n < 2);
-    uint8_t *const bank_ptr = prg_base + 0x4000*(bank & (prg_16k_banks - 1));
-    for (unsigned i = 0; i < 2; ++i)
+
+    uint8_t *base;
+    unsigned mask;
+    if (!is_rom && prg_ram_base) {
+        base = prg_ram_base;
+        mask = 2*prg_ram_8k_banks - 1;
+    }
+    else {
+        base = prg_base;
+        mask = prg_16k_banks - 1;
+    }
+
+    uint8_t *const bank_ptr = base + 0x4000*(bank & mask);
+    for (unsigned i = 0; i < 2; ++i) {
         prg_pages[2*n + i] = bank_ptr + 0x2000*i;
+        prg_page_is_ram[2*n + i] = !is_rom;
+    }
 }
 
-void set_prg_8k_bank(unsigned n, unsigned bank) {
+void set_prg_8k_bank(unsigned n, unsigned bank, bool is_rom /* = true */) {
     assert(n < 4);
-    prg_pages[n] = prg_base + 0x2000*(bank & (2*prg_16k_banks - 1));
+
+    uint8_t *base;
+    unsigned mask;
+    if (!is_rom && prg_ram_base) {
+        base = prg_ram_base;
+        mask = prg_ram_8k_banks - 1;
+    }
+    else {
+        base = prg_base;
+        mask = 2*prg_16k_banks - 1;
+    }
+
+    prg_pages[n] = base + 0x2000*(bank & mask);
+    prg_page_is_ram[n] = !is_rom;
+}
+
+void set_prg_6000_bank(unsigned bank) {
+    prg_ram_6000_page = prg_ram_base + 0x2000*(bank & (prg_ram_8k_banks - 1));
 }
 
 void set_chr_8k_bank(unsigned bank) {

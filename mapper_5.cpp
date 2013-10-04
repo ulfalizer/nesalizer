@@ -44,6 +44,7 @@ static unsigned exram_mode;
 static unsigned prg_mode;
 static unsigned chr_mode;
 
+static unsigned prg_6000_bank;
 static unsigned prg_banks[4];
 static unsigned sprite_chr_banks[8];
 static unsigned bg_chr_banks[4];
@@ -161,25 +162,27 @@ static void make_effective() {
         break;
 
     case 1:
-        set_prg_16k_bank(0, (prg_banks[1] & 0x7F) >> 1);
+        set_prg_16k_bank(0, (prg_banks[1] & 0x7F) >> 1, prg_banks[1] & 0x80);
         set_prg_16k_bank(1, prg_banks[3] >> 1);
         break;
 
     case 2:
-        set_prg_16k_bank(0, (prg_banks[1] & 0x7F) >> 1);
-        set_prg_8k_bank(2, prg_banks[2] & 0x7F);
+        set_prg_16k_bank(0, (prg_banks[1] & 0x7F) >> 1, prg_banks[1] & 0x80);
+        set_prg_8k_bank(2, prg_banks[2] & 0x7F, prg_banks[2] & 0x80);
         set_prg_8k_bank(3, prg_banks[3]);
         break;
 
     case 3:
-        set_prg_8k_bank(0, prg_banks[0] & 0x7F);
-        set_prg_8k_bank(1, prg_banks[1] & 0x7F);
-        set_prg_8k_bank(2, prg_banks[2] & 0x7F);
+        set_prg_8k_bank(0, prg_banks[0] & 0x7F, prg_banks[0] & 0x80);
+        set_prg_8k_bank(1, prg_banks[1] & 0x7F, prg_banks[1] & 0x80);
+        set_prg_8k_bank(2, prg_banks[2] & 0x7F, prg_banks[2] & 0x80);
         set_prg_8k_bank(3, prg_banks[3]);
         break;
 
     default: UNREACHABLE
     }
+
+    set_prg_6000_bank(prg_6000_bank);
 
     // Update the currently active CHR mapping
     if (using_bg_chr) {
@@ -198,6 +201,7 @@ void mapper_5_init() {
     init_array(bg_chr_banks, 0xFFu);
 
     prg_mode       = chr_mode = 3;
+    prg_6000_bank  = 7;
     mirroring      = SPECIAL;
     mmc5_mirroring = 0xFF;
     high_chr_bits  = 0;
@@ -255,7 +259,7 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
         break;
     }
 
-    case 0x5113: /* PRG-RAM bankswitching */ break;
+    case 0x5113: prg_6000_bank = value & 7; break;
 
     case 0x5114 ... 0x5117:
         prg_banks[addr - 0x5114] = value;

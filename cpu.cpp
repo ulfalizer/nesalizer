@@ -123,10 +123,10 @@ uint8_t read(uint16_t addr) {
         break;
 
     case 0x6000 ... 0x7FFF:
-        res = prg_ram ? prg_ram[addr & 0x1FFF] : cpu_data_bus;
+        res = prg_ram_6000_page ? prg_ram_6000_page[addr & 0x1FFF] : cpu_data_bus;
         break;
 
-    case 0x8000 ... 0xFFFF: res = PRG(addr); break;
+    case 0x8000 ... 0xFFFF: res = read_prg(addr); break;
 
     default: res = cpu_data_bus; break;
     }
@@ -187,7 +187,7 @@ void write(uint8_t value, uint16_t addr) {
         // corresponding text string to $6004
         if (addr == 0x6000) {
             if (value < 0x80)
-                report_status_and_end_test(value, (char*)prg_ram + 4);
+                report_status_and_end_test(value, (char*)prg_ram_6000_page + 4);
             else if (value == 0x81)
                 // Wait 150 ms before resetting
                 ticks_till_reset = 0.15*ntsc_cpu_clock_rate;
@@ -195,10 +195,12 @@ void write(uint8_t value, uint16_t addr) {
 #endif
 
         // PRG RAM/SRAM/WRAM
-        if (prg_ram) prg_ram[addr & 0x1FFF] = value;
+        if (prg_ram_6000_page) prg_ram_6000_page[addr & 0x1FFF] = value;
         break;
 
-    case 0x8000 ... 0xFFFF: break;
+    case 0x8000 ... 0xFFFF:
+        write_prg(addr, value);
+        break;
     }
 
     write_mapper(value, addr);
@@ -1373,8 +1375,8 @@ void run() {
 static int read_without_side_effects(uint16_t addr) {
     switch (pc) {
     case 0x0000 ... 0x1FFF: return ram[addr & 0x07FF];
-    case 0x6000 ... 0x7FFF: return prg_ram ? prg_ram[addr & 0x1FFF] : 0;
-    case 0x8000 ... 0xFFFF: return PRG(addr);
+    case 0x6000 ... 0x7FFF: return prg_ram_6000_page ? prg_ram_6000_page[addr & 0x1FFF] : 0;
+    case 0x8000 ... 0xFFFF: return read_prg(addr);
 
     default: return -1;
     }

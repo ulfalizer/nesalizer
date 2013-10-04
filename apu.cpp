@@ -411,7 +411,7 @@ static void load_dmc_sample_byte() {
     if (dmc_loading_sample_byte)
         return;
 
-    dmc_sample_buffer = PRG(dmc_sample_cur_addr);
+    dmc_sample_buffer = read_prg(dmc_sample_cur_addr);
     // Should do this to be OCD and get open bus rights, but it currently
     // breaks OAM DMA
     // cpu_data_bus = dmc_sample_buffer;

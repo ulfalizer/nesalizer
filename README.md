@@ -36,14 +36,15 @@ A set of test ROMs listed in <b>test.cpp</b> can be run automatically with
     $ make TEST=1
     $ ./nes
 
-This requires https://github.com/christopherpow/nes-test-roms to first be cloned into a directory
-called <i>tests</i>.
+This requires https://github.com/christopherpow/nes-test-roms to first be
+cloned into a directory called <i>tests</i>. All tests listed are expected to
+pass.
 
 ## Compatibility ##
 
-iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 5 (partial), 7, 9, 11, 71, 232.
+iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 5 (including ExGrafix, split screen, and PRG RAM swapping), 7, 9, 11, 71, 232.
 
-Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, and Battletoads.
+Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, Uchuu Keibitai SDF, Just Breed, and Battletoads.
 
 <b>No PAL support yet.</b> PAL support will likely never be as good as NTSC support in any emulator due to much
 trickier and less explored timing (plus you lose 10 FPS for games that also have an NTSC version). PAL ROMs can
