@@ -50,7 +50,7 @@ void show_frame() {
 // Audio
 //
 
-Uint16 const sdl_audio_buffer_size = 1024;
+Uint16 const sdl_audio_buffer_size = 2048;
 
 // Audio ring buffer
 // Make room for 1/6'th seconds of delay and round up to the nearest power of
