@@ -255,7 +255,6 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
     {
         unsigned const attrib_bits = value & 3;
         fill_attrib = (attrib_bits << 6) | (attrib_bits << 4) | (attrib_bits << 2) | attrib_bits;
-        LOG_MAPPER("Fill-mode attribute\n");
         break;
     }
 
