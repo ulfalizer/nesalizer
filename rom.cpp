@@ -3,6 +3,7 @@
 #include "apu.h"
 #include "cpu.h"
 #include "mapper.h"
+#include "md5.h"
 #include "ppu.h"
 #include "rom.h"
 #include "timing.h"
@@ -25,6 +26,11 @@ bool has_trainer;
 bool is_vs_unisystem;
 bool is_playchoice_10;
 
+// If true, the mapper has bus conflicts and does not shut off ROM output for
+// writes to the $8000+ range. This results in an AND between the written value
+// and the value in ROM. Significant for some games.
+bool has_bus_conflicts;
+
 unsigned mapper;
 
 char const*const mirroring_to_str[N_MIRRORING_MODES] =
@@ -34,6 +40,9 @@ char const*const mirroring_to_str[N_MIRRORING_MODES] =
     "one-screen, high",
     "four-screen",
     "special (internal error - should never get this here)" };
+
+// Forward declaration
+static void do_rom_specific_overrides();
 
 void load_rom(char const*filename, bool print_info) {
     size_t rom_buf_size;
@@ -60,6 +69,23 @@ void load_rom(char const*filename, bool print_info) {
     fail_if(!is_pow_2_or_0(prg_16k_banks) || !is_pow_2_or_0(chr_8k_banks),
       "non-power-of-two PRG and CHR sizes are not supported yet");
 
+    // Check if the ROM is large enough to hold all the banks
+
+    size_t const min_size = 16 + 512*has_trainer + 0x4000*prg_16k_banks + 0x2000*chr_8k_banks;
+    if (rom_buf_size < min_size) {
+        char chr_msg[18]; // sizeof(" + xxx*8192 (CHR)")
+        if (chr_8k_banks)
+            sprintf(chr_msg, " + %u*8192 (CHR)", chr_8k_banks);
+        else
+            chr_msg[0] = '\0';
+        fail("'%s' is too short to hold the specified number of PRG (program data) and CHR (graphics data) "
+          "banks - is %zi bytes, expected at least %zi bytes (16 (header) + %s%u*16384 (PRG)%s)",
+          filename, rom_buf_size, min_size,
+          has_trainer ? "512 (trainer) + " : "",
+          prg_16k_banks,
+          chr_msg);
+    }
+
     // Possibly updated with the high nibble below
     mapper = rom_buf[6] >> 4;
 
@@ -81,15 +107,30 @@ void load_rom(char const*filename, bool print_info) {
 
     // If bit 3 of flag byte 6 is set, the cart contains 2 KB of additional
     // CIRAM (nametable memory) and uses four-screen (linear) addressing
-    if (rom_buf[6] & 8) {
+    if (rom_buf[6] & 8)
         mirroring = FOUR_SCREEN;
+    else
+        mirroring = rom_buf[6] & 1 ? VERTICAL : HORIZONTAL;
+
+    if ((has_battery = rom_buf[6] & 2)) PRINT_INFO("has battery\n");
+    if ((has_trainer = rom_buf[6] & 4)) PRINT_INFO("has trainer\n");
+
+    prg_base = rom_buf + 16 + 512*has_trainer;
+
+    // Default
+    has_bus_conflicts = false;
+
+    do_rom_specific_overrides();
+
+    PRINT_INFO("mirroring: %s\n", mirroring_to_str[mirroring]);
+
+    if (mirroring == FOUR_SCREEN) {
         ciram = alloc_array_init<uint8_t>(0x1000, 0xFF);
         // Assume no PRG RAM when four-screen, per
         // http://wiki.nesdev.com/w/index.php/INES_Mapper_004
         prg_ram_base = prg_ram_6000_page = 0;
     }
     else {
-        mirroring = rom_buf[6] & 1 ? VERTICAL : HORIZONTAL;
         ciram = alloc_array_init<uint8_t>(0x800, 0xFF);
 
         // Original iNES assumes all carts have 8 KB of PRG RAM. For MMC5,
@@ -105,29 +146,6 @@ void load_rom(char const*filename, bool print_info) {
     fail_if(!ciram,
             "failed to allocate %u bytes of nametable memory",
             mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
-
-    PRINT_INFO("mirroring: %s\n", mirroring_to_str[mirroring]);
-    if ((has_battery = rom_buf[6] & 2)) PRINT_INFO("has battery\n");
-    if ((has_trainer = rom_buf[6] & 4)) PRINT_INFO("has trainer\n");
-
-    // Check if the ROM is large enough to hold all the banks
-
-    size_t const min_size = 16 + 512*has_trainer + 0x4000*prg_16k_banks + 0x2000*chr_8k_banks;
-    if (rom_buf_size < min_size) {
-        char chr_msg[18]; // sizeof(" + xxx*8192 (CHR)")
-        if (chr_8k_banks)
-            sprintf(chr_msg, " + %u*8192 (CHR)", chr_8k_banks);
-        else
-            chr_msg[0] = '\0';
-        fail("'%s' is too short to hold the specified number of PRG (program data) and CHR (graphics data) "
-          "banks - is %zi bytes, expected at least %zi bytes (16 (header) + %s%u*16384 (PRG)%s)",
-          filename, rom_buf_size, min_size,
-          has_trainer ? "512 (trainer) + " : "",
-          prg_16k_banks,
-          chr_msg);
-    }
-
-    prg_base = rom_buf + 16 + 512*has_trainer;
 
     if ((uses_chr_ram = (chr_8k_banks == 0))) {
         // Cart uses 8 KB of CHR RAM. Not sure about the initialization value
@@ -165,4 +183,36 @@ void unload_rom() {
     if (uses_chr_ram)
         free_array_set_null(chr_base);
     free_array_set_null(prg_ram_base);
+}
+
+// ROM detection from a PRG MD5 digest. Needed to infer and correct information
+// for some ROMs.
+
+static void correct_mirroring(Mirroring m) {
+    if (mirroring != m) {
+        printf("Correcting mirroring from %s to %s based on ROM checksum\n",
+               mirroring_to_str[mirroring], mirroring_to_str[m]);
+        mirroring = m;
+    }
+}
+
+static void enable_bus_conflicts() {
+    puts("Enabling bus conflicts based on ROM checksum");
+    has_bus_conflicts = true;
+}
+
+static void do_rom_specific_overrides() {
+    static MD5_CTX md5_ctx;
+    static unsigned char md5[16];
+
+    MD5_Init(&md5_ctx);
+    MD5_Update(&md5_ctx, (void*)prg_base, 16*1024*prg_16k_banks);
+    MD5_Final(md5, &md5_ctx);
+
+    if (!memcmp(md5, "\x44\x6F\xCD\x30\x75\x61\x00\xA9\x94\x35\x9A\xD4\xC5\xF8\x76\x67", 16))
+        // Rad Racer 2
+        correct_mirroring(FOUR_SCREEN);
+    else if (!memcmp(md5, "\xAC\x5F\x53\x53\x59\x87\x58\x45\xBC\xBD\x1B\x6F\x31\x30\x7D\xEC", 16))
+        // Cybernoid
+        enable_bus_conflicts();
 }

@@ -26,12 +26,12 @@ endif
 # Source files and libraries
 #
 
-objects :=                                    \
-  audio.o apu.o blip_buf.o controller.o cpu.o \
-  debug.o error.o input.o main.o mapper.o     \
-  mapper_0.o mapper_1.o mapper_2.o mapper_3.o \
-  mapper_4.o mapper_5.o mapper_7.o mapper_9.o \
-  mapper_11.o mapper_71.o mapper_232.o ppu.o  \
+objects :=                                      \
+  audio.o apu.o blip_buf.o controller.o cpu.o   \
+  debug.o error.o input.o main.o md5.o mapper.o \
+  mapper_0.o mapper_1.o mapper_2.o mapper_3.o   \
+  mapper_4.o mapper_5.o mapper_7.o mapper_9.o   \
+  mapper_11.o mapper_71.o mapper_232.o ppu.o    \
   rom.o sdl_backend.o timing.o test.o util.o
 sources        := $(objects:.o=.cpp)
 objdir_objects := $(addprefix $(OBJDIR)/,$(objects))
