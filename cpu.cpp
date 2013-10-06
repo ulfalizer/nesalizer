@@ -1586,7 +1586,7 @@ static void print_state() {
 
 static void log_instruction() {
     if (debug_mode == RUN) {
-        if ((n_breakpoints_set > 0 && breakpoint_at[pc]) || keys[SDLK_d])
+        if ((n_breakpoints_set > 0 && breakpoint_at[pc]) || keys[SDL_SCANCODE_D])
             debug_mode = SINGLE_STEP;
         else
             return;
@@ -1645,7 +1645,11 @@ static void log_instruction() {
                 case 'c':
                     debug_mode = RUN;
                     free(line);
-                    sync_input();
+                    // Process input events to avoid another D press being
+                    // detected immediately
+                    SDL_LockMutex(event_lock);
+                    SDL_PumpEvents();
+                    SDL_UnlockMutex(event_lock);
                     return;
 
                 case 'd':

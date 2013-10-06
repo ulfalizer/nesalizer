@@ -19,7 +19,7 @@ TEST              := 0
 
 # If V is "1", commands are printed as they are executed
 ifneq ($(V),1)
-q = @
+q := @
 endif
 
 #
@@ -37,7 +37,7 @@ sources        := $(objects:.o=.cpp)
 objdir_objects := $(addprefix $(OBJDIR)/,$(objects))
 objdir_deps    := $(addprefix $(OBJDIR)/,$(sources:.cpp=.d))
 
-LDLIBS := -lreadline -lSDL -lrt
+LDLIBS := -lreadline $(shell sdl2-config --libs) -lrt
 
 #
 # Debugging and optimization
@@ -103,6 +103,8 @@ endif
 # Gives nicer errors for large files (even though we don't support them on
 # 32-bit systems)
 compile_flags += -D_FILE_OFFSET_BITS=64
+# SDL2 stuff
+compile_flags += $(shell sdl2-config --cflags)
 
 #
 # Targets

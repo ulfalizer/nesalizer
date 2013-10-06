@@ -4,18 +4,18 @@ A work-in-progress NES emulator. Uses a low-level pixel-based renderer that
 simulates the real PPU, going to through the motions of sprite evaluation and
 pixel selection, and omits most prediction and catch-up for straightforward and
 easy-to-debug code. This makes many effects that require special handling in
-other emulators work automagically. Peaks at around 42% of one core on my
-two-year-old 2600K Core i7, but there's still room for improvement.
+other emulators work automagically. The emulation thread peaks at around 37% of
+one core on my two-year-old 2600K Core i7, but there's still room for
+improvement.
 
 Still lacks a GUI and save states, so not worth using yet from a user's
 perspective. Will include some cool unique features later on. :)
 
 ## Building ##
 
-Linux-only so far. Dependencies are <b>readline</b> and <b>SDL 1.2</b>. For Ubuntu, the following
-should work:
+Linux-only so far. Dependencies are <b>readline</b> and <b>SDL 2</b>. Build
+with
 
-    $ apt-get install libreadline-dev libsdl1.2-dev
     $ make CONF=release
 
 See the <b>Makefile</b> for other options.

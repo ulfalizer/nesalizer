@@ -13,21 +13,13 @@
 #  include "test.h"
 #endif
 
-char const *program_name;
+#include <SDL.h>
 
-#ifdef RUN_TESTS
-int main(int, char *argv[]) {
-#else
-int main(int argc, char *argv[]) {
-#endif
-    program_name = argv[0] ? argv[0] : "nesalizer";
-#ifndef RUN_TESTS
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <rom file>\n", program_name);
-        exit(EXIT_FAILURE);
-    }
-#endif
+char const   *program_name;
+static int    argc;
+static char **argv;
 
+static int emulation_thread(void*) {
     // One-time initialization of various components
     init_apu();
     init_audio();
@@ -37,16 +29,33 @@ int main(int argc, char *argv[]) {
     init_mappers();
 
 #ifdef RUN_TESTS
-    init_sdl();
     run_tests();
 #else
-    // Load the ROM before initializing SDL so we fail early without annoying
-    // window flashes
     load_rom(argv[1], true);
-    init_sdl();
     run();
     unload_rom();
 #endif
+
     deinit_audio();
+}
+
+int main(int argc, char *argv[]) {
+    program_name = argv[0] ? argv[0] : "nesalizer";
+    ::argc = argc;
+    ::argv = argv;
+#ifndef RUN_TESTS
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s <rom file>\n", program_name);
+        exit(EXIT_FAILURE);
+    }
+#endif
+
+    init_sdl();
+
+    SDL_Thread *emu_thread;
+    fail_if(!(emu_thread = SDL_CreateThread(emulation_thread, "emulation", 0)),
+      "failed to create emulation thread: %s", SDL_GetError());
+    sdl_thread_loop();
+    SDL_WaitThread(emu_thread, 0);
     deinit_sdl();
 }
