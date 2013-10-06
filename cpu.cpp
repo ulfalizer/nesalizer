@@ -1645,7 +1645,6 @@ static void log_instruction() {
                 case 'c':
                     debug_mode = RUN;
                     free(line);
-                    sync_input();
                     return;
 
                 case 'd':

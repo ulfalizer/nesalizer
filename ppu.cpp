@@ -707,18 +707,12 @@ void tick_ppu() {
     if (++dot == 341) {
         dot = 0;
         if (++scanline == 262) {
-            // TODO: Move some of this. Could also draw as soon as the
-            // non-VBlank part is done and poll input status right as the
-            // controller is read to remove a tiny bit of input lag
-
 // Run tests as fast as we can
 #ifndef RUN_TESTS
             sleep_till_end_of_frame();
 #endif
-            show_frame();
-
-            reset_input_state();
-            process_backend_events();
+            // Draw frame and process events
+            frame_done();
 
             scanline = 0;
             if (rendering_enabled && odd_frame) ++dot;
@@ -726,9 +720,8 @@ void tick_ppu() {
         }
     }
 
-    if (pending_v_update > 0 && --pending_v_update == 0) {
+    if (pending_v_update > 0 && --pending_v_update == 0)
         v = t;
-    }
 
     ++ppu_cycle;
 

@@ -15,6 +15,13 @@ T const &max(T const &x, T const &y) {
     return x > y ? x : y;
 }
 
+template<typename T>
+void swap(T &x, T &y) {
+    T const temp = x;
+    x = y;
+    y = temp;
+}
+
 #define NTH_BIT(x, n) (((x) >> (n)) & 1)
 
 // Returns the next power of two greater than or equal to 'n'. Meant to be used

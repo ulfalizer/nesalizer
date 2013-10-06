@@ -1,9 +1,8 @@
-#include <SDL/SDL.h>
+#include <SDL.h>
 
 // Video
 
 void put_pixel(unsigned x, unsigned y, uint32_t color);
-void show_frame();
 
 // Audio
 
@@ -15,15 +14,16 @@ void   start_audio_playback();
 
 // Input
 
-extern Uint8 *keys;
-
-void sync_input();
-
-// Events
-
-void process_backend_events();
+extern Uint8 const*keys;
 
 // Initialization and de-initialization
 
 void init_sdl();
 void deinit_sdl();
+
+// Main loop and signalling of SDL thread
+
+void frame_done();
+void sdl_thread_loop();
+// Used only when running test ROMs
+void exit_sdl_thread();
