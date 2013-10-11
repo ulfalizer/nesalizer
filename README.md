@@ -54,3 +54,17 @@ Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, Uchuu Keibi
 <b>No PAL support yet.</b> PAL support will likely never be as good as NTSC support in any emulator due to much
 trickier and less explored timing (plus you lose 10 FPS for games that also have an NTSC version). PAL ROMs can
 often be recognized by having "(E)" in their name.
+
+## Screenshots ##
+
+### Bucky O'Hare ###
+
+![Bucky O'Hare](https://raw.github.com/ulfalizer/nesalizer/screenshots/bucky.png)
+
+### Battletoads ###
+
+![Battletoads](https://raw.github.com/ulfalizer/nesalizer/screenshots/battletoads.png)
+
+### Rad Racer 2 ###
+
+![Rad Racer 2](https://raw.github.com/ulfalizer/nesalizer/screenshots/radracer2.png)
