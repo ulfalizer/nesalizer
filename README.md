@@ -65,6 +65,10 @@ often be recognized by having "(E)" in their name.
 
 ![Battletoads](https://raw.github.com/ulfalizer/nesalizer/screenshots/battletoads.png)
 
+### Castlevania III ###
+
+![Castlevania III](https://raw.github.com/ulfalizer/nesalizer/screenshots/cv3.png)
+
 ### Rad Racer 2 ###
 
 ![Rad Racer 2](https://raw.github.com/ulfalizer/nesalizer/screenshots/radracer2.png)
