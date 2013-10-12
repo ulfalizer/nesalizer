@@ -25,7 +25,7 @@ private:
     // Indices from start_index up to but not including end_index (modulo
     // wrapping) contain samples
     size_t start_index, end_index;
-    // True is the last operation was a read. Indicates whether
+    // True if the last operation was a read. Indicates whether
     // start_index == end_index means the buffer is full or empty.
     bool prev_op_was_read;
 };
