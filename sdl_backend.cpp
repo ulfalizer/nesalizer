@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "audio_ring_buffer.h"
 #include "cpu.h"
 #include "input.h"
 #include "sdl_backend.h"
@@ -73,38 +74,26 @@ Uint16 const sdl_audio_buffer_size = 2048;
 // Audio ring buffer
 // Make room for 1/6'th seconds of delay and round up to the nearest power of
 // two for efficient wrapping
-static int16_t audio_buffer[GE_POW_2(sample_rate/6)];
-static size_t  start_index, end_index;
+static Audio_ring_buffer<GE_POW_2(sample_rate/6)> audio_buf;
 
-// Returns the fill level of the audio buffer in percent
 double audio_buf_fill_level() {
-    double const data_len =
-      (end_index + ARRAY_LEN(audio_buffer) - start_index) % ARRAY_LEN(audio_buffer);
-    return data_len/ARRAY_LEN(audio_buffer);
+    return audio_buf.fill_level();
 }
 
 // Un-static to prevent warning
 void print_fill_level() {
     static unsigned count = 0;
     if (++count % 8 == 0)
-        printf("Audio buffer fill level: %f%%\n", 100.0*audio_buf_fill_level());
+        printf("Audio buffer fill level: %f%%\n", 100.0*audio_buf.fill_level());
 }
 
 void add_audio_samples(int16_t *samples, size_t len) {
-    // TODO: Copy larger chunks like in the audio callback
-
     SDL_LockAudioDevice(audio_device_id);
-    for (size_t i = 0; i < (size_t)len; ++i) {
-        size_t new_end_index = (end_index + 1) % ARRAY_LEN(audio_buffer);
-        if (new_end_index == start_index) {
+    if (!audio_buf.write_samples(samples, len))
 #ifndef RUN_TESTS
-            puts("overflow!");
+        puts("overflow!")
 #endif
-            break;
-        }
-        audio_buffer[end_index] = samples[i];
-        end_index = new_end_index;
-    }
+        ;
     SDL_UnlockAudioDevice(audio_device_id);
 }
 
@@ -114,51 +103,14 @@ void start_audio_playback() {
 
 static void sdl_audio_callback(void*, Uint8 *stream, int len) {
     assert(len >= 0);
-    assert(start_index < ARRAY_LEN(audio_buffer));
-
-    int16_t *out = (int16_t*)stream;
-    len /= sizeof(int16_t);
 
     //print_fill_level();
 
-    // Copy data from the internal ring buffer to 'stream'. To speed things up,
-    // copy contiguous sections with memcpy().
-
-    unsigned const contiguous_avail
-      = ((start_index <= end_index) ? end_index : ARRAY_LEN(audio_buffer)) - start_index;
-    if (contiguous_avail >= (size_t)len) {
-        memcpy(out, audio_buffer + start_index, sizeof(int16_t)*len);
-        start_index = (start_index + len) % ARRAY_LEN(audio_buffer);
-    }
-    else {
-        memcpy(out, audio_buffer + start_index, sizeof(int16_t)*contiguous_avail);
-        len -= contiguous_avail;
-        assert(len > 0);
-        start_index = (start_index + contiguous_avail) % ARRAY_LEN(audio_buffer);
-        assert(start_index <= end_index);
-        size_t const avail = end_index - start_index;
-        if (avail >= (size_t)len) {
-            memcpy(out + contiguous_avail, audio_buffer + start_index, sizeof(int16_t)*len);
-            start_index += len;
-        }
-        else {
-            memcpy(out + contiguous_avail, audio_buffer + start_index, sizeof(int16_t)*avail);
-            // SDL 2 requires that the entire buffer is initialized even in
-            // case of underflow
-            memset(out + contiguous_avail + avail, 0, sizeof(int16_t)*(len - avail));
-            assert(start_index + avail == end_index);
-            start_index = end_index;
-            goto underflow;
-        }
-    }
-
-    return;
-
-underflow:
+    if (!audio_buf.read_samples((int16_t*)stream, len/sizeof(int16_t)))
 #ifndef RUN_TESTS
-    puts("underflow!");
+        puts("underflow!")
 #endif
-    return;
+        ;
 }
 
 //
