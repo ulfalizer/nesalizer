@@ -272,6 +272,9 @@ void init_sdl() {
     SDL_EventState(SDL_KEYUP          , SDL_IGNORE);
     SDL_EventState(SDL_MOUSEMOTION    , SDL_IGNORE);
 
+    // Ignore window events for now
+    SDL_EventState(SDL_WINDOWEVENT, SDL_IGNORE);
+
     keys = SDL_GetKeyboardState(0);
 
     // SDL thread synchronization
