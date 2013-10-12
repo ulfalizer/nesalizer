@@ -36,8 +36,8 @@ Audio_ring_buffer<LENGTH>::Audio_ring_buffer() :
 
 template<size_t LENGTH>
 bool Audio_ring_buffer<LENGTH>::write_samples(int16_t const*samples, size_t len) {
-    // Copy samples from 'samples' to to the ring buffer by memcpy()ing
-    // contiguous segments
+    // Copy samples from 'samples' to the ring buffer by memcpy()ing contiguous
+    // segments
 
     // How many contiguous bytes are available...?
 
