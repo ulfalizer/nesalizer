@@ -8,7 +8,7 @@ other emulators work automagically. The emulation thread peaks at around 37% of
 one core on my two-year-old 2600K Core i7, but there's still room for
 improvement.
 
-Still lacks a GUI and save states, so not worth using yet from a user's
+Still lacks a GUI and proper save states, so not worth using yet from a user's
 perspective. Will include some cool unique features later on. :)
 
 ## Building ##
@@ -28,11 +28,15 @@ Controls are currently hardcoded (in <b>input.cpp</b>) as follows:
 
 <table>
   <tr><td>D-pad </td><td>Arrow keys </td></tr>
-  <tr><td>A     </td><td>X          </td></tr>
-  <tr><td>B     </td><td>Z          </td></tr>
-  <tr><td>Start </td><td>Return     </td></tr>
-  <tr><td>Select</td><td>Right shift</td></tr>
+  <tr><td>A         </td><td>X          </td></tr>
+  <tr><td>B         </td><td>Z          </td></tr>
+  <tr><td>Start     </td><td>Return     </td></tr>
+  <tr><td>Select    </td><td>Right shift</td></tr>
+  <tr><td>Save state</td><td>S          </td></tr>
+  <tr><td>Load state</td><td>L          </td></tr>
 </table>
+
+The save state is in-memory and not saved to disk yet.
 
 ### Automatic testing ###
 

@@ -46,8 +46,6 @@ void calc_logical_dpad_state() {
     // Calculate the logical input state of the D-pad after left+right/up+down
     // elimination (if enabled)
 
-    SDL_LockMutex(event_lock);
-
     for (unsigned i = 0; i < 2; ++i) {
         Controller_data &c = controller_data[i];
 
@@ -91,13 +89,15 @@ void calc_logical_dpad_state() {
         c.up_was_pushed    = keys[c.key_up];
         c.down_was_pushed  = keys[c.key_down];
     }
-
-    SDL_UnlockMutex(event_lock);
 }
 
 uint8_t get_button_states(unsigned n) {
+    SDL_LockMutex(event_lock);
     Controller_data &cd = controller_data[n];
-    return (cd.right_pushed << 7) | (cd.left_pushed     << 6) | (cd.down_pushed      << 5) |
-           (cd.up_pushed    << 4) | (keys[cd.key_start] << 3) | (keys[cd.key_select] << 2) |
-           (keys[cd.key_b]  << 1) |  keys[cd.key_a];
+    uint8_t const res =
+      (cd.right_pushed << 7) | (cd.left_pushed     << 6) | (cd.down_pushed      << 5) |
+      (cd.up_pushed    << 4) | (keys[cd.key_start] << 3) | (keys[cd.key_select] << 2) |
+      (keys[cd.key_b]  << 1) |  keys[cd.key_a];
+    SDL_UnlockMutex(event_lock);
+    return res;
 }

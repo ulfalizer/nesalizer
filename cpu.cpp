@@ -9,6 +9,7 @@
 #  include "test.h"
 #endif
 #include "rom.h"
+#include "save_states.h"
 #include "sdl_backend.h"
 #include "timing.h"
 
@@ -24,6 +25,11 @@ static unsigned ticks_till_reset;
 // Set true to perform the reset at the next instruction boundary
 static bool pending_reset;
 #endif
+
+// True if a state transfer (load or save) has been requested
+bool pending_state_transfer;
+// True if a requested state transfer is a save; otherwise it is a load
+bool state_transfer_is_save;
 
 // RAM, registers, status flags, and misc. variables {{{
 
@@ -892,6 +898,17 @@ void run() {
     do_interrupt(Int_reset);
     while (!end_emulation) {
 
+        // The current location within the CPU emulation loop becomes part of
+        // the state due to the way emulation is structured. To simplify
+        // things, we always do state transfers at instruction boundaries.
+        if (pending_state_transfer) {
+            pending_state_transfer = false;
+            if (state_transfer_is_save)
+                save_state();
+            else
+                load_state();
+        }
+
 #ifdef RUN_TESTS
         if (pending_reset) {
             pending_reset = false;
@@ -1741,5 +1758,38 @@ static void reset_cpu() {
     do_interrupt(Int_reset);
 }
 #endif
+
+// }}}
+
+// State transfers {{{
+
+template<bool calculating_size, bool is_save>
+void transfer_cpu_state(uint8_t *&buf) {
+    #define T(x) transfer<calculating_size, is_save>(x, buf);
+    #define T_MEM(x, len) transfer_mem<calculating_size, is_save>(x, len, buf);
+
+    T(ram)
+    if (prg_ram_base) T_MEM(prg_ram_base, 0x2000*prg_ram_8k_banks)
+    T(pc)
+    T(a) T(s) T(x) T(y)
+    T(zero_negative_flag) T(carry_flag) T(irq_disable_flag) T(decimal_flag) T(overflow_flag)
+    T(op_1)
+    T(cpu_is_reading)
+    T(cpu_data_bus)
+    T(cart_irq) T(dmc_irq) T(frame_irq) T(irq_line) T(nmi_asserted)
+    T(pending_irq) T(pending_nmi)
+
+    #undef T
+    #undef T_MEM
+}
+
+// Explicit instantiations
+
+// Calculating state size
+template void transfer_cpu_state<true, false>(uint8_t*&);
+// Saving state to buffer
+template void transfer_cpu_state<false, true>(uint8_t*&);
+// Loading state from buffer
+template void transfer_cpu_state<false, false>(uint8_t*&);
 
 // }}}

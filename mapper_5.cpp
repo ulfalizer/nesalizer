@@ -155,7 +155,7 @@ static void use_sprite_chr() {
     }
 }
 
-static void make_effective() {
+static void apply_state() {
     switch (prg_mode) {
     case 0:
         set_prg_32k_bank(prg_banks[3] >> 2);
@@ -214,7 +214,7 @@ void mapper_5_init() {
     // Assume the sprite CHR banks are used at startup
     using_bg_chr = false;
 
-    make_effective();
+    apply_state();
 }
 
 uint8_t mapper_5_read(uint16_t addr) {
@@ -302,7 +302,7 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
         break;
     }
 
-    make_effective();
+    apply_state();
 }
 
 uint8_t mapper_5_read_nt(uint16_t addr) {
@@ -425,7 +425,7 @@ void mapper_5_write_nt(uint16_t addr, uint8_t value) {
     }
 }
 
-void mmc5_ppu_tick_callback() {
+void mapper_5_ppu_tick_callback() {
     // It is not known exactly how the MMC5 detects scanlines. Cheat by looking
     // at the current rendering position and status.
 
@@ -462,3 +462,32 @@ void mmc5_ppu_tick_callback() {
         }
     }
 }
+
+MAPPER_STATE_START(5)
+  MAPPER_STATE(exram)
+  MAPPER_STATE(mmc5_mirroring)
+  MAPPER_STATE(exram_mode)
+  MAPPER_STATE(prg_mode)
+  MAPPER_STATE(chr_mode)
+  MAPPER_STATE(prg_6000_bank)
+  MAPPER_STATE(prg_banks)
+  MAPPER_STATE(sprite_chr_banks)
+  MAPPER_STATE(bg_chr_banks)
+  MAPPER_STATE(high_chr_bits)
+  MAPPER_STATE(multiplicand)
+  MAPPER_STATE(multiplier)
+  MAPPER_STATE(irq_pending)
+  MAPPER_STATE(irq_enabled)
+  MAPPER_STATE(irq_scanline)
+  MAPPER_STATE(scanline_cnt)
+  MAPPER_STATE(in_frame)
+  MAPPER_STATE(using_bg_chr)
+  MAPPER_STATE(fill_tile)
+  MAPPER_STATE(fill_attrib)
+  MAPPER_STATE(exram_val)
+  MAPPER_STATE(split_enabled)
+  MAPPER_STATE(split_on_right)
+  MAPPER_STATE(split_tile_nr)
+  MAPPER_STATE(split_y_scroll)
+  MAPPER_STATE(split_chr_page)
+MAPPER_STATE_END(5)

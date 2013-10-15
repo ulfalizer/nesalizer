@@ -5,6 +5,7 @@ typedef uint8_t read_fn(uint16_t addr);
 typedef void ppu_tick_callback_fn();
 typedef uint8_t read_nt_fn(uint16_t addr);
 typedef void write_nt_fn(uint16_t addr, uint8_t value);
+typedef size_t state_fn(uint8_t*&);
 
 struct Mapper_fns {
     void (*init)();
@@ -13,6 +14,7 @@ struct Mapper_fns {
     read_nt_fn *read_nt;
     write_nt_fn *write_nt;
     ppu_tick_callback_fn *ppu_tick_callback;
+    state_fn *state_size, *save_state, *load_state;
 };
 
 extern uint8_t *prg_pages[4];
@@ -63,8 +65,63 @@ void set_mirroring(Mirroring m);
 
 extern Mapper_fns mapper_functions[256];
 
-extern read_fn  *read_mapper;
-extern write_fn *write_mapper;
+extern read_fn              *read_mapper;
+extern write_fn             *write_mapper;
 extern ppu_tick_callback_fn *ppu_tick_callback;
-extern read_nt_fn *mapper_read_nt;
-extern write_nt_fn *mapper_write_nt;
+extern read_nt_fn           *mapper_read_nt;
+extern write_nt_fn          *mapper_write_nt;
+extern state_fn             *mapper_state_size;
+extern state_fn             *mapper_save_state;
+extern state_fn             *mapper_load_state;
+
+// Helper macros for declaring mapper state that needs to be included in and
+// loaded from save states
+//
+// A declaration like
+//
+//   MAPPER_STATE_START(123)
+//     MAPPER_STATE(foo)
+//     MAPPER_STATE(bar)
+//   MAPPER_STATE_END(123)
+//
+// Expands to
+//
+//   template<bool calculating_size, bool is_save>
+//   size_t transfer_mapper_123_state(uint8_t *&buf) {
+//       uint8_t *tmp = buf;
+//       transfer<calculating_size, is_save>(foo, buf);
+//       transfer<calculating_size, is_save>(bar, buf);
+//       if (!is_save)
+//           apply_state();
+//       // Return state size
+//       return buf - tmp;
+//    }
+//    // Calculating state size
+//    template size_t transfer_mapper_123_state<true, false>(uint8_t*&);
+//    // Saving state to buffer
+//    template size_t transfer_mapper_123_state<false, true>(uint8_t*&);
+//    // Loading state from buffer
+//    template size_t transfer_mapper_123_state<false, false>(uint8_t*&);
+//
+//  Each mapper has an apply_state(), which sets up memory mappings, etc.,
+//  associated with the state.
+
+// Helper
+#define MAPPER_FN_INSTANTIATIONS(n)                                     \
+  template size_t transfer_mapper_##n##_state<true, false>(uint8_t*&);  \
+  template size_t transfer_mapper_##n##_state<false, true>(uint8_t*&);  \
+  template size_t transfer_mapper_##n##_state<false, false>(uint8_t*&);
+
+#define MAPPER_STATE_START(n)                         \
+  template<bool calculating_size, bool is_save>       \
+  size_t transfer_mapper_##n##_state(uint8_t *&buf) { \
+      uint8_t *tmp = buf;
+
+#define MAPPER_STATE_END(n)   \
+      if (!is_save)           \
+          apply_state();      \
+      return buf - tmp;       \
+  }                           \
+  MAPPER_FN_INSTANTIATIONS(n)
+
+#define MAPPER_STATE(x) transfer<calculating_size, is_save>(x, buf);

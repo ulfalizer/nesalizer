@@ -5,17 +5,27 @@
 #include "mapper.h"
 #include "rom.h"
 
+static uint8_t prg_bank;
+
+static void apply_state() {
+    set_prg_16k_bank(0, prg_bank);
+}
+
 void mapper_2_init() {
     // Last PRG bank and all CHR banks fixed
     set_prg_16k_bank(1, prg_16k_banks - 1);
     set_chr_8k_bank(0);
-
-    // Default
-    set_prg_16k_bank(0, 0);
+    prg_bank = 0;
+    apply_state();
 }
 
 void mapper_2_write(uint8_t value, uint16_t addr) {
     if (!(addr & 0x8000)) return;
 
-    set_prg_16k_bank(0, value);
+    prg_bank = value;
+    apply_state();
 }
+
+MAPPER_STATE_START(2)
+  MAPPER_STATE(prg_bank)
+MAPPER_STATE_END(2)

@@ -271,7 +271,7 @@ static void clock_triangle_generator() {
 //   - and shift reg value
 static unsigned noise_output_level;
 
-static bool noise_enabled;
+static bool     noise_enabled;
 
 static bool     noise_halt_len_loop_env;
 static bool     noise_const_vol;
@@ -950,3 +950,116 @@ void set_apu_cold_boot_state() {
     // Reset signal takes care of the rest
     reset_apu();
 }
+
+//
+// State transfers
+//
+
+template<bool calculating_size, bool is_save>
+void transfer_apu_state(uint8_t *&buf) {
+    #define T(x) transfer<calculating_size, is_save>(x, buf);
+
+    T(apu_clk1_is_high)
+    T(oam_dma_state)
+
+    // Pulse channel
+
+    for (unsigned i = 0; i < 2; ++i) {
+        #define TP(x) T(pulse[i].x)
+
+        TP(enabled)
+        TP(const_vol)
+        TP(duty)
+        TP(waveform_pos);
+        TP(len_cnt)
+        TP(period)
+        TP(period_cnt)
+        TP(sweep_enabled)
+        TP(sweep_negate)
+        TP(sweep_period)
+        TP(sweep_period_cnt)
+        TP(sweep_shift)
+        TP(sweep_reload_flag)
+        TP(vol)
+
+        TP(env_div_cnt)
+        TP(env_vol)
+        TP(halt_len_loop_env)
+        TP(env_start_flag)
+
+        #undef TP
+
+        if (!is_save) {
+            update_sweep_target_period(i);
+            update_pulse_output_level(i);
+        }
+    }
+
+    // Triangle channel
+
+    T(tri_enabled)
+    T(tri_period)
+    T(tri_period_cnt)
+    T(tri_waveform_pos)
+    T(tri_len_cnt)
+    T(tri_halt_flag)
+    T(tri_lin_cnt_load)
+    T(tri_lin_cnt)
+    T(tri_lin_cnt_reload_flag)
+
+    // Noise channel
+
+    T(noise_enabled)
+    T(noise_halt_len_loop_env)
+    T(noise_const_vol)
+    T(noise_vol)
+    T(noise_feedback_bit)
+    T(noise_period)
+    T(noise_period_cnt)
+    T(noise_len_cnt)
+    T(noise_shift_reg)
+    T(noise_env_start_flag)
+    T(noise_env_vol)
+    T(noise_env_div_cnt)
+
+    update_noise_output_level();
+
+    // DMC channel
+
+    T(dmc_counter)
+    T(dmc_irq_enabled)
+    T(dmc_loop_sample)
+    T(dmc_period)
+    T(dmc_period_cnt)
+    T(dmc_sample_start_addr)
+    T(dmc_sample_len)
+    T(dmc_sample_buffer)
+    T(dmc_sample_buffer_has_data)
+    T(dmc_shift_reg)
+    T(dpcm_active)
+    T(dmc_loading_sample_byte)
+    T(dmc_sample_cur_addr)
+    T(dmc_bytes_remaining)
+    T(dmc_bits_remaining)
+
+    // Frame counter
+
+    T(frame_counter_mode)
+    T(inhibit_frame_irq)
+    T(frame_counter_clock)
+    T(delayed_frame_timer_reset)
+
+
+    channel_updated = true;
+
+    #undef T
+}
+
+// Explicit instantiations
+
+// Calculating state size
+template void transfer_apu_state<true, false>(uint8_t*&);
+// Saving state to buffer
+template void transfer_apu_state<false, true>(uint8_t*&);
+// Loading state from buffer
+template void transfer_apu_state<false, false>(uint8_t*&);

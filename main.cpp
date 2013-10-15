@@ -58,4 +58,5 @@ int main(int argc, char *argv[]) {
     sdl_thread_loop();
     SDL_WaitThread(emu_thread, 0);
     deinit_sdl();
+    puts("Shut down cleanly");
 }

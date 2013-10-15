@@ -4,110 +4,129 @@
 #include "mapper.h"
 #include "rom.h"
 
-// NROM
-void mapper_0_init();
-void mapper_0_write(uint8_t, uint16_t);
-
-// SxROM, all of which use the Nintendo MMC1
-void mapper_1_init();
-void mapper_1_write(uint8_t, uint16_t);
-
-// Most common configuration of the UxROM boardset
-void mapper_2_init();
-void mapper_2_write(uint8_t, uint16_t);
-
-// CNROM board and a very similar board used for Panesian games
-void mapper_3_init();
-void mapper_3_write(uint8_t, uint16_t);
-
-// "iNES Mapper 004 is a wide abstraction that can represent boards using the
-// Nintendo MMC3, Nintendo MMC6, or functional clones of any of the above. Most
-// games utilizing TxROM, DxROM, and HKROM boards use this designation."
-void mapper_4_init();
-void mapper_4_write(uint8_t, uint16_t);
-void mmc3_ppu_tick_callback();
-
-// MMC5/ExROM - Used by Castlevania III
-void mapper_5_init();
-uint8_t mapper_5_read(uint16_t);
-void mapper_5_write(uint8_t, uint16_t);
-void mmc5_ppu_tick_callback();
-uint8_t mapper_5_read_nt(uint16_t);
-void mapper_5_write_nt(uint16_t, uint8_t);
-
-// AxROM - Rare games often use this one
-void mapper_7_init();
-void mapper_7_write(uint8_t, uint16_t);
-
-// MMC2 - only used by Punch-Out!!
-void mapper_9_init();
-void mapper_9_write(uint8_t, uint16_t);
-void mmc2_ppu_tick_callback();
-
-// Color Dreams
-void mapper_11_init();
-void mapper_11_write(uint8_t, uint16_t);
-
-// Mapper-2-ish
-void mapper_71_init();
-void mapper_71_write(uint8_t, uint16_t);
-
-// Camerica/Capcom mapper used by the Quattro * games
-
-void mapper_232_init();
-void mapper_232_write(uint8_t, uint16_t);
-
-
 static uint8_t nop_read(uint16_t) { return cpu_data_bus; } // Return open bus by default
 static void nop_write(uint8_t, uint16_t) {}
 static void nop_ppu_tick_callback() {}
+static uint8_t bad_nt_read(uint16_t addr) {
+    fail("internal error: reading nametable address %04X with no read function defined",
+         addr);
+}
+static void bad_nt_write(uint16_t addr, uint8_t value) {
+    fail("internal error: writing %02X to nametable address %04X with no write function defined",
+         value, addr);
+}
+// For stateless mappers
+static size_t nop_state_fn(uint8_t*&) { return 0; }
 
 // Implicitly zero-initialized
 Mapper_fns mapper_functions[256];
 
-read_fn *read_mapper;
-write_fn *write_mapper;
+read_fn              *read_mapper;
+write_fn             *write_mapper;
 ppu_tick_callback_fn *ppu_tick_callback;
-read_nt_fn *mapper_read_nt;
-write_nt_fn *mapper_write_nt;
+read_nt_fn           *mapper_read_nt;
+write_nt_fn          *mapper_write_nt;
+state_fn             *mapper_state_size;
+state_fn             *mapper_save_state;
+state_fn             *mapper_load_state;
+
+// Workaround for not being able to declare templates inside functions
+#define DECLARE_STATE_FNS(n)              \
+  template<bool, bool> size_t             \
+  transfer_mapper_##n##_state(uint8_t*&);
+DECLARE_STATE_FNS(  1) DECLARE_STATE_FNS(   2) DECLARE_STATE_FNS(  3) DECLARE_STATE_FNS(  4)
+DECLARE_STATE_FNS(  5) DECLARE_STATE_FNS(   7) DECLARE_STATE_FNS(  9) DECLARE_STATE_FNS( 11)
+DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS( 232)
 
 void init_mappers() {
+    // Helper for initializing state saving/loading functions
+    #define MAPPER_STATE_FNS(n)                                                   \
+      mapper_functions[n].state_size = transfer_mapper_##n##_state<true, false>;  \
+      mapper_functions[n].save_state = transfer_mapper_##n##_state<false, true>;  \
+      mapper_functions[n].load_state = transfer_mapper_##n##_state<false, false>;
+
+    // No mapper (hardwired/NROM)
+    #define MAPPER_NONE(n)                                           \
+      void mapper_##n##_init();                                      \
+      mapper_functions[n].init              = mapper_##n##_init;     \
+      mapper_functions[n].read              = nop_read;              \
+      mapper_functions[n].write             = nop_write;             \
+      mapper_functions[n].ppu_tick_callback = nop_ppu_tick_callback; \
+      mapper_functions[n].read_nt           = bad_nt_read;           \
+      mapper_functions[n].write_nt          = bad_nt_write;          \
+      mapper_functions[n].state_size        = nop_state_fn;          \
+      mapper_functions[n].save_state        = nop_state_fn;          \
+      mapper_functions[n].load_state        = nop_state_fn;
+
     // Mapper that only reacts to writes
-    #define MAPPER_W(n, write_fn)                                    \
-      mapper_functions[n].init  = mapper_##n##_init;                 \
-      mapper_functions[n].read  = nop_read;                          \
-      mapper_functions[n].write = write_fn;                          \
-      mapper_functions[n].ppu_tick_callback = nop_ppu_tick_callback;
+    #define MAPPER_W(n)                                              \
+      void mapper_##n##_init();                                      \
+      void mapper_##n##_write(uint8_t, uint16_t);                    \
+      mapper_functions[n].init              = mapper_##n##_init;     \
+      mapper_functions[n].read              = nop_read;              \
+      mapper_functions[n].write             = mapper_##n##_write;    \
+      mapper_functions[n].ppu_tick_callback = nop_ppu_tick_callback; \
+      mapper_functions[n].read_nt           = bad_nt_read;           \
+      mapper_functions[n].write_nt          = bad_nt_write;          \
+      MAPPER_STATE_FNS(n)
 
     // Mapper that reacts to writes and (P)PU events
-    #define MAPPER_WP(n, write_fn, _ppu_tick_callback)            \
-      mapper_functions[n].init  = mapper_##n##_init;              \
-      mapper_functions[n].read  = nop_read;                       \
-      mapper_functions[n].write = write_fn;                       \
-      mapper_functions[n].ppu_tick_callback = _ppu_tick_callback;
+    #define MAPPER_WP(n)                                                      \
+      void mapper_##n##_init();                                               \
+      void mapper_##n##_write(uint8_t, uint16_t);                             \
+      void mapper_##n##_ppu_tick_callback();                                  \
+      mapper_functions[n].init              = mapper_##n##_init;              \
+      mapper_functions[n].read              = nop_read;                       \
+      mapper_functions[n].write             = mapper_##n##_write;             \
+      mapper_functions[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
+      mapper_functions[n].read_nt           = bad_nt_read;                    \
+      mapper_functions[n].write_nt          = bad_nt_write;                   \
+      MAPPER_STATE_FNS(n)
 
     // Mapper that reacts to reads, writes, PPU events, and has special
     // (n)ametable mirroring (e.g. MMC5)
-    #define MAPPER_RWPN(n, write_fn, _ppu_tick_callback, read_fn, read_nt_fn, write_nt_fn) \
-      mapper_functions[n].init  = mapper_##n##_init;                                       \
-      mapper_functions[n].read  = read_fn;                                                 \
-      mapper_functions[n].write = write_fn;                                                \
-      mapper_functions[n].ppu_tick_callback = _ppu_tick_callback;                          \
-      mapper_functions[n].read_nt = read_nt_fn;                                            \
-      mapper_functions[n].write_nt = write_nt_fn;
+    #define MAPPER_RWPN(n)                                                    \
+      void mapper_##n##_init();                                               \
+      uint8_t mapper_##n##_read(uint16_t);                                    \
+      void mapper_##n##_write(uint8_t, uint16_t);                             \
+      void mapper_##n##_ppu_tick_callback();                                  \
+      uint8_t mapper_##n##_read_nt(uint16_t);                                 \
+      void mapper_##n##_write_nt(uint16_t, uint8_t);                          \
+      mapper_functions[n].init              = mapper_##n##_init;              \
+      mapper_functions[n].read              = mapper_##n##_read;              \
+      mapper_functions[n].write             = mapper_##n##_write;             \
+      mapper_functions[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
+      mapper_functions[n].read_nt           = mapper_##n##_read_nt;           \
+      mapper_functions[n].write_nt          = mapper_##n##_write_nt;          \
+      MAPPER_STATE_FNS(n)
 
-    MAPPER_W(     0, nop_write                                                                                   )
-    MAPPER_W(     1, mapper_1_write                                                                              )
-    MAPPER_W(     2, mapper_2_write                                                                              )
-    MAPPER_W(     3, mapper_3_write                                                                              )
-    MAPPER_WP(    4, mapper_4_write  , mmc3_ppu_tick_callback                                                    )
-    MAPPER_RWPN(  5, mapper_5_write  , mmc5_ppu_tick_callback, mapper_5_read, mapper_5_read_nt, mapper_5_write_nt)
-    MAPPER_W(     7, mapper_7_write                                                                              )
-    MAPPER_WP(    9, mapper_9_write  , mmc2_ppu_tick_callback                                                    )
-    MAPPER_W(    11, mapper_11_write                                                                             )
-    MAPPER_W(    71, mapper_71_write                                                                             )
-    MAPPER_W(   232, mapper_232_write                                                                            )
+    // NROM
+    MAPPER_NONE(     0)
+    // SxROM, all of which use the Nintendo MMC1
+    MAPPER_W(        1)
+    // Most common configuration of the UxROM boardset
+    MAPPER_W(        2)
+    // CNROM board and a very similar board used for Panesian games
+    MAPPER_W(        3)
+    // "iNES Mapper 004 is a wide abstraction that can represent boards using the
+    // Nintendo MMC3, Nintendo MMC6, or functional clones of any of the above. Most
+    // games utilizing TxROM, DxROM, and HKROM boards use this designation."
+    MAPPER_WP(       4)
+    // MMC5/ExROM - Used by Castlevania III
+    MAPPER_RWPN(     5)
+    // AxROM - Rare games often use this one
+    MAPPER_W(        7)
+    // MMC2 - only used by Punch-Out!!
+    MAPPER_WP(       9)
+    // Color Dreams
+    MAPPER_W(       11)
+    // Mapper-2-ish
+    MAPPER_W(       71)
+    // Camerica/Capcom mapper used by the Quattro * games
+    MAPPER_W(      232)
 
+    #undef MAPPER_STATE_FNS
+    #undef MAPPER_NONE
     #undef MAPPER_W
     #undef MAPPER_WP
     #undef MAPPER_RWPN

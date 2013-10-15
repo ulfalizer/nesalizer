@@ -16,7 +16,7 @@ static uint8_t irq_period;
 static uint8_t irq_period_cnt;
 static bool irq_enabled;
 
-static void make_effective() {
+static void apply_state() {
     // Second 8K PRG bank fixed to regs[7]
     set_prg_8k_bank(1, regs[7]);
     if (!(reg_8000 & 0x40)) {
@@ -49,11 +49,10 @@ static void make_effective() {
 void mapper_4_init() {
     init_array(regs, (unsigned)0);
     set_mirroring(HORIZONTAL); // Guess
-
-    // Last PRG 8K page fixed
-    set_prg_8k_bank(3, 2*prg_16k_banks - 1);
-
-    make_effective();
+    set_prg_8k_bank(3, 2*prg_16k_banks - 1); // Last PRG 8K page fixed
+    irq_period = irq_period_cnt = 0;
+    irq_enabled = false;
+    apply_state();
 }
 
 void mapper_4_write(uint8_t value, uint16_t addr) {
@@ -109,7 +108,7 @@ void mapper_4_write(uint8_t value, uint16_t addr) {
     default: UNREACHABLE
     }
 
-    make_effective();
+    apply_state();
 }
 
 // There is a short delay after A12 rises till IRQ is asserted, but it probably
@@ -143,7 +142,7 @@ static uint64_t last_a12_high_cycle;
 
 unsigned const min_a12_rise_diff = 16;
 
-void mmc3_ppu_tick_callback() {
+void mapper_4_ppu_tick_callback() {
     //if (delayed_irq > 0) {
         //if (--delayed_irq == 0) {
             //cart_irq = true;
@@ -157,3 +156,11 @@ void mmc3_ppu_tick_callback() {
         last_a12_high_cycle = ppu_cycle;
     }
 }
+
+MAPPER_STATE_START(4)
+  MAPPER_STATE(reg_8000)
+  MAPPER_STATE(regs)
+  MAPPER_STATE(irq_period)
+  MAPPER_STATE(irq_period_cnt)
+  MAPPER_STATE(irq_enabled)
+MAPPER_STATE_END(4)

@@ -32,7 +32,8 @@ objects :=                                      \
   mapper_0.o mapper_1.o mapper_2.o mapper_3.o   \
   mapper_4.o mapper_5.o mapper_7.o mapper_9.o   \
   mapper_11.o mapper_71.o mapper_232.o ppu.o    \
-  rom.o sdl_backend.o timing.o test.o util.o
+  rom.o save_states.o sdl_backend.o timing.o    \
+  test.o util.o
 sources        := $(objects:.o=.cpp)
 objdir_objects := $(addprefix $(OBJDIR)/,$(objects))
 objdir_deps    := $(addprefix $(OBJDIR)/,$(sources:.cpp=.d))
@@ -105,6 +106,9 @@ endif
 compile_flags += -D_FILE_OFFSET_BITS=64
 # SDL2 stuff
 compile_flags += $(shell sdl2-config --cflags)
+
+# Save states may involve unsafe type punning
+compile_flags += -fno-strict-aliasing
 
 #
 # Targets

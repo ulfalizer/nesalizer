@@ -18,3 +18,6 @@ uint8_t read_ppu_reg(unsigned n);
 void write_ppu_reg(uint8_t value, unsigned n);
 
 void write_oam_data_reg(uint8_t value);
+
+template<bool calculating_size, bool is_save>
+void transfer_ppu_state(uint8_t *&buf);

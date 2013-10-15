@@ -6,6 +6,7 @@
 #include "md5.h"
 #include "ppu.h"
 #include "rom.h"
+#include "save_states.h"
 #include "timing.h"
 
 static uint8_t *rom_buf;
@@ -175,6 +176,11 @@ void load_rom(char const*filename, bool print_info) {
     ppu_tick_callback = mapper_functions[mapper].ppu_tick_callback;
     mapper_read_nt    = mapper_functions[mapper].read_nt;
     mapper_write_nt   = mapper_functions[mapper].write_nt;
+    mapper_state_size = mapper_functions[mapper].state_size;
+    mapper_save_state = mapper_functions[mapper].save_state;
+    mapper_load_state = mapper_functions[mapper].load_state;
+
+    init_save_states();
 }
 
 void unload_rom() {
@@ -183,6 +189,8 @@ void unload_rom() {
     if (uses_chr_ram)
         free_array_set_null(chr_base);
     free_array_set_null(prg_ram_base);
+
+    deinit_save_states();
 }
 
 // ROM detection from a PRG MD5 digest. Needed to infer and correct information

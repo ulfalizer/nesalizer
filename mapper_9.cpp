@@ -9,15 +9,14 @@
 static unsigned chr_bank_0FDx, chr_bank_0FEx;
 static unsigned chr_bank_1FDx, chr_bank_1FEx;
 
-static bool low_bank_uses_0FDx;
-static bool high_bank_uses_1FDx;
+static bool low_bank_uses_0FDx, high_bank_uses_1FDx;
 
 // Assume the CHR switch-over happens when the PPU address bus goes from one of
 // the magic values to some other value (probably not perfectly accurate, but
 // captures observed behavior)
 static unsigned previous_magic_bits;
 
-static void make_effective() {
+static void apply_state() {
     set_chr_4k_bank(0, low_bank_uses_0FDx  ? chr_bank_0FDx : chr_bank_0FEx);
     set_chr_4k_bank(1, high_bank_uses_1FDx ? chr_bank_1FDx : chr_bank_1FEx);
 }
@@ -67,7 +66,7 @@ void mapper_9_write(uint8_t value, uint16_t addr) {
         break;
     }
 
-    make_effective();
+    apply_state();
 }
 
 static bool non_magic() {
@@ -76,14 +75,21 @@ static bool non_magic() {
            magic_bits != 0x1FD0 && magic_bits != 0x1FE0;
 }
 
-void mmc2_ppu_tick_callback() {
+void mapper_9_ppu_tick_callback() {
     // TODO: Optimize (beyond just moving stuff inside)
     switch (previous_magic_bits) {
-    case 0x0FD0: if (non_magic()) low_bank_uses_0FDx  = true ; make_effective(); break;
-    case 0x0FE0: if (non_magic()) low_bank_uses_0FDx  = false; make_effective(); break;
-    case 0x1FD0: if (non_magic()) high_bank_uses_1FDx = true ; make_effective(); break;
-    case 0x1FE0: if (non_magic()) high_bank_uses_1FDx = false; make_effective(); break;
+    case 0x0FD0: if (non_magic()) low_bank_uses_0FDx  = true ; apply_state(); break;
+    case 0x0FE0: if (non_magic()) low_bank_uses_0FDx  = false; apply_state(); break;
+    case 0x1FD0: if (non_magic()) high_bank_uses_1FDx = true ; apply_state(); break;
+    case 0x1FE0: if (non_magic()) high_bank_uses_1FDx = false; apply_state(); break;
     }
 
     previous_magic_bits = ppu_addr_bus & 0xFFF0;
 }
+
+MAPPER_STATE_START(9)
+  MAPPER_STATE(chr_bank_0FDx) MAPPER_STATE(chr_bank_0FEx)
+  MAPPER_STATE(chr_bank_1FDx) MAPPER_STATE(chr_bank_1FEx)
+  MAPPER_STATE(low_bank_uses_0FDx) MAPPER_STATE(high_bank_uses_1FDx)
+  MAPPER_STATE(previous_magic_bits)
+MAPPER_STATE_END(9)

@@ -4,15 +4,26 @@
 
 #include "mapper.h"
 
+uint8_t prg_bank, chr_bank;
+
+static void apply_state() {
+    set_prg_32k_bank(prg_bank);
+    set_chr_8k_bank(chr_bank);
+}
+
 void mapper_11_init() {
-    set_prg_32k_bank(0);
-    set_chr_8k_bank(0);
+    prg_bank = chr_bank = 0;
+    apply_state();
 }
 
 void mapper_11_write(uint8_t value, uint16_t addr) {
     if (!(addr & 0x8000)) return;
-
-    // PRG reg only has three bits, but supporting oversize probably won't hurt
-    set_prg_32k_bank(value);
-    set_chr_8k_bank(value >> 4);
+    prg_bank = value & 3;
+    chr_bank = value >> 4;
+    apply_state();
 }
+
+MAPPER_STATE_START(11)
+  MAPPER_STATE(prg_bank)
+  MAPPER_STATE(chr_bank)
+MAPPER_STATE_END(11)

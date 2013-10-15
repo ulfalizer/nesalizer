@@ -10,11 +10,11 @@
 
 // 64 KB block, selected by 0x8000-0x9FFF. Represented as an offset in 16 KB
 // units - always a multiple of four.
-static unsigned block;
+static uint8_t block;
 // 16 KB Page within block, selected by 0xA000-0xFFFF
-static unsigned page;
+static uint8_t page;
 
-static void make_effective() {
+static void apply_state() {
     set_prg_16k_bank(0, block | page);
     set_prg_16k_bank(1, block | 3);
 }
@@ -24,7 +24,7 @@ void mapper_232_init() {
     set_chr_8k_bank(0);
 
     block = page = 0;
-    make_effective();
+    apply_state();
 }
 
 void mapper_232_write(uint8_t value, uint16_t addr) {
@@ -37,5 +37,10 @@ void mapper_232_write(uint8_t value, uint16_t addr) {
         // 0xA000-0xFFFF
         page = value & 3;
 
-    make_effective();
+    apply_state();
 }
+
+MAPPER_STATE_START(232)
+  MAPPER_STATE(block)
+  MAPPER_STATE(page)
+MAPPER_STATE_END(232)

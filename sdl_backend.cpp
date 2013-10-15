@@ -61,6 +61,16 @@ void frame_done() {
         SDL_CondSignal(frame_available_cond);
     }
     SDL_UnlockMutex(frame_lock);
+
+    extern Uint8 const*keys;
+    if (keys[SDL_SCANCODE_S]) {
+        pending_state_transfer = true;
+        state_transfer_is_save = true;
+    }
+    else if (keys[SDL_SCANCODE_L]) {
+        pending_state_transfer = true;
+        state_transfer_is_save = false;
+    }
 }
 
 //

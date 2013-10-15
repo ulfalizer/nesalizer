@@ -5,11 +5,19 @@
 #include "mapper.h"
 #include "rom.h"
 
+// Actual reg is only 2 bits wide, but some homebrew ROMs (e.g.
+// lolicatgirls) assume more is possible
+static uint8_t chr_bank;
+
+static void apply_state() {
+    set_chr_8k_bank(chr_bank);
+}
+
 void mapper_3_init() {
     // No PRG swapping
     set_prg_32k_bank(0);
-    // Default
-    set_chr_8k_bank(0);
+    chr_bank = 0;
+    apply_state();
 }
 
 void mapper_3_write(uint8_t value, uint16_t addr) {
@@ -17,7 +25,10 @@ void mapper_3_write(uint8_t value, uint16_t addr) {
 
     // Cybernoid depends on bus conflicts
     if (has_bus_conflicts) value &= read_prg(addr);
-    // Actual reg is only 2 bits wide, but some homebrew ROMs (e.g.
-    // lolicatgirls) assume more is possible
-    set_chr_8k_bank(value);
+    chr_bank = value;
+    apply_state();
 }
+
+MAPPER_STATE_START(3)
+  MAPPER_STATE(chr_bank)
+MAPPER_STATE_END(3)

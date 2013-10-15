@@ -8,10 +8,9 @@
 
 static unsigned temp_reg;
 static unsigned nth_write;
-
 static unsigned regs[4];
 
-static void make_effective() {
+static void apply_state() {
     switch (regs[0] & 3) {
     case 0: set_mirroring(ONE_SCREEN_LOW);  break;
     case 1: set_mirroring(ONE_SCREEN_HIGH); break;
@@ -47,19 +46,17 @@ static void make_effective() {
 
 void mapper_1_init() {
     // Specified
-    regs[0] |= 0x0C; // 16K PRG swapping (0x08), swapping 8000-BFFF (0x04)
+    regs[0] = 0x0C; // 16K PRG swapping (0x08), swapping 8000-BFFF (0x04)
     // Guess
     nth_write = temp_reg = regs[1] = regs[2] = regs[3] = 0;
-
-    make_effective();
+    apply_state();
 }
 
 void mapper_1_write(uint8_t value, uint16_t addr) {
     // static uint64_t last_write_cycle;
+    if (!(addr & 0x8000)) return;
 
     LOG_MAPPER("MMC1: Writing $%02X to $%04X\n", value, addr);
-
-    if (!(addr & 0x8000)) return;
 
     // Writes after the first write are ignored for writes on consecutive CPU
     // cycles. Bill & Ted's Excellent Adventure needs this.
@@ -72,7 +69,7 @@ void mapper_1_write(uint8_t value, uint16_t addr) {
         nth_write = 0;
         temp_reg = 0;
         regs[0] |= 0x0C; // 16K PRG swapping (0x08), swapping 8000-BFFF (0x04)
-        make_effective();
+        apply_state();
     }
     else {
         temp_reg = ((value & 1) << 4) | (temp_reg >> 1);
@@ -88,7 +85,13 @@ void mapper_1_write(uint8_t value, uint16_t addr) {
             regs[(addr >> 13) & 3] = temp_reg;
             nth_write = 0;
             temp_reg = 0;
-            make_effective();
+            apply_state();
         }
     }
 }
+
+MAPPER_STATE_START(1)
+  MAPPER_STATE(temp_reg)
+  MAPPER_STATE(nth_write)
+  MAPPER_STATE(regs)
+MAPPER_STATE_END(1)

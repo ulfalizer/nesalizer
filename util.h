@@ -53,7 +53,7 @@ char (&array_len_helper(T (&)[N]))[N];
 uint8_t *get_file_buffer(char const *filename, size_t &size_out);
 
 //
-// Memory functions
+// Array functions
 //
 
 // Initializes each element of an array to a given value. Verifies that the
@@ -81,4 +81,37 @@ template<typename T>
 void free_array_set_null(T *p) {
     delete [] p;
     p = 0;
+}
+
+//
+// State serialization and deserialization helpers
+//
+
+// Saves a variable to or loads a variable from a buffer, incrementing the
+// buffer pointer afterwards. If 'calculating_size' is true, the buffer pointer
+// is incremented without saving or loading the value, which is used for buffer
+// size calculations.
+template<bool calculating_size, bool is_save, typename T>
+inline void transfer(T &value, uint8_t *&bufp) {
+    if (!calculating_size) {
+        // Use memcpy to support arrays. Optimized well by GCC in other cases
+        // too.
+        if (is_save)
+            memcpy(bufp, &value, sizeof(T));
+        else
+            memcpy(&value, bufp, sizeof(T));
+    }
+    bufp += sizeof(T);
+}
+
+// Ditto for saving a memory area referenced by a pointer
+template<bool calculating_size, bool is_save, typename T>
+inline void transfer_mem(T *ptr, size_t len, uint8_t *&bufp) {
+    if (!calculating_size) {
+        if (is_save)
+            memcpy(bufp, ptr, len);
+        else
+            memcpy(ptr, bufp, len);
+    }
+    bufp += len;
 }
