@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include "apu.h"
+#include "audio.h"
 #include "cpu.h"
 #include "mapper.h"
 #include "md5.h"
@@ -184,6 +185,9 @@ void load_rom(char const*filename, bool print_info) {
 }
 
 void unload_rom() {
+    // Flush any pending audio samples
+    end_audio_frame();
+
     free_array_set_null(rom_buf);
     free_array_set_null(ciram);
     if (uses_chr_ram)

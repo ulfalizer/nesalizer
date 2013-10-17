@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "audio.h"
 #include "cpu.h"
 #include "input.h"
 #include "ppu.h"
@@ -712,8 +713,9 @@ void tick_ppu() {
 #ifndef RUN_TESTS
             sleep_till_end_of_frame();
 #endif
-            // Draw frame and process events
-            frame_done();
+            end_audio_frame();
+            draw_frame();
+            handle_ui_keys();
 
             scanline = 0;
             if (rendering_enabled && odd_frame) ++dot;

@@ -48,7 +48,7 @@ static SDL_cond  *frame_available_cond;
 static bool       ready_to_draw_new_frame;
 static bool       frame_available;
 
-void frame_done() {
+void draw_frame() {
     // Signal to the SDL thread that the frame has ended
 
     SDL_LockMutex(frame_lock);
@@ -61,16 +61,6 @@ void frame_done() {
         SDL_CondSignal(frame_available_cond);
     }
     SDL_UnlockMutex(frame_lock);
-
-    extern Uint8 const*keys;
-    if (keys[SDL_SCANCODE_S]) {
-        pending_state_transfer = true;
-        state_transfer_is_save = true;
-    }
-    else if (keys[SDL_SCANCODE_L]) {
-        pending_state_transfer = true;
-        state_transfer_is_save = false;
-    }
 }
 
 //
@@ -132,6 +122,19 @@ Uint8 const*keys;
 //
 // SDL thread and events
 //
+
+// Runs from emulation thread
+void handle_ui_keys() {
+    extern Uint8 const*keys;
+    if (keys[SDL_SCANCODE_S]) {
+        pending_state_transfer = true;
+        state_transfer_is_save = true;
+    }
+    else if (keys[SDL_SCANCODE_L]) {
+        pending_state_transfer = true;
+        state_transfer_is_save = false;
+    }
+}
 
 static bool exit_sdl_thread_loop;
 

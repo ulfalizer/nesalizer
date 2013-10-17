@@ -3,6 +3,7 @@
 // Video
 
 void put_pixel(unsigned x, unsigned y, uint32_t color);
+void draw_frame();
 
 // Audio
 
@@ -14,9 +15,10 @@ void   start_audio_playback();
 
 // Input and events
 
+extern SDL_mutex *event_lock;
 extern Uint8 const*keys;
 
-extern SDL_mutex *event_lock;
+void handle_ui_keys();
 
 // Initialization and de-initialization
 
@@ -25,7 +27,6 @@ void deinit_sdl();
 
 // Main loop and signalling of SDL thread
 
-void frame_done();
 void sdl_thread_loop();
 // Used only when running test ROMs
 void exit_sdl_thread();

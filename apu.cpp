@@ -817,6 +817,11 @@ void tick_apu() {
 //
 
 void reset_apu() {
+    // We should never generate more than a frame's worth of audio at a time.
+    // Since we jump back to the beginning of the frame on reset, we need to
+    // flush audio.
+    end_audio_frame();
+
     // Things explicitly initialized by the reset signal, derived from tracing
     // the _res node in Visual 2A03
 
