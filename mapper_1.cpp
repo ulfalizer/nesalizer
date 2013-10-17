@@ -55,7 +55,6 @@ void mapper_1_init() {
 void mapper_1_write(uint8_t value, uint16_t addr) {
     // static uint64_t last_write_cycle;
     if (!(addr & 0x8000)) return;
-
     LOG_MAPPER("MMC1: Writing $%02X to $%04X\n", value, addr);
 
     // Writes after the first write are ignored for writes on consecutive CPU
