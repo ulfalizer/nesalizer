@@ -44,7 +44,6 @@ void load_state() {
 }
 
 void init_save_states() {
-    uint8_t *bufp_dummy = 0;
     size_t const save_size = transfer_system_state<true, false>(0);
 #ifndef RUN_TESTS
     printf("Save state size: %zi\n", save_size);
