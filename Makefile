@@ -19,7 +19,7 @@ TEST              := 0
 
 # If V is "1", commands are printed as they are executed
 ifneq ($(V),1)
-q := @
+    q := @
 endif
 
 #
@@ -67,38 +67,41 @@ warnings :=                                        \
 #
 
 ifeq ($(filter debug release release-debug,$(CONF)),)
-$(error unknown configuration "$(CONF)")
+    $(error unknown configuration "$(CONF)")
 else ifneq ($(MAKECMDGOALS),clean)
 # make will restart after updating the .d dependency files, so make sure we
 # only print this message once
-ifndef MAKE_RESTARTS
-$(info Using configuration "$(CONF)")
-endif
+    ifndef MAKE_RESTARTS
+        $(info Using configuration "$(CONF)")
+    endif
 endif
 
 ifneq ($(filter debug release-debug,$(CONF)),)
-add_debug_info := 1
+    add_debug_info := 1
 endif
 ifneq ($(filter release release-debug,$(CONF)),)
-optimize := 1
+    optimize := 1
 endif
 
 # The GCC docs aren't too clear on which flags are needed during linking. Add
 # them all to be safe.
 ifeq ($(add_debug_info),1)
-compile_flags += -ggdb
-link_flags    += -ggdb
+    compile_flags += -ggdb
+    link_flags    += -ggdb
 endif
+
 ifeq ($(optimize),1)
-compile_flags += $(optimizations) -DOPTIMIZING
-link_flags    += $(optimizations) $(link_optimizations)
+    compile_flags += $(optimizations) -DOPTIMIZING
+    link_flags    += $(optimizations) $(link_optimizations)
 endif
+
 ifeq ($(BACKTRACE_SUPPORT),1)
-compile_flags += -rdynamic
-link_flags    += -rdynamic
+    compile_flags += -rdynamic
+    link_flags    += -rdynamic
 endif
+
 ifeq ($(TEST),1)
-compile_flags += -DRUN_TESTS
+    compile_flags += -DRUN_TESTS
 endif
 
 # Gives nicer errors for large files (even though we don't support them on
@@ -133,9 +136,9 @@ $(objdir_deps): $(OBJDIR)/%.d: %.cpp
 	  rm -f $@.$$$$
 
 ifneq ($(MAKECMDGOALS),clean)
-# The .d files that hold the automatically generated dependencies. One per
-# source file.
--include $(objdir_deps)
+    # The .d files that hold the automatically generated dependencies. One per
+    # source file.
+    -include $(objdir_deps)
 endif
 
 $(OBJDIR): ; $(q)mkdir $(OBJDIR)
