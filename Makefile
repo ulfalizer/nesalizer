@@ -22,6 +22,9 @@ ifneq ($(V),1)
     q := @
 endif
 
+# 1 if "clang" occurs in CXX, otherwise 0
+is_clang := $(if $(findstring clang,$(CXX)),1,0)
+
 #
 # Source files and libraries
 #
@@ -49,10 +52,14 @@ LDLIBS := -lreadline $(shell sdl2-config --libs) -lrt
 #   -U_FORTIFY_SOURCE
 #   -funroll-loops
 
-optimizations :=                                 \
-  -Ofast -msse3 -mfpmath=sse -flto               \
-  -fno-exceptions -fno-stack-protector -fno-rtti \
-  -funsafe-loop-optimizations -DNDEBUG
+ifeq ($(is_clang),1)
+    optimizations := -O3 -ffast-math
+else
+    # Assume GCC
+    optimizations := -Ofast -mfpmath=sse -funsafe-loop-optimizations
+endif
+
+optimizations += -msse3 -flto -fno-exceptions -fno-stack-protector -fno-rtti -DNDEBUG
 # Flags passed in addition to the above during linking
 link_optimizations := -fuse-linker-plugin
 
@@ -96,8 +103,11 @@ ifeq ($(optimize),1)
 endif
 
 ifeq ($(BACKTRACE_SUPPORT),1)
-    compile_flags += -rdynamic
-    link_flags    += -rdynamic
+    # No -rdynamic support in Clang
+    ifeq ($(is_clang),0)
+        compile_flags += -rdynamic
+        link_flags    += -rdynamic
+    endif
 endif
 
 ifeq ($(TEST),1)
@@ -131,7 +141,7 @@ $(OBJDIR)/%.o : %.cpp
 # static pattern rule) rather than a catch-all wildcard.
 $(objdir_deps): $(OBJDIR)/%.d: %.cpp
 	@set -e; rm -f $@;                                              \
-	  $(CXX) -MM $< > $@.$$$$;                                      \
+	  $(CXX) -MM $(shell sdl2-config --cflags) $< > $@.$$$$;        \
 	  sed 's,\($*\)\.o[ :]*,$(OBJDIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
 	  rm -f $@.$$$$
 

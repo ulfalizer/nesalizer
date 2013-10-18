@@ -35,8 +35,9 @@ static int emulation_thread(void*) {
     run();
     unload_rom();
 #endif
-
     deinit_audio();
+
+    return 0;
 }
 
 int main(int argc, char *argv[]) {

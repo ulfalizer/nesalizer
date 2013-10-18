@@ -236,8 +236,9 @@ uint8_t mapper_5_read(uint16_t addr) {
     case 0x5C00 ... 0x5FFF:
         if (exram_mode == 2 || exram_mode == 3)
             return exram[addr - 0x5C00];
-        return cpu_data_bus; // Open bus
     }
+
+    return cpu_data_bus; // Open bus
 }
 
 void mapper_5_write(uint8_t value, uint16_t addr) {
@@ -397,15 +398,21 @@ uint8_t mapper_5_read_nt(uint16_t addr) {
     switch ((mmc5_mirroring >> bit_offset) & 3) {
     // Internal nametable A
     case 0: return ciram[addr & 0x03FF];
+
     // Internal nametable B
     case 1: return ciram[0x0400 | (addr & 0x03FF)];
+
     // Use ExRAM as nametable
     case 2: return (exram_mode <= 1) ? exram[addr & 0x03FF] : 0;
+
     // Fill mode
     case 3:
         // If the nametable index is in the range 0x3C0-0x3FF, we're fetching
         // an attribute byte
         return (~addr & 0x3C0) ? fill_tile : fill_attrib;
+
+    // Silences Clang warning
+    default: UNREACHABLE
     }
 }
 
