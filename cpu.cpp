@@ -1627,6 +1627,9 @@ static void log_instruction() {
     // Simple debugger with breakpoints. Only for internal use - does not do
     // robust argument checking.
 
+    // Prevent audio underflow while running debugger
+    stop_audio_playback();
+
     static char const delims[] = " \f\t\v";
 
     for (;;) {
@@ -1661,11 +1664,14 @@ static void log_instruction() {
                 case 'c':
                     debug_mode = RUN;
                     free(line);
+
                     // Process input events to avoid another D press being
                     // detected immediately
                     SDL_LockMutex(event_lock);
                     SDL_PumpEvents();
                     SDL_UnlockMutex(event_lock);
+
+                    start_audio_playback();
                     return;
 
                 case 'd':

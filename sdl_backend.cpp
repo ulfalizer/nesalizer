@@ -103,6 +103,10 @@ void start_audio_playback() {
     SDL_PauseAudioDevice(audio_device_id, 0);
 }
 
+void stop_audio_playback() {
+    SDL_PauseAudioDevice(audio_device_id, 1);
+}
+
 static void sdl_audio_callback(void*, Uint8 *stream, int len) {
     assert(len >= 0);
 
