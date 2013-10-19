@@ -14,8 +14,9 @@ user's perspective. Will include some cool unique features later on. :)
 ## Building ##
 
 Linux-only so far. Dependencies are <b>readline</b> and <b>SDL 2</b>. Build
-with
+with (Ubuntu 13.10)
 
+    $ apt-get install libreadline-dev libsdl2-dev
     $ make CONF=release
 
 See the <b>Makefile</b> for other options.
