@@ -131,7 +131,7 @@ void handle_ui_keys() {
 
     // Rewind can't be disabled yet, so we always get a pending state transfer
     // each frame
-    pending_state_transfer = true;
+    pending_event = pending_state_transfer = true;
 
     if (keys[SDL_SCANCODE_S])
         save_load_status = PENDING_SAVE;
@@ -144,7 +144,7 @@ void handle_ui_keys() {
         rewind_status = PENDING_RECORD;
 
     if (keys[SDL_SCANCODE_F5])
-        pending_reset = true;
+        pending_event = pending_reset = true;
 }
 
 static bool exit_sdl_thread_loop;

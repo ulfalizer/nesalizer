@@ -19,6 +19,11 @@
 // Set true to break out of the CPU emulation loop
 bool end_emulation;
 
+// Set true when an event needs to be handled at the next instruction boundary.
+// Avoids having to check them all for each instruction. This includes
+// interrupts, state transfers, and (soft) reset.
+bool pending_event;
+
 #ifdef RUN_TESTS
 // The system is soft-reset when this goes from 1 to 0. Used by test ROMs.
 static unsigned ticks_till_reset;
@@ -835,10 +840,10 @@ static void poll_for_interrupt() {
     // This behavior has been confirmed in Visual 6502.
     if (nmi_asserted) {
         nmi_asserted = false;
-        pending_nmi  = true;
+        pending_event = pending_nmi = true;
     }
     else if (irq_line && !irq_disable_flag)
-        pending_irq = true;
+        pending_event = pending_irq = true;
 }
 
 void update_irq_status() {
@@ -879,6 +884,37 @@ static void log_instruction();
 static void set_cpu_cold_boot_state();
 static void reset_cpu();
 
+// See pending_event
+static void process_pending_events() {
+    if (pending_nmi) {
+        pending_nmi = false;
+        do_interrupt(Int_NMI);
+    }
+
+    if (pending_irq) {
+        pending_irq = false;
+        do_interrupt(Int_IRQ);
+    }
+
+    if (pending_reset) {
+        pending_reset = false;
+
+        // Reset the APU and PPU first since they should tick during the
+        // CPU's reset sequence
+        reset_apu();
+        reset_ppu();
+        reset_cpu();
+    }
+
+    // The current location within the CPU emulation loop becomes part of the
+    // state due to the way emulation is structured. To simplify things, we
+    // always do state transfers at instruction boundaries.
+    if (pending_state_transfer) {
+        pending_state_transfer = false;
+        do_state_transfer();
+    }
+}
+
 void run() {
     end_emulation = false;
 
@@ -890,39 +926,14 @@ void run() {
     do_interrupt(Int_reset);
     while (!end_emulation) {
 
-        // The current location within the CPU emulation loop becomes part of
-        // the state due to the way emulation is structured. To simplify
-        // things, we always do state transfers at instruction boundaries.
-        if (pending_state_transfer) {
-            pending_state_transfer = false;
-            do_state_transfer();
-        }
-
-        if (pending_reset) {
-            pending_reset = false;
-
-            // Reset the APU and PPU first since they should tick during the
-            // CPU's reset sequence
-            reset_apu();
-            reset_ppu();
-            reset_cpu();
+        if (pending_event) {
+            pending_event = false;
+            process_pending_events();
         }
 
 #ifdef LOG_INSTRUCTIONS
         log_instruction();
 #endif
-
-        if (pending_nmi) {
-            do_interrupt(Int_NMI);
-            pending_nmi = false;
-            continue;
-        }
-
-        if (pending_irq) {
-            do_interrupt(Int_IRQ);
-            pending_irq = false;
-            continue;
-        }
 
         uint8_t const opcode = read(pc++);
         if (polls_irq_after_first_cycle[opcode])

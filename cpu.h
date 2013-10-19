@@ -18,6 +18,8 @@ extern bool cpu_is_reading;
 // Set true to break out of the emulation loop
 extern bool end_emulation;
 
+extern bool pending_event;
+
 extern bool pending_reset;
 
 template<bool calculating_size, bool is_save>
