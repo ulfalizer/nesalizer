@@ -26,11 +26,6 @@ static unsigned ticks_till_reset;
 static bool pending_reset;
 #endif
 
-// True if a state transfer (load or save) has been requested
-bool pending_state_transfer;
-// True if a requested state transfer is a save; otherwise it is a load
-bool state_transfer_is_save;
-
 // RAM, registers, status flags, and misc. variables {{{
 
 static uint8_t ram[0x800];
@@ -903,10 +898,7 @@ void run() {
         // things, we always do state transfers at instruction boundaries.
         if (pending_state_transfer) {
             pending_state_transfer = false;
-            if (state_transfer_is_save)
-                save_state();
-            else
-                load_state();
+            do_state_transfer();
         }
 
 #ifdef RUN_TESTS

@@ -4,6 +4,7 @@
 #include "audio_ring_buffer.h"
 #include "cpu.h"
 #include "input.h"
+#include "save_states.h"
 #include "sdl_backend.h"
 #ifdef RUN_TESTS
 #  include "test.h"
@@ -127,14 +128,20 @@ Uint8 const*keys;
 // Runs from emulation thread
 void handle_ui_keys() {
     extern Uint8 const*keys;
-    if (keys[SDL_SCANCODE_S]) {
-        pending_state_transfer = true;
-        state_transfer_is_save = true;
-    }
-    else if (keys[SDL_SCANCODE_L]) {
-        pending_state_transfer = true;
-        state_transfer_is_save = false;
-    }
+
+    // Rewind can't be disabled yet, so we always get a pending state transfer
+    // each frame
+    pending_state_transfer = true;
+
+    if (keys[SDL_SCANCODE_S])
+        save_load_status = PENDING_SAVE;
+    else if (keys[SDL_SCANCODE_L])
+        save_load_status = PENDING_LOAD;
+
+    if (keys[SDL_SCANCODE_R])
+        rewind_status = PENDING_REWIND;
+    else
+        rewind_status = PENDING_RECORD;
 }
 
 static bool exit_sdl_thread_loop;

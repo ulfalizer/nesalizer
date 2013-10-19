@@ -3,6 +3,7 @@
 #include "apu.h"
 #include "audio.h"
 #include "blip_buf.h"
+#include "save_states.h"
 #include "sdl_backend.h"
 #include "timing.h"
 
@@ -68,7 +69,9 @@ void end_audio_frame() {
 void set_audio_signal_level(int16_t level) {
     // TODO: Do something to reduce the initial pop here?
     static int16_t previous_signal_level;
-    blip_add_delta(blip, audio_frame_offset, level - previous_signal_level);
+    // Silence audio while rewinding for now
+    if (!is_rewinding)
+        blip_add_delta(blip, audio_frame_offset, level - previous_signal_level);
     previous_signal_level = level;
 }
 
