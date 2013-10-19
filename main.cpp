@@ -15,9 +15,8 @@
 
 #include <SDL.h>
 
-char const   *program_name;
-static int    argc;
-static char **argv;
+       char const *program_name;
+static char const *rom_filename;
 
 static int emulation_thread(void*) {
     // One-time initialization of various components
@@ -31,7 +30,7 @@ static int emulation_thread(void*) {
 #ifdef RUN_TESTS
     run_tests();
 #else
-    load_rom(argv[1], true);
+    load_rom(rom_filename, true);
     run();
     unload_rom();
 #endif
@@ -42,14 +41,13 @@ static int emulation_thread(void*) {
 
 int main(int argc, char *argv[]) {
     program_name = argv[0] ? argv[0] : "nesalizer";
-    ::argc = argc;
-    ::argv = argv;
 #ifndef RUN_TESTS
     if (argc != 2) {
         fprintf(stderr, "usage: %s <rom file>\n", program_name);
         exit(EXIT_FAILURE);
     }
 #endif
+    rom_filename = argv[1];
 
     init_sdl();
 
