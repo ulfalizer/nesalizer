@@ -36,6 +36,7 @@ Controls are currently hardcoded (in <b>input.cpp</b> and <b>sdl_backend.cpp</b>
   <tr><td>Save state  </td><td>S          </td></tr>
   <tr><td>Load state  </td><td>L          </td></tr>
   <tr><td>Rewind state</td><td>R (hold)   </td></tr>
+  <tr><td>(Soft) reset</td><td>F5         </td></tr>
 </table>
 
 The save state is in-memory and not saved to disk yet. The length of the rewind

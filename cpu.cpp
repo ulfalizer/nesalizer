@@ -22,9 +22,9 @@ bool end_emulation;
 #ifdef RUN_TESTS
 // The system is soft-reset when this goes from 1 to 0. Used by test ROMs.
 static unsigned ticks_till_reset;
-// Set true to perform the reset at the next instruction boundary
-static bool pending_reset;
 #endif
+// Set true to perform the reset at the next instruction boundary
+bool pending_reset;
 
 // RAM, registers, status flags, and misc. variables {{{
 
@@ -877,10 +877,7 @@ static void init_interrupts() {
 static void log_instruction();
 #endif
 static void set_cpu_cold_boot_state();
-#ifdef RUN_TESTS
-// We currently only reset for test ROMs
 static void reset_cpu();
-#endif
 
 void run() {
     end_emulation = false;
@@ -901,7 +898,6 @@ void run() {
             do_state_transfer();
         }
 
-#ifdef RUN_TESTS
         if (pending_reset) {
             pending_reset = false;
 
@@ -911,7 +907,6 @@ void run() {
             reset_ppu();
             reset_cpu();
         }
-#endif
 
 #ifdef LOG_INSTRUCTIONS
         log_instruction();
@@ -1742,14 +1737,12 @@ static void set_cpu_cold_boot_state() {
 #endif
 }
 
-#ifdef RUN_TESTS
 static void reset_cpu() {
     irq_line = pending_irq = cart_irq = false;
 
     // This sets the interrupt flag as a side effect
     do_interrupt(Int_reset);
 }
-#endif
 
 // }}}
 

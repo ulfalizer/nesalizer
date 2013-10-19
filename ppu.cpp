@@ -1210,7 +1210,6 @@ void reset_ppu() {
     write_flip_flop = false;
     dot = scanline = 0;
     odd_frame = false;
-    initial_frame = true;
 
     sprite_y = sprite_index = 0;
     sprite_in_range = false;

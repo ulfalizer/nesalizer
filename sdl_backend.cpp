@@ -142,6 +142,9 @@ void handle_ui_keys() {
         rewind_status = PENDING_REWIND;
     else
         rewind_status = PENDING_RECORD;
+
+    if (keys[SDL_SCANCODE_F5])
+        pending_reset = true;
 }
 
 static bool exit_sdl_thread_loop;
