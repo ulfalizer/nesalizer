@@ -24,7 +24,7 @@ See the <b>Makefile</b> for other options.
 
     $ ./nes <rom file>
 
-Controls are currently hardcoded (in <b>input.cpp</b>) as follows:
+Controls are currently hardcoded (in <b>input.cpp</b> and <b>sdl_backend.cpp</b>) as follows:
 
 <table>
   <tr><td>D-pad       </td><td>Arrow keys </td></tr>
