@@ -1376,7 +1376,8 @@ void run() {
         case KI0: case KI1: case KI2: case KI3: case KI4: case KI5:
         case KI6: case KI7: case KI8: case KI9: case K10: case K11:
             puts("KIL instruction executed, system hung");
-            exit(0);
+            end_emulation = true;
+            exit_sdl_thread();
         }
     }
 }
@@ -1704,8 +1705,9 @@ static void log_instruction() {
                     break;
 
                 case 'q':
-                    exit(0);
-                    break;
+                    end_emulation = true;
+                    exit_sdl_thread();
+                    return;
 
                 default:
                     printf("Unknown command '%c'\n", *keyword);
