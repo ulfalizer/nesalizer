@@ -174,7 +174,7 @@ static void process_events() {
 void sdl_thread_loop() {
     for (;;) {
 
-        // Wait for emulation thread to signal that a frame has completed
+        // Wait for the emulation thread to signal that a frame has completed
 
         SDL_LockMutex(frame_lock);
         ready_to_draw_new_frame = true;
@@ -203,7 +203,7 @@ void sdl_thread_loop() {
     }
 }
 
-// Used only when running test ROMs. Called from emulation thread.
+// Causes the SDL thread to exit. Called from the emulation thread.
 void exit_sdl_thread() {
     SDL_LockMutex(frame_lock);
     exit_sdl_thread_loop = true;

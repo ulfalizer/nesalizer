@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
       "failed to create emulation thread: %s", SDL_GetError());
     sdl_thread_loop();
     SDL_WaitThread(emu_thread, 0);
+
     deinit_sdl();
     puts("Shut down cleanly");
 }
