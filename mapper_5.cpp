@@ -202,7 +202,7 @@ void mapper_5_init() {
 
     prg_mode       = chr_mode = 3;
     prg_6000_bank  = 7;
-    mirroring      = SPECIAL;
+    set_mirroring(SPECIAL);
     mmc5_mirroring = 0xFF;
     high_chr_bits  = 0;
     multiplicand   = multiplier = 0;

@@ -16,9 +16,13 @@ static bool low_bank_uses_0FDx, high_bank_uses_1FDx;
 // captures observed behavior)
 static unsigned previous_magic_bits;
 
+static bool horizontal_mirroring;
+
 static void apply_state() {
     set_chr_4k_bank(0, low_bank_uses_0FDx  ? chr_bank_0FDx : chr_bank_0FEx);
     set_chr_4k_bank(1, high_bank_uses_1FDx ? chr_bank_1FDx : chr_bank_1FEx);
+
+    set_mirroring(horizontal_mirroring ? HORIZONTAL : VERTICAL);
 }
 
 void mapper_9_init() {
@@ -62,7 +66,7 @@ void mapper_9_write(uint8_t value, uint16_t addr) {
         break;
 
     case 7: // 0xF000
-        set_mirroring(value & 1 ? HORIZONTAL : VERTICAL);
+        horizontal_mirroring = value & 1;
         break;
     }
 
@@ -92,4 +96,5 @@ MAPPER_STATE_START(9)
   MAPPER_STATE(chr_bank_1FDx) MAPPER_STATE(chr_bank_1FEx)
   MAPPER_STATE(low_bank_uses_0FDx) MAPPER_STATE(high_bank_uses_1FDx)
   MAPPER_STATE(previous_magic_bits)
+  MAPPER_STATE(horizontal_mirroring)
 MAPPER_STATE_END(9)

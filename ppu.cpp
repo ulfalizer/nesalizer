@@ -1224,7 +1224,6 @@ void transfer_ppu_state(uint8_t *&buf) {
 
     if (uses_chr_ram) T_MEM(chr_base, 0x2000);
     T_MEM(ciram, mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
-    T(mirroring)
     T(palettes)
     T(oam) T(sec_oam)
     T(t) T(v) T(fine_x)
