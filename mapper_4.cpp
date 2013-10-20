@@ -10,11 +10,13 @@ static unsigned reg_8000;
 // regs[0-5] define CHR mappings, regs[6-7] PRG mappings
 static unsigned regs[8];
 
+static bool horizontal_mirroring;
+
 // IRQs
 
 static uint8_t irq_period;
 static uint8_t irq_period_cnt;
-static bool irq_enabled;
+static bool    irq_enabled;
 
 static void apply_state() {
     // Second 8K PRG bank fixed to regs[7]
@@ -44,11 +46,13 @@ static void apply_state() {
         set_chr_2k_bank(2, regs[0] >> 1);
         set_chr_2k_bank(3, regs[1] >> 1);
     }
+
+    set_mirroring(horizontal_mirroring ? HORIZONTAL : VERTICAL);
 }
 
 void mapper_4_init() {
     init_array(regs, (unsigned)0);
-    set_mirroring(HORIZONTAL); // Guess
+    horizontal_mirroring = true; // Guess
     set_prg_8k_bank(3, 2*prg_16k_banks - 1); // Last PRG 8K page fixed
     irq_period = irq_period_cnt = 0;
     irq_enabled = false;
@@ -71,9 +75,9 @@ void mapper_4_write(uint8_t value, uint16_t addr) {
         regs[reg_8000 & 7] = value;
         break;
 
-    case 2: // 0xA000 ("Ignore when 4-screen")
+    case 2: // 0xA000
         LOG_MAPPER("A000\n");
-        set_mirroring(value & 1 ? HORIZONTAL : VERTICAL);
+        horizontal_mirroring = value & 1;
         break;
 
     case 3: // 0xA001
@@ -159,7 +163,9 @@ void mapper_4_ppu_tick_callback() {
 MAPPER_STATE_START(4)
   MAPPER_STATE(reg_8000)
   MAPPER_STATE(regs)
+  MAPPER_STATE(horizontal_mirroring)
   MAPPER_STATE(irq_period)
   MAPPER_STATE(irq_period_cnt)
   MAPPER_STATE(irq_enabled)
+  MAPPER_STATE(last_a12_high_cycle);
 MAPPER_STATE_END(4)
