@@ -98,7 +98,7 @@ uint32_t const nes_to_rgb[8][64] =
         0x8f9068, 0x859569, 0x7c9773, 0x789784, 0x789396, 0x707070, 0x000000, 0x000000 } };
 
 // Points to the current palette as determined by the color tint bits
-uint32_t const*pal_to_rgb;
+static uint32_t const*pal_to_rgb;
 
 // Nametable memory of variable size, initialized when loading the ROM
 uint8_t *ciram;
