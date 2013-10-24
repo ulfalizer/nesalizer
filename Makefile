@@ -29,19 +29,19 @@ is_clang := $(if $(findstring clang,$(CXX)),1,0)
 # Source files and libraries
 #
 
-objects :=                                      \
-  audio.o apu.o blip_buf.o controller.o cpu.o   \
-  debug.o error.o input.o main.o md5.o mapper.o \
-  mapper_0.o mapper_1.o mapper_2.o mapper_3.o   \
-  mapper_4.o mapper_5.o mapper_7.o mapper_9.o   \
-  mapper_11.o mapper_71.o mapper_232.o ppu.o    \
-  rom.o save_states.o sdl_backend.o timing.o    \
+objects :=                                         \
+  audio.o apu.o blip_buf.o controller.o cpu.o      \
+  debug.o error.o input.o main.o md5.o mapper.o    \
+  mapper_0.o mapper_1.o mapper_2.o mapper_3.o      \
+  mapper_4.o mapper_5.o mapper_7.o mapper_9.o      \
+  mapper_11.o mapper_71.o mapper_232.o movie.o     \
+  ppu.o rom.o save_states.o sdl_backend.o timing.o \
   test.o util.o
 sources        := $(objects:.o=.cpp)
 objdir_objects := $(addprefix $(OBJDIR)/,$(objects))
 objdir_deps    := $(addprefix $(OBJDIR)/,$(sources:.cpp=.d))
 
-LDLIBS := -lreadline $(shell sdl2-config --libs) -lrt
+LDLIBS := -lreadline $(shell sdl2-config --libs) -lrt -lavcodec -lavformat -lavutil -lm -lswscale
 
 #
 # Debugging and optimization
@@ -76,8 +76,8 @@ warnings :=                                        \
 ifeq ($(filter debug release release-debug,$(CONF)),)
     $(error unknown configuration "$(CONF)")
 else ifneq ($(MAKECMDGOALS),clean)
-# make will restart after updating the .d dependency files, so make sure we
-# only print this message once
+    # make will restart after updating the .d dependency files, so make sure we
+    # only print this message once
     ifndef MAKE_RESTARTS
         $(info Using configuration "$(CONF)")
     endif
