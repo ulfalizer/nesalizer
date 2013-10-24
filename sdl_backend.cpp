@@ -3,6 +3,7 @@
 #include "audio_ring_buffer.h"
 #include "cpu.h"
 #include "input.h"
+#include "movie.h"
 #include "save_states.h"
 #include "sdl_backend.h"
 #ifdef RUN_TESTS
@@ -50,6 +51,10 @@ static bool       ready_to_draw_new_frame;
 static bool       frame_available;
 
 void draw_frame() {
+#ifdef RECORD_MOVIE
+    add_movie_video_frame(back_buffer);
+#endif
+
     // Signal to the SDL thread that the frame has ended
 
     SDL_LockMutex(frame_lock);
@@ -89,6 +94,10 @@ void print_fill_level() {
 }
 
 void add_audio_samples(int16_t *samples, size_t len) {
+#ifdef RECORD_MOVIE
+    add_movie_audio_frame(samples, len);
+#endif
+
     SDL_LockAudioDevice(audio_device_id);
     if (!audio_buf.write_samples(samples, len))
 #ifndef RUN_TESTS
@@ -269,6 +278,8 @@ void init_sdl() {
     fail_if(!(screen_tex =
       SDL_CreateTexture(
         renderer,
+        // SDL takes endianess into account, so this becomes GL_RGBA8
+        // internally on little-endian systems
         SDL_PIXELFORMAT_ARGB8888,
         SDL_TEXTUREACCESS_STREAMING,
         256, 240)),

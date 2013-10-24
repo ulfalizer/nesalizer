@@ -12,6 +12,8 @@ EXTRA_LINK        :=
 # "debug", "release", or "release-debug". "release-debug" adds debugging
 # information in addition to optimizing.
 CONF              := debug
+# If "1", a movie is recorded to movie.mp4 using libav (movie.cpp)
+RECORD_MOVIE      := 0
 # If "1", passes -rdynamic to add symbols for backtraces
 BACKTRACE_SUPPORT := 1
 # If "1", configures for automatic test ROM running
@@ -37,11 +39,17 @@ objects :=                                      \
   mapper_11.o mapper_71.o mapper_232.o ppu.o    \
   rom.o save_states.o sdl_backend.o timing.o    \
   test.o util.o
+ifeq ($(RECORD_MOVIE),1)
+    objects += movie.o
+endif
 sources        := $(objects:.o=.cpp)
 objdir_objects := $(addprefix $(OBJDIR)/,$(objects))
 objdir_deps    := $(addprefix $(OBJDIR)/,$(sources:.cpp=.d))
 
 LDLIBS := -lreadline $(shell sdl2-config --libs) -lrt
+ifeq ($(RECORD_MOVIE),1)
+    LDLIBS += -lavcodec -lavformat -lavutil -lswscale
+endif
 
 #
 # Debugging and optimization
@@ -76,8 +84,8 @@ warnings :=                                        \
 ifeq ($(filter debug release release-debug,$(CONF)),)
     $(error unknown configuration "$(CONF)")
 else ifneq ($(MAKECMDGOALS),clean)
-# make will restart after updating the .d dependency files, so make sure we
-# only print this message once
+    # make will restart after updating the .d dependency files, so make sure we
+    # only print this message once
     ifndef MAKE_RESTARTS
         $(info Using configuration "$(CONF)")
     endif
@@ -108,6 +116,10 @@ ifeq ($(BACKTRACE_SUPPORT),1)
         compile_flags += -rdynamic
         link_flags    += -rdynamic
     endif
+endif
+
+ifeq ($(RECORD_MOVIE),1)
+    compile_flags += -DRECORD_MOVIE
 endif
 
 ifeq ($(TEST),1)

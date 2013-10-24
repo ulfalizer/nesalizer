@@ -19,7 +19,8 @@ with (Ubuntu 13.10)
     $ apt-get install libreadline-dev libsdl2-dev
     $ make CONF=release
 
-See the <b>Makefile</b> for other options.
+See the <b>Makefile</b> for other options, including movie recording using
+<b>libav</b> (<b>movie.cpp</b>).
 
 ## Running ##
 

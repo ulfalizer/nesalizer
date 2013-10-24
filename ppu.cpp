@@ -713,8 +713,8 @@ void tick_ppu() {
 #ifndef RUN_TESTS
             sleep_till_end_of_frame();
 #endif
-            end_audio_frame();
             draw_frame();
+            end_audio_frame();
             handle_ui_keys();
 
             scanline = 0;

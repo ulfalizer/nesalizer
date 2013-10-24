@@ -6,6 +6,7 @@
 #include "cpu.h"
 #include "input.h"
 #include "mapper.h"
+#include "movie.h"
 #include "ppu.h"
 #include "rom.h"
 #include "sdl_backend.h"
@@ -26,6 +27,9 @@ static int emulation_thread(void*) {
     init_debug();
     init_input();
     init_mappers();
+#ifdef RECORD_MOVIE
+    init_movie();
+#endif
 
 #ifdef RUN_TESTS
     run_tests();
@@ -35,6 +39,9 @@ static int emulation_thread(void*) {
     unload_rom();
 #endif
     deinit_audio();
+#ifdef RECORD_MOVIE
+    end_movie();
+#endif
 
     return 0;
 }
