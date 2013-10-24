@@ -19,7 +19,7 @@ static void add_to_timespec(timespec &ts, long nano_secs) {
 
 void init_timing() {
     errno_fail_if(clock_gettime(CLOCK_MONOTONIC, &clock_previous) < 0,
-      "Failed to fetch initial synchronization timestamp from clock_gettime()");
+      "failed to fetch initial synchronization timestamp from clock_gettime()");
 }
 
 void sleep_till_end_of_frame() {
