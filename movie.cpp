@@ -71,7 +71,6 @@ void init_movie() {
     video_encoder_ctx->bit_rate      = 400000;
     video_encoder_ctx->width         = vid_scale_factor*256;
     video_encoder_ctx->height        = vid_scale_factor*240;
-    video_encoder_ctx->height        = vid_scale_factor*240;
     // Assume NTSC for now and adjust to exactly 60 FPS
     video_encoder_ctx->time_base.den = 60;
     video_encoder_ctx->time_base.num = 1;
