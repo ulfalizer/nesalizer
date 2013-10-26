@@ -8,30 +8,48 @@ extern "C" {
 #include "libavutil/mathematics.h"
 #include "libswscale/swscale.h"
 }
+#include "sdl_backend.h"
 
 #include <SDL_endian.h>
 
-unsigned const          vid_scale_factor = 3;
+unsigned const                 vid_scale_factor = 3;
 
-char const*const        filename = "movie.avi";
+char const*const               filename = "movie.avi";
 
-static AVFormatContext *output_ctx;
-static AVOutputFormat  *output_fmt;
+static AVFormatContext        *output_ctx;
+static AVOutputFormat         *output_fmt;
 
-static AVCodec         *video_encoder;
-static AVCodecContext  *video_encoder_ctx;
-static AVStream        *video_stream;
+// Video
 
-static AVFrame         *frame;
+static AVCodec                *video_encoder;
+static AVCodecContext         *video_encoder_ctx;
+static AVStream               *video_stream;
+
+static AVFrame                *frame;
 // Stores the encoded image for formats that expect us to do the encoding
 // rather than accepting a raw AVPicture
-static uint8_t         *encoded_frame_buf;
+static uint8_t                *encoded_frame_buf;
 // The old API used here doesn't provide a way to estimate the maximum size of
 // the encoded frame, so we'll have to make a guess
-size_t const            encoded_frame_buf_size = 1024*400;
+size_t const                   encoded_frame_buf_size = 1024*400;
 
-// Converts from ARGB to the video's frame format and scales
-static SwsContext      *convert_from_argb_ctx;
+// Scales and converts frames to the video's frame format
+static SwsContext             *video_conv_ctx;
+
+// Audio
+
+static AVCodec                *audio_encoder;
+static AVCodecContext         *audio_encoder_ctx;
+static AVStream               *audio_stream;
+
+// Audio frame size used when the codec can handle variably-sized frames
+size_t const                   audio_frame_var_size = 1024*10;
+
+uint8_t                       *audio_frame_buf;
+static int                     audio_frame_size;
+
+// Converts to the video's audio format and sample rate
+static AVAudioResampleContext *audio_conv_ctx;
 
 static void check_av_error(int err, char const *msg) {
     if (err < 0) {
@@ -56,13 +74,18 @@ void init_movie() {
       "movie filename is too long (max %zi characters allowed)", sizeof(output_ctx->filename) - 1);
     strcpy(output_ctx->filename, filename);
 
-    // Find an encoder for the video format
     fail_if(output_fmt->video_codec == CODEC_ID_NONE,
       "the output format does not appear to support video");
-    fail_if(!(video_encoder = avcodec_find_encoder(output_fmt->video_codec)),
-      "faled to find a video encoder");
+    fail_if(output_fmt->audio_codec == CODEC_ID_NONE,
+      "the output format does not appear to support audio");
 
-    // Allocate and initialize the video stream
+    //
+    // Initialize and add video stream
+    //
+
+    // Find an encoder for the video format
+    fail_if(!(video_encoder = avcodec_find_encoder(output_fmt->video_codec)),
+      "failed to find a video encoder");
 
     fail_if(!(video_stream = avformat_new_stream(output_ctx, video_encoder)),
       "failed to allocate video stream");
@@ -71,26 +94,27 @@ void init_movie() {
     video_encoder_ctx->bit_rate      = 400000;
     video_encoder_ctx->width         = vid_scale_factor*256;
     video_encoder_ctx->height        = vid_scale_factor*240;
-    video_encoder_ctx->height        = vid_scale_factor*240;
     // Assume NTSC for now and adjust to exactly 60 FPS
     video_encoder_ctx->time_base.den = 60;
     video_encoder_ctx->time_base.num = 1;
     // Seems widely supported. TODO: Detect suitable video format?
     video_encoder_ctx->pix_fmt       = PIX_FMT_YUV420P;
+
     // TODO: B frames
+
     // Some formats want stream headers to be separate
     if (output_ctx->oformat->flags & AVFMT_GLOBALHEADER)
         video_encoder_ctx->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     // Open the video encoder
-    check_av_error(avcodec_open2(video_encoder_ctx, 0, 0), "failed to open encoder");
+    check_av_error(avcodec_open2(video_encoder_ctx, 0, 0), "failed to open video encoder");
 
     // Allocate buffers for frame
 
     if (!(output_ctx->oformat->flags & AVFMT_RAWPICTURE))
         // The output format needs us to encode the frame
         fail_if(!(encoded_frame_buf = (uint8_t*)av_malloc(encoded_frame_buf_size)),
-          "failed to allocate encode buffer for video frame");
+          "failed to allocate buffer for encoded video frames");
 
     fail_if(!(frame = avcodec_alloc_frame()), "failed to allocate frame structure");
     int const frame_size = avpicture_get_size(video_encoder_ctx->pix_fmt,
@@ -100,7 +124,7 @@ void init_movie() {
     avpicture_fill((AVPicture*)frame, frame_buf,
       video_encoder_ctx->pix_fmt, video_encoder_ctx->width, video_encoder_ctx->height);
 
-    fail_if(!(convert_from_argb_ctx = sws_getCachedContext(0,
+    fail_if(!(video_conv_ctx = sws_getCachedContext(0,
       256, 240,
       // SDL takes endianess into account for pixel formats, libav doesn't
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
@@ -111,10 +135,56 @@ void init_movie() {
       video_encoder_ctx->width, video_encoder_ctx->height,
       video_encoder_ctx->pix_fmt,
       SWS_BICUBIC, 0, 0, 0)),
-      "failed to create ARGB-to-video-pixel-format converter");
+      "failed to create video pixel converter/scaler");
 
+    //
+    // Initialize and add audio stream
+    //
 
-    // Print format information
+    // Find an encoder for the audio format
+    fail_if(!(audio_encoder = avcodec_find_encoder(output_fmt->audio_codec)),
+      "failed to find an audio encoder");
+
+    fail_if(!(audio_stream = avformat_new_stream(output_ctx, audio_encoder)),
+      "failed to allocate audio stream");
+    audio_encoder_ctx = audio_stream->codec;
+    // Parameters
+    audio_encoder_ctx->sample_fmt  = AV_SAMPLE_FMT_FLT; // TODO: endianess?
+    audio_encoder_ctx->bit_rate    = 64000;
+    audio_encoder_ctx->sample_rate = sample_rate;
+    audio_encoder_ctx->channels    = 1;
+
+    // Some formats want stream headers to be separate
+    if (output_ctx->oformat->flags & AVFMT_GLOBALHEADER)
+        audio_encoder_ctx->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
+    // Open the audio encoder
+    check_av_error(avcodec_open2(audio_encoder_ctx, 0, 0), "failed to open audio encoder");
+
+    if (audio_codec_ctx->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE)
+        // The codec accepts variably-sized audio frames
+        audio_frame_size = audio_frame_var_size;
+    else
+        // The codec expects all audio frames to have the same size
+        audio_frame_size = audio_codec_ctx->frame_size;
+
+    fail_if(!(audio_frame_buf = av_malloc(
+      av_get_bytes_per_sample(audio_codec_ctx->sample_fmt)*audio_frame_size,
+      audio_codec_ctx->channels)),
+      "failed to allocate buffer for audio frames");
+
+    fail_if(!(audio_conv_ctx = avresample_alloc_context()),
+      "failed to allocate audio converter");
+    // TODO: Check return values
+    av_opt_set_int(audio_conv_ctx, "in_channel_layout" , AV_CH_LAYOUT_MONO);
+    av_opt_set_int(audio_conv_ctx, "out_channel_layout", AV_CH_LAYOUT_MONO);
+    av_opt_set_int(audio_conv_ctx, "in_sample_rate"    , sample_rate);
+    av_opt_set_int(audio_conv_ctx, "out_sample_rate"   , audio_encoder_ctx->sample_rate);
+    av_opt_set_int(audio_conv_ctx, "in_sample_fmt"     , AV_SAMPLE_FMT_S16);
+    av_opt_set_int(audio_conv_ctx, "out_sample_fmt"    , audio_encoder_ctx->sample_fmt);
+    check_av_error(avresample_open(audio_conv_ctx));
+
+    // Print format information. TODO: error?
     av_dump_format(output_ctx, 0, filename, 1);
 
 
@@ -139,7 +209,7 @@ void add_movie_frame(uint32_t *frame_data) {
       PIX_FMT_ARGB,
 #endif
       256, 240);
-    sws_scale(convert_from_argb_ctx, (uint8_t const*const*)frame_pic.data, frame_pic.linesize,
+    sws_scale(video_conv_ctx, (uint8_t const*const*)frame_pic.data, frame_pic.linesize,
       0, 240, frame->data, frame->linesize);
 
     AVPacket pkt;
@@ -161,7 +231,10 @@ void add_movie_frame(uint32_t *frame_data) {
         // Encode frame
         int const frame_size = avcodec_encode_video(video_encoder_ctx,
           encoded_frame_buf, encoded_frame_buf_size, frame);
-        fail_if(frame_size < 0, "failed to encode video frame");
+        check_av_error(frame_size, "failed to encode video frame");
+
+        // TODO: "it is very strongly..." for pts, dts, duration in
+        // the doc for av_interleaved_write_frame
 
         // If the size is zero the image was buffered internally, and we won't
         // get any data this frame
@@ -192,7 +265,7 @@ void end_movie() {
     if (!(output_fmt->flags & AVFMT_NOFILE))
         avio_close(output_ctx->pb);
 
-    sws_freeContext(convert_from_argb_ctx);
+    sws_freeContext(video_conv_ctx);
 
     avcodec_close(video_stream->codec);
     av_free(frame->data[0]); // frees frame_buf
