@@ -709,6 +709,7 @@ void tick_ppu() {
     if (++dot == 341) {
         dot = 0;
         if (++scanline == 262) {
+            // TODO: Call helper to signal that frame has ended instead of putting this here
 // Run tests as fast as we can
 #ifndef RUN_TESTS
             sleep_till_end_of_frame();

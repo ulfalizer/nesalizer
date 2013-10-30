@@ -34,10 +34,10 @@ static int emulation_thread(void*) {
 #else
     load_rom(rom_filename, true);
     run();
-    end_movie();
     unload_rom();
 #endif
     deinit_audio();
+    end_movie();
 
     return 0;
 }

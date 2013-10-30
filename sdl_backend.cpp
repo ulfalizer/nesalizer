@@ -51,7 +51,7 @@ static bool       ready_to_draw_new_frame;
 static bool       frame_available;
 
 void draw_frame() {
-    add_movie_frame(back_buffer);
+    add_movie_video_frame(back_buffer);
 
     // Signal to the SDL thread that the frame has ended
 
@@ -92,6 +92,8 @@ void print_fill_level() {
 }
 
 void add_audio_samples(int16_t *samples, size_t len) {
+    add_movie_audio_frame(samples, len);
+
     SDL_LockAudioDevice(audio_device_id);
     if (!audio_buf.write_samples(samples, len))
 #ifndef RUN_TESTS
