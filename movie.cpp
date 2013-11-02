@@ -21,23 +21,6 @@ char const*const               filename = "movie.avi";
 static AVFormatContext        *output_ctx;
 static AVOutputFormat         *output_fmt;
 
-// Video
-
-static AVCodec                *video_encoder;
-static AVCodecContext         *video_encoder_ctx;
-static AVStream               *video_stream;
-
-static AVFrame                *video_frame;
-// Stores the encoded image for formats that expect us to do the encoding
-// rather than accepting a raw AVPicture
-static uint8_t                *encoded_frame_buf;
-// The old API used here doesn't provide a way to estimate the maximum size of
-// the encoded frame, so we'll have to make a guess
-size_t const                   encoded_frame_buf_size = 1024*400;
-
-// Scales and converts frames to the video's frame format
-static SwsContext             *video_conv_ctx;
-
 // Audio
 
 static AVCodec                *audio_encoder;
@@ -64,6 +47,27 @@ static ReSampleContext        *resample_ctx;
 
 static AVFifoBuffer           *audio_fifo;
 
+// Video
+
+static AVCodec                *video_encoder;
+static AVCodecContext         *video_encoder_ctx;
+static AVStream               *video_stream;
+
+static AVFrame                *video_frame;
+// Stores the encoded image for formats that expect us to do the encoding
+// rather than accepting a raw AVPicture
+static uint8_t                *encoded_frame_buf;
+// The old API used here doesn't provide a way to estimate the maximum size of
+// the encoded frame, so we'll have to make a guess
+size_t const                   encoded_frame_buf_size = 1024*400;
+
+// Scales and converts frames to the video's frame format
+static SwsContext             *video_conv_ctx;
+
+// Holds x264 options
+AVDictionary                  *video_opts;
+
+
 static void check_av_error(int err, char const *msg) {
     if (err < 0) {
         static char err_msg_buf[128];
@@ -81,8 +85,9 @@ static void print_audio_encoder_info(AVCodec *c) {
     else
         for (AVSampleFormat const*f = c->sample_fmts; *f != -1; ++f) {
             char const*const s_str = av_get_sample_fmt_name(*f);
-            printf(" %s\n", s_str ? s_str : "(unrecognized format)");
+            printf(" %s", s_str ? s_str : "(unrecognized format)");
         }
+    putchar('\n');
 }
 
 static void print_video_encoder_info(AVCodec *c) {
@@ -94,9 +99,11 @@ static void print_video_encoder_info(AVCodec *c) {
     else
         for (PixelFormat const*p = c->pix_fmts; *p != -1; ++p) {
             char const*const p_str = av_get_pix_fmt_name(*p);
-            printf(" %s\n", p_str ? p_str : "(unrecognized format)");
+            printf(" %s", p_str ? p_str : "(unrecognized format)");
         }
+    putchar('\n');
 }
+
 
 static void init_audio() {
     // Find an encoder for the audio format
@@ -159,7 +166,7 @@ static void init_audio() {
 
 static void init_video() {
     // Find an encoder for the video format
-    fail_if(!(video_encoder = avcodec_find_encoder(output_fmt->video_codec)),
+    fail_if(!(video_encoder = avcodec_find_encoder(CODEC_ID_H264)),
       "failed to find a video encoder");
 
     print_video_encoder_info(video_encoder);
@@ -168,23 +175,29 @@ static void init_video() {
       "failed to allocate video stream");
     video_encoder_ctx = video_stream->codec;
     // Parameters
-    video_encoder_ctx->bit_rate      = 400000;
     video_encoder_ctx->width         = vid_scale_factor*256;
     video_encoder_ctx->height        = vid_scale_factor*240;
     // Assume NTSC for now and adjust to exactly 60 FPS
     video_encoder_ctx->time_base.den = 60;
     video_encoder_ctx->time_base.num = 1;
-    // Seems widely supported. TODO: Detect suitable video format?
-    video_encoder_ctx->pix_fmt       = PIX_FMT_YUV420P;
-
-    // TODO: B frames
+    video_encoder_ctx->pix_fmt       = PIX_FMT_YUV444P;
 
     // Some formats want stream headers to be separate
     if (output_ctx->oformat->flags & AVFMT_GLOBALHEADER)
         video_encoder_ctx->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
+    av_dict_set(&video_opts, "preset", "slow"     , 0);
+    av_dict_set(&video_opts, "tune"  , "animation", 0);
+    av_dict_set(&video_opts, "crf"   , "18"       , 0);
+
     // Open the video encoder
-    check_av_error(avcodec_open2(video_encoder_ctx, 0, 0), "failed to open video encoder");
+    check_av_error(avcodec_open2(video_encoder_ctx, 0, &video_opts), "failed to open video encoder");
+
+    // Any remaining options in video_opts correspond to parameters that
+    // weren't recognized
+    AVDictionaryEntry *t;
+    if ((t = av_dict_get(video_opts, "", 0, AV_DICT_IGNORE_SUFFIX)))
+        printf("warning: unrecognized codec option %s\n", t->key);
 
     // Allocate buffers for frame
 
@@ -213,7 +226,7 @@ static void init_video() {
 #endif
       video_encoder_ctx->width, video_encoder_ctx->height,
       video_encoder_ctx->pix_fmt,
-      SWS_BICUBIC, 0, 0, 0)),
+      SWS_X, 0, 0, 0)),
       "failed to create video pixel converter/scaler");
 }
 
@@ -253,45 +266,104 @@ void init_movie() {
     check_av_error(avformat_write_header(output_ctx, 0), "failed to write movie header");
 }
 
+static void write_audio_frame(int frame_size) {
+    // audio_frame->nb_samples is initialized in init_audio()
+    check_av_error(avcodec_fill_audio_frame(audio_frame,
+      audio_encoder_ctx->channels, audio_encoder_ctx->sample_fmt,
+      (uint8_t*)audio_tmp_buf, frame_size, 1),
+      "failed to initialize audio frame");
+
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    // 'data' and 'size' must be zero to signal to avcodec_encode_audio2()
+    // to allocate the buffer for us
+    pkt.data = 0;
+    pkt.size = 0;
+
+    int got_packet;
+    check_av_error(avcodec_encode_audio2(audio_encoder_ctx, &pkt, audio_frame, &got_packet),
+      "failed to encode audio frame");
+    if (!got_packet)
+        return;
+
+    pkt.stream_index = audio_stream->index;
+
+    // libav takes ownership of the data buffer in 'pkt' here
+    check_av_error(av_interleaved_write_frame(output_ctx, &pkt),
+      "failed to write audio frame");
+}
+
+static void write_audio_frames() {
+    // Read and add as many audio frames as possible
+    while (av_fifo_size(audio_fifo) >= audio_frame_bsize) {
+        av_fifo_generic_read(audio_fifo, audio_tmp_buf, audio_frame_bsize, 0);
+        write_audio_frame(audio_frame_bsize);
+    }
+}
+
 void add_movie_audio_frame(int16_t *samples, size_t len) {
     int const n_samples = audio_resample(resample_ctx, (short*)audio_tmp_buf, (short*)samples, len);
     int const n_written = av_fifo_generic_write(audio_fifo, audio_tmp_buf, sample_bsize*n_samples, 0);
     if (n_written != sample_bsize*n_samples)
         puts("warning: movie audio FIFO full - discarding samples");
 
-    // Read and add as many audio frames as possible
-    while (av_fifo_size(audio_fifo) >= audio_frame_bsize) {
-        av_fifo_generic_read(audio_fifo, audio_tmp_buf, audio_frame_bsize, 0);
+    write_audio_frames();
+}
 
-        // audio_frame->nb_samples is initialized in init_audio()
-        check_av_error(avcodec_fill_audio_frame(audio_frame,
-          audio_encoder_ctx->channels, audio_encoder_ctx->sample_fmt,
-          (uint8_t*)audio_tmp_buf, audio_frame_bsize, 1),
-          "failed to initialize audio frame");
+static void flush_audio() {
+    write_audio_frames();
 
+    // Flush any remaining samples that are too few to constitute a complete
+    // audio frame
+    int const fifo_bytes = av_fifo_size(audio_fifo);
+    if (fifo_bytes > 0) {
+        av_fifo_generic_read(audio_fifo, audio_tmp_buf, fifo_bytes, 0);
+
+        int frame_bytes;
+
+        // Pad last frame with silence if needed
+        if (!(audio_encoder_ctx->codec->capabilities & CODEC_CAP_SMALL_LAST_FRAME)) {
+            frame_bytes = audio_frame_bsize;
+            // A memset() here generates a spurious linker warning, so use a
+            // loop instead
+            for (int i = 0; i < frame_bytes - fifo_bytes; ++i)
+                // This is what avconv.c does
+                audio_tmp_buf[fifo_bytes + i] =
+                  (audio_encoder_ctx->sample_fmt == AV_SAMPLE_FMT_U8) ? 0x80 : 0x00;
+        }
+        else
+            frame_bytes = fifo_bytes;
+
+        write_audio_frame(frame_bytes);
+    }
+}
+
+
+static void write_video_frame(int frame_size) {
+    // If the size is zero the image was buffered internally (e.g. to get
+    // lookahead for B frames), and we won't get any data this frame
+    if (frame_size > 0) {
         AVPacket pkt;
         av_init_packet(&pkt);
-        // 'data' and 'size' must be zero to signal to avcodec_encode_audio2()
-        // to allocate the buffer for us
-        pkt.data = 0;
-        pkt.size = 0;
 
-        int got_packet;
-        check_av_error(avcodec_encode_audio2(audio_encoder_ctx, &pkt, audio_frame, &got_packet),
-          "failed to encode audio frame");
-        if (!got_packet)
-            continue;
+        if (video_encoder_ctx->coded_frame->pts != AV_NOPTS_VALUE)
+            // The format uses PTSs (Presentation Timestamps). Rescale them
+            // from the encoder's time base to the video stream's.
+            pkt.pts = av_rescale_q(video_encoder_ctx->coded_frame->pts,
+              video_encoder_ctx->time_base, video_stream->time_base);
+        if (video_encoder_ctx->coded_frame->key_frame)
+            pkt.flags |= AV_PKT_FLAG_KEY;
+        pkt.stream_index = video_stream->index;
+        pkt.data         = encoded_frame_buf;
+        pkt.size         = frame_size;
 
-        pkt.stream_index = audio_stream->index;
-
-        // libav takes ownership of the data buffer in 'pkt' here
         check_av_error(av_interleaved_write_frame(output_ctx, &pkt),
-          "failed to write audio frame");
+          "failed to write video frame");
     }
 }
 
 void add_movie_video_frame(uint32_t *frame_data) {
-    // Scale and convert to the video's frame format
+    // Scale and convert to the video's pixel format
     AVPicture frame_pic;
     avpicture_fill(&frame_pic,
       (uint8_t*)frame_data,
@@ -305,12 +377,10 @@ void add_movie_video_frame(uint32_t *frame_data) {
     sws_scale(video_conv_ctx, (uint8_t const*const*)frame_pic.data, frame_pic.linesize,
       0, 240, video_frame->data, video_frame->linesize);
 
-    AVPacket pkt;
-    av_init_packet(&pkt);
-
-    int write_res = 0;
-
     if (output_ctx->oformat->flags & AVFMT_RAWPICTURE) {
+        AVPacket pkt;
+        av_init_packet(&pkt);
+
         // The format wants an AVPicture with the raw picture data; no need to
         // encode
         pkt.flags        |= AV_PKT_FLAG_KEY; // All frames are key frames
@@ -318,39 +388,46 @@ void add_movie_video_frame(uint32_t *frame_data) {
         pkt.data          = (uint8_t*)video_frame;
         pkt.size          = sizeof(AVPicture);
 
-        write_res = av_interleaved_write_frame(output_ctx, &pkt);
+        check_av_error(av_interleaved_write_frame(output_ctx, &pkt),
+          "failed to write video frame (raw frame case)");
     }
     else {
+        static int64_t frame_n;
+        video_frame->pts = frame_n++;
+
         // Encode frame
         int const frame_size = avcodec_encode_video(video_encoder_ctx,
           encoded_frame_buf, encoded_frame_buf_size, video_frame);
         check_av_error(frame_size, "failed to encode video frame");
 
-        // TODO: "it is very strongly..." for pts, dts, duration in
-        // the doc for av_interleaved_write_frame
-
-        // If the size is zero the image was buffered internally, and we won't
-        // get any data this frame
-        if (frame_size > 0) {
-            if (video_encoder_ctx->coded_frame->pts != AV_NOPTS_VALUE)
-                // The format uses PTSs (Presentation Timestamps). Rescale them
-                // from the encoder's time base to the video stream's.
-                pkt.pts = av_rescale_q(video_encoder_ctx->coded_frame->pts,
-                  video_encoder_ctx->time_base, video_stream->time_base);
-            if (video_encoder_ctx->coded_frame->key_frame)
-                pkt.flags |= AV_PKT_FLAG_KEY;
-            pkt.stream_index = video_stream->index;
-            pkt.data         = encoded_frame_buf;
-            pkt.size         = frame_size;
-
-            write_res = av_interleaved_write_frame(output_ctx, &pkt);
-        }
+        write_video_frame(frame_size);
     }
-
-    check_av_error(write_res, "failed to write video frame");
 }
 
+// Flushes any remaining frames (e.g. due to B frames) from the encoder at the
+// end of recording
+static void flush_video() {
+    if (output_ctx->oformat->flags & AVFMT_RAWPICTURE)
+        return;
+
+    for (;;) {
+        // Passing null for the last argument gets a delayed frame
+        int const frame_size = avcodec_encode_video(video_encoder_ctx,
+          encoded_frame_buf, encoded_frame_buf_size, 0);
+        check_av_error(frame_size, "failed to encode video frame");
+
+        if (frame_size == 0)
+            return;
+
+        write_video_frame(frame_size);
+    }
+}
+
+
 void end_movie() {
+    flush_audio();
+    flush_video();
+
     // Write stream trailer, if any
     check_av_error(av_write_trailer(output_ctx),
       "failed to write video trailer");
@@ -370,6 +447,8 @@ void end_movie() {
     av_free(audio_tmp_buf);
 
     // Video
+
+    av_dict_free(&video_opts);
 
     sws_freeContext(video_conv_ctx);
 
