@@ -304,7 +304,8 @@ static void write_audio_frames() {
 
     // Compensate for A/V drift by fudging the resampling rate
 
-    // Maximum number of samples
+    // Maximum number of samples to deliberately deviate from the output sample
+    // rate by for A/V synchronization purposes
     int    const max_sample_adjust = 400;
 
     double const audio_pts    = audio_stream->pts.val * av_q2d(audio_stream->time_base);
