@@ -619,8 +619,8 @@ static void do_sprite_loading() {
         break;
 
     case 2:
-        // Dummy AT fetch. Might not be worth emulating (slow to calculate).
-        ppu_addr_bus = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 7);
+        // The "dummy AT fetch" during sprite loading is an NT fetch too
+        ppu_addr_bus = 0x2000 | (v & 0x0FFF);
 
         sprite_attribs[SPRITE_N] = sec_oam[sec_oam_addr];
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
