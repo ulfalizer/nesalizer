@@ -17,23 +17,23 @@
 #include <readline/readline.h>
 
 // Set true to break out of the CPU emulation loop
-bool end_emulation;
+bool            end_emulation;
 
 // Set true when an event needs to be handled at the next instruction boundary.
 // Avoids having to check them all for each instruction. This includes
 // interrupts, state transfers, and (soft) reset.
-bool pending_event;
+bool            pending_event;
 
 #ifdef RUN_TESTS
 // The system is soft-reset when this goes from 1 to 0. Used by test ROMs.
 static unsigned ticks_till_reset;
 #endif
-// Set true to perform the reset at the next instruction boundary
-bool pending_reset;
+// Set true to perform a soft reset at the next instruction boundary
+bool            pending_reset;
 
 // RAM, registers, status flags, and misc. variables {{{
 
-static uint8_t ram[0x800];
+static uint8_t  ram[0x800];
 
 // Possible optimization: Making some of the variables a natural size for the
 // implementation architecture might be faster. CPU emulation is already
@@ -41,7 +41,7 @@ static uint8_t ram[0x800];
 
 // Registers
 static uint16_t pc;
-static uint8_t a, s, x, y;
+static uint8_t  a, s, x, y;
 
 // Status flags
 
@@ -56,18 +56,21 @@ static uint8_t a, s, x, y;
 // instruction and when pulling flags from the stack.
 static unsigned zero_negative_flag;
 
-static bool carry_flag;
-static bool irq_disable_flag;
-static bool decimal_flag;
-static bool overflow_flag;
+static bool     carry_flag;
+static bool     irq_disable_flag;
+static bool     decimal_flag;
+static bool     overflow_flag;
 
 // The byte after the opcode byte. Always fetched, so factoring out the fetch
 // saves logic.
-static uint8_t op_1;
+static uint8_t  op_1;
 
 // Current CPU read/write state. Needed to get the timing for APU DMC sample
 // loading right (tested by the sprdma_and_dmc_dma tests).
-bool cpu_is_reading;
+bool            cpu_is_reading;
+
+// Last value put on the CPU data bus. Used to implement open bus reads.
+uint8_t         cpu_data_bus;
 
 // }}}
 
@@ -104,9 +107,6 @@ static void write_tick() {
 
 // Forward declaration
 static void poll_for_interrupt();
-
-// Currently only used to implement open bus reads
-uint8_t cpu_data_bus;
 
 uint8_t read(uint16_t addr) {
     read_tick();
@@ -751,7 +751,7 @@ enum {
 // Interrupt variables. 'true' means asserted.
 
 // IRQ from mapper hardware on the cart
-bool cart_irq;
+bool        cart_irq;
 
 // IRQ from the DMC channel
 // Set by the last sample byte being loaded, unless inhibited or looping is set
@@ -759,7 +759,7 @@ bool cart_irq;
 //  * the reset signal,
 //  * writing $4015,
 //  * and clearing the IRQ enable flag in $4010
-bool dmc_irq;
+bool        dmc_irq;
 
 // IRQ from the frame counter
 // Set by the frame counter in 4-step mode, unless inhibited
@@ -767,13 +767,13 @@ bool dmc_irq;
 //  * the reset signal,
 //  * setting the inhibit IRQ flag,
 //  * and reading $4015
-bool frame_irq;
+bool        frame_irq;
 
 // The OR of the above IRQ sources. Updated in update_irq_status().
 static bool irq_line;
 
 // Set true when a falling edge occurs on the NMI input
-bool nmi_asserted;
+bool        nmi_asserted;
 
 // Set true if interrupt polling detects a pending IRQ or NMI. The next
 // "instruction" executed is the interrupt sequence in that case.
@@ -1457,7 +1457,7 @@ static char const*decode_addr(uint16_t addr) {
 #define INS_ABS_Y(name)  case name##_ABS_Y : printf(#name" %s,Y "  , decode_addr((op_2 << 8) | op_1));    break;
 #define INS_IND(name)    case name##_IND   : printf(#name" (%s) "  , decode_addr((op_2 << 8) | op_1));    break;
 
-static bool breakpoint_at[0x10000];
+static bool     breakpoint_at[0x10000];
 // Optimization to avoid trashing the cache via breakpoint_at lookups when no
 // breakpoints are set
 static unsigned n_breakpoints_set;
