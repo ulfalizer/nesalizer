@@ -237,7 +237,7 @@ void init_movie() {
     // Initialize libavcodec and register all codecs and formats
     av_register_all();
 
-    // Guess container format and codecs from filename
+    // Guess container format
     fail_if(!(output_fmt = av_guess_format(0, filename, 0)),
       "failed to deduce output format for '%s'", filename);
 
