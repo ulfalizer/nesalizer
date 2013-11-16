@@ -93,13 +93,13 @@ void print_fill_level() {
         printf("Audio buffer fill level: %f%%\n", 100.0*audio_buf.fill_level());
 }
 
-void add_audio_samples(int16_t *samples, size_t len) {
+void add_audio_samples(int16_t *samples, size_t n_samples) {
 #ifdef RECORD_MOVIE
-    add_movie_audio_frame(samples, len);
+    add_movie_audio_frame(samples, n_samples);
 #endif
 
     SDL_LockAudioDevice(audio_device_id);
-    if (!audio_buf.write_samples(samples, len))
+    if (!audio_buf.write_samples(samples, n_samples))
 #ifndef RUN_TESTS
         puts("overflow!")
 #endif
