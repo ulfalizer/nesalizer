@@ -16,9 +16,11 @@
 // Video
 //
 
-static SDL_Window *screen;
+unsigned const       scale_factor = 3;
+
+static SDL_Window   *screen;
 static SDL_Renderer *renderer;
-static SDL_Texture *screen_tex;
+static SDL_Texture  *screen_tex;
 
 // On Unity with the Nouveau driver, displaying the frame sometimes blocks for
 // a very long time (to the tune of only managing 30 FPS with everything
@@ -32,11 +34,14 @@ static SDL_Texture *screen_tex;
 //
 // TODO: This could probably be optimized to eliminate some copying and format
 // conversions.
-Uint32 render_buffers[2][240*256];
-Uint32 *front_buffer;
-Uint32 *back_buffer;
+static Uint32        render_buffers[2][240*256];
+static Uint32       *front_buffer;
+static Uint32       *back_buffer;
 
-unsigned const scale_factor = 3;
+static SDL_mutex    *frame_lock;
+static SDL_cond     *frame_available_cond;
+static bool          ready_to_draw_new_frame;
+static bool          frame_available;
 
 void put_pixel(unsigned x, unsigned y, uint32_t color) {
     assert(x < 256);
@@ -44,11 +49,6 @@ void put_pixel(unsigned x, unsigned y, uint32_t color) {
 
     back_buffer[256*y + x] = color;
 }
-
-static SDL_mutex *frame_lock;
-static SDL_cond  *frame_available_cond;
-static bool       ready_to_draw_new_frame;
-static bool       frame_available;
 
 void draw_frame() {
 #ifdef RECORD_MOVIE
@@ -73,9 +73,9 @@ void draw_frame() {
 // Audio
 //
 
-static SDL_AudioDeviceID audio_device_id;
+Uint16 const             sdl_audio_buffer_size = 2048;
 
-Uint16 const sdl_audio_buffer_size = 2048;
+static SDL_AudioDeviceID audio_device_id;
 
 // Audio ring buffer
 // Make room for 1/6'th seconds of delay and round up to the nearest power of
@@ -166,7 +166,7 @@ void handle_ui_keys() {
 static bool exit_sdl_thread_loop;
 
 // Protects the 'keys' array from being read while being updated
-SDL_mutex *event_lock;
+SDL_mutex  *event_lock;
 
 static void process_events() {
     SDL_Event event;
