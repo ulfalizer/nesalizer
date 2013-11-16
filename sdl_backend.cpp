@@ -145,6 +145,8 @@ void handle_ui_keys() {
     // each frame
     pending_event = pending_state_transfer = true;
 
+    SDL_LockMutex(event_lock);
+
     if (keys[SDL_SCANCODE_S])
         save_load_status = PENDING_SAVE;
     else if (keys[SDL_SCANCODE_L])
@@ -157,6 +159,8 @@ void handle_ui_keys() {
 
     if (keys[SDL_SCANCODE_F5])
         pending_event = pending_reset = true;
+
+    SDL_UnlockMutex(event_lock);
 }
 
 static bool exit_sdl_thread_loop;

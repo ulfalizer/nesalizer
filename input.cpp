@@ -61,7 +61,7 @@ void calc_logical_dpad_state() {
         if (prevent_simul_left_right_or_up_down) {
             if (keys[c.key_left] && keys[c.key_right]) {
                 c.left_pushed  =  c.left_pushed_most_recently;
-                c.right_pushed = !c.left_pushed_most_recently;
+                c.right_pushed = !c.left_pushed;
             }
             else {
                 c.left_pushed  = keys[c.key_left];
@@ -70,7 +70,7 @@ void calc_logical_dpad_state() {
 
             if (keys[c.key_up] && keys[c.key_down]) {
                 c.up_pushed   =  c.up_pushed_most_recently;
-                c.down_pushed = !c.up_pushed_most_recently;
+                c.down_pushed = !c.up_pushed;
             }
             else {
                 c.up_pushed   = keys[c.key_up];
