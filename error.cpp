@@ -20,28 +20,9 @@ void fail(char const *format, ...) {
     fail_helper(false, format, args);
 }
 
-void fail_if(bool condition, char const *format, ...) {
+void errno_fail(int errno_val, char const *format, ...) {
     va_list args;
-    if (condition) {
-        va_start(args, format);
-        fail_helper(false, format, args);
-    }
-}
-
-void errno_fail_if(bool condition, char const *format, ...) {
-    va_list args;
-    if (condition) {
-        va_start(args, format);
-        fail_helper(true, format, args);
-    }
-}
-
-// Like errno_fail_if() but with a specified errno value
-void errno_val_fail_if(bool condition, int errno_val, char const *format, ...) {
-    va_list args;
-    if (condition) {
-        va_start(args, format);
-        errno = errno_val;
-        fail_helper(true, format, args);
-    }
+    va_start(args, format);
+    errno = errno_val;
+    fail_helper(true, format, args);
 }

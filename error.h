@@ -1,11 +1,17 @@
 void fail(char const *format, ...)
   __attribute__((format(printf, 1, 2), noreturn));
 
-void fail_if(bool condition, char const *format, ...)
+void errno_fail(int errno_val, char const *format, ...)
   __attribute__((format(printf, 2, 3)));
 
-void errno_fail_if(bool condition, char const *format, ...)
-  __attribute__((format(printf, 2, 3)));
+#define fail_if(condition, ...) \
+    if (condition)              \
+        fail(__VA_ARGS__);
 
-void errno_val_fail_if(bool condition, int errno_val, char const *format, ...)
-  __attribute__((format(printf, 3, 4)));
+#define errno_fail_if(condition, ...)   \
+    if (condition)                      \
+        errno_fail(errno, __VA_ARGS__);
+
+#define errno_val_fail_if(condition, errno_val, ...) \
+    if (condition)                                           \
+        errno_fail(errno_val, __VA_ARGS__);
