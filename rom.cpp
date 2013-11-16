@@ -54,7 +54,7 @@ void load_rom(char const*filename, bool print_info) {
 
     fail_if(rom_buf_size < 16,
       "'%s' is too short to be a valid iNES file "
-      "(is %zi bytes - not even enough to hold the 16-byte header)",
+      "(is %zu bytes - not even enough to hold the 16-byte header)",
       filename, rom_buf_size);
 
     fail_if(memcmp(rom_buf, "NES\x1A", 4),
@@ -81,7 +81,7 @@ void load_rom(char const*filename, bool print_info) {
         else
             chr_msg[0] = '\0';
         fail("'%s' is too short to hold the specified number of PRG (program data) and CHR (graphics data) "
-          "banks - is %zi bytes, expected at least %zi bytes (16 (header) + %s%u*16384 (PRG)%s)",
+          "banks - is %zu bytes, expected at least %zu bytes (16 (header) + %s%u*16384 (PRG)%s)",
           filename, rom_buf_size, min_size,
           has_trainer ? "512 (trainer) + " : "",
           prg_16k_banks,

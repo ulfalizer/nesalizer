@@ -112,13 +112,13 @@ void init_save_states() {
     state_size = transfer_system_state<true, false>(0);
     size_t const rewind_buf_size = state_size*n_rewind_frames;
 #ifndef RUN_TESTS
-    printf("Save state size: %zi bytes\nRewind buffer size: %zi bytes\n",
+    printf("Save state size: %zu bytes\nRewind buffer size: %zu bytes\n",
            state_size, rewind_buf_size);
 #endif
     fail_if(!(state = new (std::nothrow) uint8_t[state_size]),
-      "failed to allocate %zi-byte buffer for save state", state_size);
+      "failed to allocate %zu-byte buffer for save state", state_size);
     fail_if(!(rewind_buf = new (std::nothrow) uint8_t[rewind_buf_size]),
-      "failed to allocate %zi-byte rewind buffer", rewind_buf_size);
+      "failed to allocate %zu-byte rewind buffer", rewind_buf_size);
     rewind_buf_i = 0;
 }
 

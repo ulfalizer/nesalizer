@@ -245,7 +245,7 @@ void init_movie() {
     fail_if(!(output_ctx = avformat_alloc_context()), "failed to allocate output context");
     output_ctx->oformat = output_fmt;
     fail_if(strlen(filename) + 1 > sizeof(output_ctx->filename),
-      "movie filename is too long (max %zi characters allowed)", sizeof(output_ctx->filename) - 1);
+      "movie filename is too long (max %zu characters allowed)", sizeof(output_ctx->filename) - 1);
     strcpy(output_ctx->filename, filename);
 
     fail_if(output_fmt->video_codec == CODEC_ID_NONE,
