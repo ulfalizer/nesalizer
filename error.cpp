@@ -1,7 +1,7 @@
 #include "common.h"
 
 static void fail_helper(bool include_errno, char const *format, va_list args)
-  __attribute((format(printf, 2, 0), noreturn));
+  __attribute__((format(printf, 2, 0), noreturn));
 
 static void fail_helper(bool include_errno, char const *format, va_list args) {
     fprintf(stderr, "%s: ", program_name);
