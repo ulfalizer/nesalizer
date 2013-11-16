@@ -138,9 +138,11 @@ void init_mappers() {
 
 // Each PRG page is 8 KB to account for the finest granularity switched by any
 // mapper
-uint8_t *prg_pages[4];
-bool prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
-uint8_t *prg_ram_6000_page; // 8 KB page mapped at $6000-$7FFF. MMC5 can remap this.
+uint8_t *prg_pages      [4];
+bool     prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
+// 8 KB page mapped at $6000-$7FFF. MMC5 can remap this.
+uint8_t *prg_ram_6000_page;
+
 // Each 1 KB big
 uint8_t *chr_pages[8];
 

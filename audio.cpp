@@ -12,22 +12,22 @@
 // rate slightly depending on the current buffer fill level. This sets the
 // maximum adjustment allowed (1.5%), though typical adjustments will be much
 // smaller.
-double const max_adjust = 0.015;
+double const    max_adjust = 0.015;
 
 // To avoid an immediate underflow, we wait for the audio buffer to fill up
 // before we start playing. This is set true when we're happy with the fill
 // level.
-static bool playback_started;
+static bool     playback_started;
 
 // Offset in CPU cycles within the current frame
 static unsigned audio_frame_offset;
 
-static blip_t *blip;
+static blip_t  *blip;
 
 // Leave some extra room in the buffer to allow audio to be slowed down.
 // (The expression is equivalent to 1.3*sample_rate/frames_per_second, but a
 // compile-time constant in C++03. TODO: Make dependent on max_adjust.)
-static int16_t blip_samples[1300*sample_rate/milliframes_per_second];
+static int16_t  blip_samples[1300*sample_rate/milliframes_per_second];
 
 void end_audio_frame() {
     if (audio_frame_offset == 0)

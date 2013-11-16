@@ -8,7 +8,7 @@ static uint8_t controller_bits[2];
 
 // Set by writing $4016:0. When enabled, the shift registers in the controllers
 // are initialized from the buttons (level triggered).
-static bool strobe_latch;
+static bool   strobe_latch;
 
 uint8_t read_controller(unsigned n) {
     LOG_CONTROLLER("Read controller %u\n", n);
