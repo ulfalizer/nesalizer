@@ -12,7 +12,7 @@
 // If true, treat the emulated code as the first code that runs (i.e., not the
 // situation on PowerPak), which means writes to certain registers will be
 // inhibited during the initial frame. This breaks some demos.
-bool const starts_on_initial_frame = false;
+bool const     starts_on_initial_frame = false;
 
 // NTSC to RGB color conversion. This is influenced by the color tint bits.
 
@@ -101,111 +101,114 @@ uint32_t const nes_to_rgb[8][64] =
 static uint32_t const*pal_to_rgb;
 
 // Nametable memory of variable size, initialized when loading the ROM
-uint8_t *ciram;
+uint8_t              *ciram;
 
-static uint8_t palettes[0x20];
-static uint8_t oam     [0x100];
-static uint8_t sec_oam [0x20];
+static uint8_t        palettes[0x20];
+static uint8_t        oam     [0x100];
+static uint8_t        sec_oam [0x20];
 
 // VRAM address and scroll regs
 // Possible optimization: Make some of these a natural size for the
 // implementation architecture
-static uint16_t t, v;
-static uint8_t fine_x;
+static uint16_t       t, v;
+static uint8_t        fine_x;
 // v is not immediately updated from t on the second write to $2006. This
 // variable implements the delay.
-static unsigned pending_v_update;
+static unsigned       pending_v_update;
 
-static unsigned    v_inc;           // $2000:2
-static uint16_t    sprite_pat_addr; // $2000:3
-static uint16_t    bg_pat_addr;     // $2000:4
-static Sprite_size sprite_size;     // $2000:5
-static bool        nmi_on_vblank;   // $2000:7
+static unsigned       v_inc;           // $2000:2
+static uint16_t       sprite_pat_addr; // $2000:3
+static uint16_t       bg_pat_addr;     // $2000:4
+static Sprite_size    sprite_size;     // $2000:5
+static bool           nmi_on_vblank;   // $2000:7
 
-static uint8_t grayscale_color_mask; // $2001:0 - 0x30 if grayscale mode enabled, otherwise 0x3F
-static bool    show_bg_left_8;       // $2001:1
-static bool    show_sprites_left_8;  // $2001:2
-static bool    show_bg;              // $2001:3
-static bool    show_sprites;         // $2001:4
-static uint8_t tint_bits;            // $2001:7-5
+static uint8_t        grayscale_color_mask; // $2001:0 - 0x30 if grayscale mode enabled, otherwise 0x3F
+static bool           show_bg_left_8;       // $2001:1
+static bool           show_sprites_left_8;  // $2001:2
+static bool           show_bg;              // $2001:3
+static bool           show_sprites;         // $2001:4
+static uint8_t        tint_bits;            // $2001:7-5
 
 // Optimization - always equals show_bg || show_sprites
-bool rendering_enabled;
+bool                  rendering_enabled;
 // Optimizations - if bg/sprites are disabled, a value is set that causes
 // comparisons to always fail. If the leftmost 8 pixels are clipped, the
 // comparison will fail for those pixels. Otherwise, the comparison will never
 // fail.
-static unsigned bg_clip_comp;
-static unsigned sprite_clip_comp;
+static unsigned       bg_clip_comp;
+static unsigned       sprite_clip_comp;
 
-static bool sprite_overflow; // $2002:5
-static bool sprite_zero_hit; // $2002:6
-static bool in_vblank;       // $2002:7
+static bool           sprite_overflow; // $2002:5
+static bool           sprite_zero_hit; // $2002:6
+static bool           in_vblank;       // $2002:7
 
-static uint8_t oam_addr;      // $2003
+static uint8_t        oam_addr;      // $2003
 // Pointer into the secondary OAM, 5 bits wide
 //  - Updated during sprite evaluation and loading
 //  - Cleared at dots 64.5, 256.5 and 340.5, if rendering
-static unsigned sec_oam_addr;
-static uint8_t oam_data;      // $2004 (seen when reading from $2004)
+static unsigned       sec_oam_addr;
+static uint8_t        oam_data;      // $2004 (seen when reading from $2004)
 
 // Sprite evaluation state
 
 // Goes high for three ticks when an in-range sprite is found during sprite
 // evaluation
-static unsigned copy_sprite_signal;
-static bool     oam_addr_overflow, sec_oam_addr_overflow;
-static bool     overflow_detection;
+static unsigned       copy_sprite_signal;
+static bool           oam_addr_overflow, sec_oam_addr_overflow;
+static bool           overflow_detection;
 
 // PPUSCROLL/PPUADDR write flip-flop. First write when false, second write when
 // true.
-static bool write_flip_flop;
+static bool           write_flip_flop;
 
 // $2007 read buffer
-static uint8_t ppu_data_reg;
+static uint8_t        ppu_data_reg;
 
-static bool odd_frame;
+static bool           odd_frame;
 
 // Used as a general-purpose timestamp throughout the emulator. Good for
 // 109 000 years.
-uint64_t ppu_cycle;
+uint64_t              ppu_cycle;
 
 // Internal PPU counters and registers
 
-unsigned dot, scanline;
+unsigned              dot, scanline;
 
-static uint8_t  nt_byte, at_byte;
-static uint8_t  bg_byte_l, bg_byte_h;
-static uint16_t bg_shift_l, bg_shift_h;
-static unsigned at_shift_l, at_shift_h;
-static unsigned at_latch_l, at_latch_h;
+static uint8_t        nt_byte, at_byte;
+static uint8_t        bg_byte_l, bg_byte_h;
+static uint16_t       bg_shift_l, bg_shift_h;
+static unsigned       at_shift_l, at_shift_h;
+static unsigned       at_latch_l, at_latch_h;
 
-static uint8_t sprite_attribs[8];
-static uint8_t sprite_positions[8];
-static uint8_t sprite_pat_l[8];
-static uint8_t sprite_pat_h[8];
+static uint8_t        sprite_attribs[8];
+static uint8_t        sprite_positions[8];
+static uint8_t        sprite_pat_l[8];
+static uint8_t        sprite_pat_h[8];
 
-static bool s0_on_next_scanline;
-static bool s0_on_cur_scanline;
+static bool           s0_on_next_scanline;
+static bool           s0_on_cur_scanline;
 
 // Temporary storage (also exists in PPU) for data during sprite loading
-static uint8_t sprite_y, sprite_index;
-static bool    sprite_in_range;
+static uint8_t        sprite_y, sprite_index;
+static bool           sprite_in_range;
 
 // Writes to certain registers are suppressed during the initial frame:
 // http://wiki.nesdev.com/w/index.php/PPU_power_up_state
 //
 // Emulating this makes NY2011 and possibly other demos hang. They probably
 // don't run on the real thing either.
-static bool initial_frame;
+static bool           initial_frame;
 
 // VRAM address currently being output (MMC3 looks at this)
-unsigned ppu_addr_bus;
+unsigned              ppu_addr_bus;
 
 // Open bus for reads from PPU $2000-$2007 (tested by ppu_open_bus.nes)
 
-static uint8_t  ppu_open_bus;
-static uint64_t ppu_bit_7_to_6_write_cycle, ppu_bit_5_write_cycle, ppu_bit_4_to_0_write_cycle;
+static uint8_t        ppu_open_bus;
+static uint64_t       ppu_bit_7_to_6_write_cycle, ppu_bit_5_write_cycle, ppu_bit_4_to_0_write_cycle;
+
+// PPU open bus values fade after about 600 ms
+unsigned const        open_bus_decay_cycles = 0.6*ntsc_ppu_clock_rate;
 
 static void open_bus_refreshed() {
     ppu_bit_7_to_6_write_cycle = ppu_bit_5_write_cycle = ppu_bit_4_to_0_write_cycle = ppu_cycle;
@@ -218,9 +221,6 @@ static void open_bus_bits_7_to_5_refreshed() {
 static void open_bus_bits_5_to_0_refreshed() {
     ppu_bit_5_write_cycle = ppu_bit_4_to_0_write_cycle = ppu_cycle;
 }
-
-// PPU open bus values fade after about 600 ms
-unsigned const open_bus_decay_cycles = 0.6*ntsc_ppu_clock_rate;
 
 static uint8_t get_open_bus_bits_7_to_6() {
     return (ppu_cycle - ppu_bit_7_to_6_write_cycle > open_bus_decay_cycles) ?
