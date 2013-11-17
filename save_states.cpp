@@ -9,21 +9,21 @@
 
 // Number of seconds of rewind to support. The rewind buffer is a ring buffer
 // where a new state will overwrite the oldest state when the buffer is full.
-unsigned const n_rewind_seconds = 30;
+unsigned const   n_rewind_seconds = 30;
 
 bool             pending_state_transfer;
 Save_load_status save_load_status;
 Rewind_status    rewind_status;
 
-static bool     has_save;
-static size_t   state_size;
-static uint8_t *state;
+static bool      has_save;
+static size_t    state_size;
+static uint8_t  *state;
 
-unsigned const  n_rewind_frames = 60*n_rewind_seconds;
-static uint8_t *rewind_buf;
-static unsigned rewind_buf_i;
-static unsigned n_recorded_frames;
-bool            is_rewinding;
+unsigned const   n_rewind_frames = 60*n_rewind_seconds;
+static uint8_t  *rewind_buf;
+static unsigned  rewind_buf_i;
+static unsigned  n_recorded_frames;
+bool             is_rewinding;
 
 template<bool calculating_size, bool is_save>
 static size_t transfer_system_state(uint8_t *buf) {
