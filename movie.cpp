@@ -67,10 +67,10 @@ size_t const                   encoded_frame_buf_size = 1024*400;
 static SwsContext             *video_conv_ctx;
 
 // Holds x264 options
-AVDictionary                  *video_opts;
+static AVDictionary           *video_opts;
 
 // The index of the next video frame to be encoded
-int64_t frame_n;
+static int64_t                 frame_n;
 
 
 static void check_av_error(int err, char const *msg) {
