@@ -315,7 +315,7 @@ static void write_audio_frames() {
                                           - av_fifo_size(audio_fifo)/sample_bsize,
                                         -max_sample_adjust, max_sample_adjust);
 
-    if (fabs(sample_delta) > 50)
+    if (abs(sample_delta) > 50)
         av_resample_compensate(*(AVResampleContext**)resample_ctx, sample_delta, audio_encoder_ctx->sample_rate);
 
     /*
