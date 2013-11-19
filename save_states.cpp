@@ -11,10 +11,6 @@
 // where a new state will overwrite the oldest state when the buffer is full.
 unsigned const   n_rewind_seconds = 30;
 
-bool             pending_state_transfer;
-Save_load_status save_load_status;
-Rewind_status    rewind_status;
-
 static bool      has_save;
 static size_t    state_size;
 static uint8_t  *state;
@@ -47,12 +43,12 @@ static size_t transfer_system_state(uint8_t *buf) {
     return buf - tmp;
 }
 
-static void save_state() {
+void save_state() {
     transfer_system_state<false, true>(state);
     has_save = true;
 }
 
-static void load_state() {
+void load_state() {
     if (has_save) {
         // Clear rewind
         n_recorded_frames = 0;
@@ -62,7 +58,7 @@ static void load_state() {
 }
 
 // Saves the current state to the rewind buffer
-static void record_state() {
+void record_state() {
     is_rewinding = false;
 
     if (n_recorded_frames < n_rewind_frames)
@@ -72,7 +68,10 @@ static void record_state() {
 }
 
 // Loads and removes a state from the rewind buffer
-static void rewind_state() {
+void rewind_state() {
+    if (n_recorded_frames == 0)
+        return;
+
     is_rewinding = true;
 
     // If we reach the beginning of the rewind buffer, keep loading the first
@@ -84,31 +83,7 @@ static void rewind_state() {
     transfer_system_state<false, false>(rewind_buf + state_size*rewind_buf_i);
 }
 
-void do_state_transfer() {
-    if (save_load_status != NO_PENDING_SAVE_OR_LOAD) {
-        if (save_load_status == PENDING_SAVE)
-            save_state();
-        else
-            load_state();
-        save_load_status = NO_PENDING_SAVE_OR_LOAD;
-    }
-
-    if (rewind_status != NO_PENDING_REWIND) {
-        // Make sure we always have a recorded state before calling
-        // rewind_state()
-        if (rewind_status == PENDING_RECORD || n_recorded_frames == 0)
-            record_state();
-        else
-            rewind_state();
-        rewind_status = NO_PENDING_REWIND;
-    }
-}
-
 void init_save_states() {
-    pending_state_transfer = false;
-    save_load_status       = NO_PENDING_SAVE_OR_LOAD;
-    rewind_status          = NO_PENDING_REWIND;
-
     state_size = transfer_system_state<true, false>(0);
     size_t const rewind_buf_size = state_size*n_rewind_frames;
 #ifndef RUN_TESTS

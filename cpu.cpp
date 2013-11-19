@@ -1,8 +1,10 @@
 #include "common.h"
 
 #include "apu.h"
+#include "audio.h"
 #include "controller.h"
 #include "cpu.h"
+#include "input.h"
 #include "mapper.h"
 #include "ppu.h"
 #ifdef RUN_TESTS
@@ -21,7 +23,7 @@ bool            end_emulation;
 
 // Set true when an event needs to be handled at the next instruction boundary.
 // Avoids having to check them all for each instruction. This includes
-// interrupts, state transfers, and (soft) reset.
+// interrupts, end-of-frame operations, state transfers, and (soft) reset.
 bool            pending_event;
 
 #ifdef RUN_TESTS
@@ -896,6 +898,19 @@ static void process_pending_events() {
         do_interrupt(Int_IRQ);
     }
 
+    if (pending_frame_completion) {
+        pending_frame_completion = false;
+
+// Run tests as fast as we can
+#ifndef RUN_TESTS
+        sleep_till_end_of_frame();
+#endif
+        draw_frame();
+        calc_logical_dpad_state();
+        end_audio_frame();
+        handle_ui_keys();
+    }
+
     if (pending_reset) {
         pending_reset = false;
 
@@ -904,14 +919,6 @@ static void process_pending_events() {
         reset_apu();
         reset_ppu();
         reset_cpu();
-    }
-
-    // The current location within the CPU emulation loop becomes part of the
-    // state due to the way emulation is structured. To simplify things, we
-    // always do state transfers at instruction boundaries.
-    if (pending_state_transfer) {
-        pending_state_transfer = false;
-        do_state_transfer();
     }
 }
 

@@ -141,24 +141,21 @@ Uint8 const*keys;
 void handle_ui_keys() {
     extern Uint8 const*keys;
 
-    // Rewind can't be disabled yet, so we always get a pending state transfer
-    // each frame
-    pending_event = pending_state_transfer = true;
-
     SDL_LockMutex(event_lock);
 
     if (keys[SDL_SCANCODE_S])
-        save_load_status = PENDING_SAVE;
+        save_state();
     else if (keys[SDL_SCANCODE_L])
-        save_load_status = PENDING_LOAD;
+        load_state();
 
     if (keys[SDL_SCANCODE_R])
-        rewind_status = PENDING_REWIND;
+        rewind_state();
     else
-        rewind_status = PENDING_RECORD;
+        // Rewind is always enabled for now
+        record_state();
 
     if (keys[SDL_SCANCODE_F5])
-        pending_event = pending_reset = true;
+        pending_reset = true;
 
     SDL_UnlockMutex(event_lock);
 }
@@ -203,7 +200,6 @@ void sdl_thread_loop() {
         // need left+right/up+down elimination)
 
         process_events();
-        calc_logical_dpad_state();
 
         // Draw the new frame
 

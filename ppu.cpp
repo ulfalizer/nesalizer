@@ -1,6 +1,5 @@
 #include "common.h"
 
-#include "audio.h"
 #include "cpu.h"
 #include "input.h"
 #include "ppu.h"
@@ -8,6 +7,11 @@
 #include "rom.h"
 #include "sdl_backend.h"
 #include "timing.h"
+
+// Set true at the end of the visible part of the frame to trigger end-of-frame
+// operations at the next instruction boundary. This simplifies state transfers
+// as the current location within the CPU emulation loop is part of the state.
+bool           pending_frame_completion;
 
 // If true, treat the emulated code as the first code that runs (i.e., not the
 // situation on PowerPak), which means writes to certain registers will be
@@ -708,15 +712,15 @@ void tick_ppu() {
     // Move to next tick - doing this first mirrors how Visual 2C02 views it
     if (++dot == 341) {
         dot = 0;
-        if (++scanline == 262) {
-// Run tests as fast as we can
-#ifndef RUN_TESTS
-            sleep_till_end_of_frame();
-#endif
-            draw_frame();
-            end_audio_frame();
-            handle_ui_keys();
+        ++scanline;
+        // Possible optimization: set an enum indicating the scanline range
+        // here and use below (SCANLINE_0_TO_239, SCANLINE_241, etc.)
+        switch (scanline) {
+        case 240:
+            pending_event = pending_frame_completion = true;
+            break;
 
+        case 262:
             scanline = 0;
             if (rendering_enabled && odd_frame) ++dot;
             odd_frame = !odd_frame;
