@@ -906,8 +906,10 @@ static void process_pending_events() {
         sleep_till_end_of_frame();
 #endif
         draw_frame();
-        calc_logical_dpad_state();
         end_audio_frame();
+        calc_controller_state();
+        // This needs to come after calc_controller_state() so that the
+        // correct controller state is used in state transfers
         handle_ui_keys();
     }
 

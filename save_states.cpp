@@ -3,6 +3,7 @@
 #include "apu.h"
 #include "controller.h"
 #include "cpu.h"
+#include "input.h"
 #include "ppu.h"
 #include "mapper.h"
 #include "save_states.h"
@@ -29,6 +30,7 @@ static size_t transfer_system_state(uint8_t *buf) {
     transfer_cpu_state<calculating_size, is_save>(buf);
     transfer_ppu_state<calculating_size, is_save>(buf);
     transfer_controller_state<calculating_size, is_save>(buf);
+    transfer_input_state<calculating_size, is_save>(buf);
 
     if (calculating_size)
         mapper_state_size(buf);
