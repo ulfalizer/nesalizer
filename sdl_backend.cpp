@@ -3,7 +3,9 @@
 #include "audio_ring_buffer.h"
 #include "cpu.h"
 #include "input.h"
-#include "movie.h"
+#ifdef RECORD_MOVIE
+#  include "movie.h"
+#endif
 #include "save_states.h"
 #include "sdl_backend.h"
 #ifdef RUN_TESTS

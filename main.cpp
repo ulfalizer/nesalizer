@@ -6,7 +6,9 @@
 #include "cpu.h"
 #include "input.h"
 #include "mapper.h"
-#include "movie.h"
+#ifdef RECORD_MOVIE
+#  include "movie.h"
+#endif
 #include "ppu.h"
 #include "rom.h"
 #include "sdl_backend.h"
