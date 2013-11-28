@@ -160,7 +160,7 @@ static void init_audio() {
 
     // Size of audio FIFO and temporary buffer, calculated assuming ~60 audio
     // frames per second. TODO: Generalize once PAL support is added.
-    unsigned int audio_buf_size =
+    unsigned const audio_buf_size =
       3*max(audio_frame_bsize, int(sample_bsize*(audio_encoder_ctx->sample_rate/60.0)));
 
     fail_if(!(audio_fifo = av_fifo_alloc(audio_buf_size)), "failed to allocate audio FIFO");
