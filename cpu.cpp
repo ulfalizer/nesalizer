@@ -907,9 +907,8 @@ static void process_pending_events() {
 #endif
         draw_frame();
         end_audio_frame();
+        begin_audio_frame();
         calc_controller_state();
-        // This needs to come after calc_controller_state() so that the
-        // correct controller state is used in state transfers
         handle_ui_keys();
     }
 

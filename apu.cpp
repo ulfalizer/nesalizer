@@ -68,6 +68,12 @@ void do_oam_dma(uint8_t addr) {
 // step most of the time.
 static bool channel_updated;
 
+void begin_audio_frame() {
+    // Invalidate the cached signal level as outlined in
+    // set_audio_signal_level()
+    channel_updated = true;
+}
+
 // Length counter look-up table
 uint8_t const len_table[] = {
   10, 254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
@@ -817,16 +823,11 @@ void tick_apu() {
 //
 
 void reset_apu() {
-    // We should never generate more than a frame's worth of audio at a time.
-    // Since we jump back to the beginning of the frame on reset, we need to
-    // flush audio.
-    end_audio_frame();
-
     // Things explicitly initialized by the reset signal, derived from tracing
     // the _res node in Visual 2A03
 
     apu_clk1_is_high = false;
-    oam_dma_state  = OAM_DMA_NOT_IN_PROGRESS;
+    oam_dma_state    = OAM_DMA_NOT_IN_PROGRESS;
 
     // Pulse channels
 
@@ -877,8 +878,6 @@ void reset_apu() {
 
     dmc_irq = frame_irq = false;
 
-    channel_updated = true;
-
     if (frame_counter_mode == FIVE_STEP) {
         clock_env_and_tri_lin();
         clock_len_and_sweep();
@@ -896,8 +895,6 @@ void reset_apu() {
     // Avoids a pop due to a sudden volume change when the triangle starts
     // playing
     tri_output_level = tri_waveform_steps[tri_waveform_pos];
-
-    channel_updated = true;
 }
 
 void set_apu_cold_boot_state() {
@@ -972,6 +969,7 @@ void transfer_apu_state(uint8_t *&buf) {
     for (unsigned i = 0; i < 2; ++i) {
         #define TP(x) T(pulse[i].x)
 
+        TP(output_level)
         TP(enabled)
         TP(const_vol)
         TP(duty)
@@ -979,6 +977,7 @@ void transfer_apu_state(uint8_t *&buf) {
         TP(len_cnt)
         TP(period)
         TP(period_cnt)
+        TP(sweep_target_period)
         TP(sweep_enabled)
         TP(sweep_negate)
         TP(sweep_period)
@@ -993,15 +992,11 @@ void transfer_apu_state(uint8_t *&buf) {
         TP(env_start_flag)
 
         #undef TP
-
-        if (!is_save) {
-            update_sweep_target_period(i);
-            update_pulse_output_level(i);
-        }
     }
 
     // Triangle channel
 
+    T(tri_output_level)
     T(tri_enabled)
     T(tri_period)
     T(tri_period_cnt)
@@ -1014,6 +1009,7 @@ void transfer_apu_state(uint8_t *&buf) {
 
     // Noise channel
 
+    T(noise_output_level)
     T(noise_enabled)
     T(noise_halt_len_loop_env)
     T(noise_const_vol)
@@ -1053,9 +1049,6 @@ void transfer_apu_state(uint8_t *&buf) {
     T(inhibit_frame_irq)
     T(frame_counter_clock)
     T(delayed_frame_timer_reset)
-
-
-    channel_updated = true;
 
     #undef T
 }

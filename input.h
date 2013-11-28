@@ -1,5 +1,7 @@
 #include <SDL.h>
 
+extern bool reset_pushed;
+
 void init_input();
 
 void calc_controller_state();

@@ -23,6 +23,10 @@ static struct Controller_data {
     unsigned key_a, key_b, key_select, key_start, key_up, key_down, key_left, key_right;
 } controller_data[2];
 
+// For rewind to work properly across resets, the reset button needs to be
+// treated as just another key whose state is saved along with the rest
+bool reset_pushed;
+
 void init_input() {
     // Currently hardcoded
 
@@ -101,6 +105,8 @@ void calc_controller_state() {
         c.down_was_pushed  = keys[c.key_down];
     }
 
+    reset_pushed = keys[SDL_SCANCODE_F5];
+
     SDL_UnlockMutex(event_lock);
 }
 
@@ -128,6 +134,8 @@ void transfer_input_state(uint8_t *&buf) {
         T(cd.down_pushed)
         T(cd.up_pushed)
     }
+
+    T(reset_pushed)
 
     #undef T
 }

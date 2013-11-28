@@ -22,6 +22,8 @@ static bool     playback_started;
 // Offset in CPU cycles within the current frame
 static unsigned audio_frame_offset;
 
+unsigned audio_frame_len;
+
 static blip_t  *blip;
 
 // Leave some extra room in the buffer to allow audio to be slowed down.
@@ -29,13 +31,59 @@ static blip_t  *blip;
 // compile-time constant in C++03. TODO: Make dependent on max_adjust.)
 static int16_t  blip_samples[1300*sample_rate/milliframes_per_second];
 
+void set_audio_signal_level(int16_t level) {
+    // TODO: Do something to reduce the initial pop here?
+    static int16_t previous_signal_level;
+
+    unsigned time  = audio_frame_offset;
+    int      delta = level - previous_signal_level;
+
+    if (is_backwards_frame) {
+        // Flip deltas and add them from the end of the frame to reverse audio.
+        // Since the exact length of the frame can't be known in advance, the
+        // length of each frame is recorded when it is saved to the rewind
+        // buffer.
+        //
+        // This is easiest to visualize by thinking of deltas as fenceposts and
+        // the signal level as spans between them. While rewinding, the signal
+        // level that's being set should be considered the one to the left of
+        // the fencepost.
+        //
+        // One complication is the boundary between frames while rewinding -
+        // there the final sample added to one frame is not followed in time by
+        // the first sample of the next frame. To solve this, we bring the
+        // signal level down to zero at the end of each frame, and then adjust
+        // it to the correct value in the next frame (when rewinding, "to zero"
+        // becomes "from zero", and everything still works out). We also call
+        // begin_frame() between frames to invalidate the cached signal level
+        // in apu.cpp. Together this allows frames to be mixed-and-matched
+        // arbitrarily in time.
+        //
+        // Thanks to Blargg for help on this.
+        time  = audio_frame_len - time;
+        delta = -delta;
+    }
+    blip_add_delta(blip, time, delta);
+
+    previous_signal_level = level;
+}
+
 void end_audio_frame() {
     if (audio_frame_offset == 0)
         // No audio added; blip_end_frame() dislikes being called with an
         // offset of 0
         return;
 
+    assert(!(is_backwards_frame && audio_frame_offset != audio_frame_len));
+
+    // Bring the signal level at the end of the frame to zero as outlined in
+    // set_audio_signal_level()
+    set_audio_signal_level(0);
+
     blip_end_frame(blip, audio_frame_offset);
+    // Save the length of the frame in CPU ticks. Used when reversing sound for
+    // rewind.
+    save_audio_frame_length(audio_frame_offset);
     audio_frame_offset = 0;
 
     if (playback_started) {
@@ -64,15 +112,6 @@ void end_audio_frame() {
         blip_clear(blip);
     }
     add_audio_samples(blip_samples, n_samples);
-}
-
-void set_audio_signal_level(int16_t level) {
-    // TODO: Do something to reduce the initial pop here?
-    static int16_t previous_signal_level;
-    // Silence audio while rewinding for now
-    if (!is_rewinding)
-        blip_add_delta(blip, audio_frame_offset, level - previous_signal_level);
-    previous_signal_level = level;
 }
 
 void tick_audio() { ++audio_frame_offset; }

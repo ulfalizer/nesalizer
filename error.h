@@ -13,5 +13,5 @@ void errno_fail(int errno_val, char const *format, ...)
         errno_fail(errno, __VA_ARGS__);
 
 #define errno_val_fail_if(condition, errno_val, ...) \
-    if (condition)                                           \
+    if (condition)                                   \
         errno_fail(errno_val, __VA_ARGS__);

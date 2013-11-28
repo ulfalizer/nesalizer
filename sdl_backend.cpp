@@ -150,13 +150,9 @@ void handle_ui_keys() {
     else if (keys[SDL_SCANCODE_L])
         load_state();
 
-    if (keys[SDL_SCANCODE_R])
-        rewind_state();
-    else
-        // Rewind is always enabled for now
-        record_state();
+    handle_rewind(keys[SDL_SCANCODE_R]);
 
-    if (keys[SDL_SCANCODE_F5])
+    if (reset_pushed)
         pending_reset = true;
 
     SDL_UnlockMutex(event_lock);

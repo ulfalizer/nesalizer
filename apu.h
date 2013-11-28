@@ -4,6 +4,8 @@ void init_apu();
 void set_apu_cold_boot_state();
 void reset_apu();
 
+void begin_audio_frame();
+
 void write_pulse_reg_0(unsigned n, uint8_t value);
 void write_pulse_reg_1(unsigned n, uint8_t value);
 void write_pulse_reg_2(unsigned n, uint8_t value);
