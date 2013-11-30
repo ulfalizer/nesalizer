@@ -277,7 +277,7 @@ static void bit(uint8_t arg) {
 // CMP, CPX, CPY
 static void comp(uint8_t reg, uint8_t arg) {
     carry_flag = reg >= arg;
-    zero_negative_flag = (reg - arg) & 0xFF;
+    zero_negative_flag = uint8_t(reg - arg);
 }
 
 // Unofficial
