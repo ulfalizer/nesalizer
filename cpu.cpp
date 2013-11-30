@@ -116,27 +116,22 @@ uint8_t read(uint16_t addr) {
     uint8_t res;
 
     // Possible optimization: Checking for the most commonly read areas first
-    // might be faster here
+    // might be faster
 
     switch (addr) {
     case 0x0000 ... 0x1FFF: res = ram[addr & 0x07FF];     break;
     case 0x2000 ... 0x3FFF: res = read_ppu_reg(addr & 7); break;
-
-    case 0x4015: res = read_apu_status();  break;
-    case 0x4016: res = read_controller(0); break;
-    case 0x4017: res = read_controller(1); break;
-
-    case 0x4018 ... 0x5FFF:
-        res = read_mapper(addr); // General enough?
-        break;
-
+    case 0x4015           : res = read_apu_status();      break;
+    case 0x4016           : res = read_controller(0);     break;
+    case 0x4017           : res = read_controller(1);     break;
+    case 0x4018 ... 0x5FFF: res = read_mapper(addr);      break; // General enough?
     case 0x6000 ... 0x7FFF:
+        // SRAM/WRAM/PRG RAM. Returns open bus if none present.
         res = prg_ram_6000_page ? prg_ram_6000_page[addr & 0x1FFF] : cpu_data_bus;
         break;
+    case 0x8000 ... 0xFFFF: res = read_prg(addr);         break;
 
-    case 0x8000 ... 0xFFFF: res = read_prg(addr); break;
-
-    default: res = cpu_data_bus; break;
+    default:                res = cpu_data_bus;           break; // Open bus
     }
 
     cpu_data_bus = res;
@@ -190,6 +185,8 @@ void write(uint8_t value, uint16_t addr) {
     case 0x4017: write_frame_counter(value);         break;
 
     case 0x6000 ... 0x7FFF:
+        // SRAM/WRAM/PRG RAM
+
 #ifdef RUN_TESTS
         // blargg's test ROMs write the test status to $6000 and a
         // corresponding text string to $6004
@@ -202,13 +199,10 @@ void write(uint8_t value, uint16_t addr) {
         }
 #endif
 
-        // PRG RAM/SRAM/WRAM
         if (prg_ram_6000_page) prg_ram_6000_page[addr & 0x1FFF] = value;
         break;
 
-    case 0x8000 ... 0xFFFF:
-        write_prg(addr, value);
-        break;
+    case 0x8000 ... 0xFFFF: write_prg(addr, value); break;
     }
 
     write_mapper(value, addr);
@@ -240,7 +234,7 @@ static void alr(uint8_t arg) {
 // Unofficial
 static void anc(uint8_t arg) {
     and_(arg);
-    carry_flag = zero_negative_flag & 0x180;
+    carry_flag = zero_negative_flag & 0x180; // Assign negative flag
 }
 
 // 'and' is an operator in C++, so we need the underscore
@@ -420,16 +414,14 @@ static uint8_t pull() {
 }
 
 static void push_flags(bool with_break_bit_set) {
-    //    7        6     5   4      3            2          1     0
-    // negative overflow 1 break decimal interrupt-disable zero carry
     push(
-      (!!(zero_negative_flag & 0x180) << 7) |
+      (!!(zero_negative_flag & 0x180) << 7) | // Negative
       (overflow_flag                  << 6) |
       (1                              << 5) |
       (with_break_bit_set             << 4) |
       (decimal_flag                   << 3) |
       (irq_disable_flag               << 2) |
-      (!(zero_negative_flag & 0xFF)   << 1) |
+      (!(zero_negative_flag & 0xFF)   << 1) | // Zero
       carry_flag);
 }
 
