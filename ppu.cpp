@@ -746,6 +746,8 @@ void tick_ppu() {
         switch (scanline) {
         case 240:
             pending_event = pending_frame_completion = true;
+            // The PPU address bus mirrors v outside of rendering
+            ppu_addr_bus = v & 0x3FFF;
             break;
 
         case 262:
@@ -755,8 +757,12 @@ void tick_ppu() {
         }
     }
 
-    if (pending_v_update > 0 && --pending_v_update == 0)
+    if (pending_v_update > 0 && --pending_v_update == 0) {
         v = t;
+        if ((scanline >= 240 && scanline <= 260) || !rendering_enabled)
+            // The PPU address bus mirrors v outside of rendering
+            ppu_addr_bus = v & 0x3FFF;
+    }
 
     ++ppu_cycle;
 
@@ -825,10 +831,6 @@ void tick_ppu() {
         break;
     }
 
-    // TODO: ppu_addr_bus could be updated as needed when v changes
-    if ((scanline >= 240 && scanline <= 260) || !rendering_enabled)
-        ppu_addr_bus = v & 0x3FFF;
-
     ppu_tick_callback();
 }
 
@@ -841,7 +843,11 @@ static void do_2007_post_access_bump() {
     }
     // The incrementation operation can touch the high bit even though it's not
     // used for addressing (it's the high bit of fine y)
-    else v = (v + v_inc) & 0x7FFF;
+    else {
+        v = (v + v_inc) & 0x7FFF;
+        // The PPU address bus mirrors v outside of rendering
+        ppu_addr_bus = v & 0x3FFF;
+    }
 }
 
 static uint8_t read_vram() {
