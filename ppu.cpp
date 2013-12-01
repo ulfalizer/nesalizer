@@ -1,3 +1,11 @@
+// PPU (graphics processor) emulation. Follows the model in
+// http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png.
+//
+// Relevant pages:
+//   http://wiki.nesdev.com/w/index.php/PPU_registers
+//   http://wiki.nesdev.com/w/index.php/PPU_rendering
+//   http://wiki.nesdev.com/w/index.php/The_skinny_on_NES_scrolling
+
 #include "common.h"
 
 #include "cpu.h"
@@ -276,6 +284,7 @@ static void write_nt(uint16_t addr, uint8_t value) {
     }
 }
 
+// Bumps the horizontal bits in v every eight pixels during rendering
 static void bump_horiz() {
     // Coarse x equal to 31?
     // Another variant is 'if (!(~v & 0x001F))'.
@@ -286,6 +295,7 @@ static void bump_horiz() {
     else ++v;
 }
 
+// Bumps the vertical bits in v at the end of each scanline during rendering
 static void bump_vert() {
     // Fine y != 7?
     if (~v & 0x7000) {
@@ -293,6 +303,8 @@ static void bump_vert() {
         v += 0x1000;
         return;
     }
+
+    // Bump coarse y
 
     unsigned coarse_y = (v >> 5) & 0x1F;
     switch (coarse_y) {
@@ -312,51 +324,52 @@ static void bump_vert() {
     v = (v & (~0x7000 & ~0x03E0)) | (coarse_y << 5);
 }
 
+// Restores the horizontal bits in v from t at the end of each scanline during
+// rendering
 static void copy_horiz() {
     // v: ... .H.. ...E DCBA = t: ... .H.. ...E DCBA
     v = (v & ~0x041F) | (t & 0x041F);
 }
 
+// Initializes the vertical bits in v from t on the pre-render line (line 261)
 static void copy_vert() {
     // v: IHG F.ED CBA. .... = t: IHG F.ED CBA. ....
     v = (v & ~0x7BE0) | (t & 0x7BE0);
 }
 
+// Fetches nametable and tile bytes for the background
 static void do_bg_fetches() {
     switch ((dot - 1) % 8) {
-    case 0:
-        ppu_addr_bus = 0x2000 | (v & 0x0FFF);
-        break;
 
-    case 1:
-        nt_byte = read_nt(ppu_addr_bus);
-        break;
+    // NT byte
+    case 0: ppu_addr_bus = 0x2000 | (v & 0x0FFF); break;
+    case 1: nt_byte = read_nt(ppu_addr_bus);      break;
 
+    // AT byte
     case 2:
         //    yyy NNAB CDEG HIJK
         // =>  10 NN11 11AB CGHI
         // 1162 is the Visual 2C02 signal that sets up this address
         ppu_addr_bus = 0x23C0 | (v & 0x0C00) | ((v >> 4) & 0x38) | ((v >> 2) & 7);
         break;
-
     case 3:
         at_byte = read_nt(ppu_addr_bus);
         break;
 
+    // Low BG tile byte
     case 4:
         assert(v <= 0x7FFF);
         ppu_addr_bus = bg_pat_addr + 16*nt_byte + (v >> 12);
         break;
-
     case 5:
         bg_byte_l = chr_ref(ppu_addr_bus);
         break;
 
+    // High BG tile byte and horizontal bump
     case 6:
         assert(v <= 0x7FFF);
         ppu_addr_bus = bg_pat_addr + 16*nt_byte + (v >> 12) + 8;
         break;
-
     case 7:
         bg_byte_h = chr_ref(ppu_addr_bus);
         bump_horiz();
@@ -364,7 +377,8 @@ static void do_bg_fetches() {
     }
 }
 
-// Performance hotspot
+// Looks for an in-range sprite pixel at the current location
+// Performance hotspot!
 // Possible optimization: Set flag if any sprites on the line
 static unsigned get_sprite_pixel(unsigned &spr_pal, bool &spr_behind_bg, bool &spr_is_s0) {
     unsigned const pixel = dot - 2;
@@ -389,7 +403,10 @@ static unsigned get_sprite_pixel(unsigned &spr_pal, bool &spr_behind_bg, bool &s
     return 0;
 }
 
-// Performance hotspot
+// Fetches pixels from the background and sprite shift registers and produces
+// an output pixel according to the pixel values and background/sprite
+// priority. Also handles sprite zero hit detection.
+// Performance hotspot!
 static void do_pixel_output_and_sprite_0() {
     unsigned const pixel = dot - 2;
     unsigned pal_index;
@@ -400,11 +417,12 @@ static void do_pixel_output_and_sprite_0() {
         // color
         pal_index = (~v & 0x3F00) ? 0 : v & 0x1F;
     else {
-        unsigned spr_pal;
-        bool spr_behind_bg, spr_is_s0;
+        unsigned       bg_pixel_pat;
+
+        bool           spr_behind_bg, spr_is_s0;
+        unsigned       spr_pal;
         unsigned const spr_pat = get_sprite_pixel(spr_pal, spr_behind_bg, spr_is_s0);
 
-        unsigned bg_pixel_pat;
         // Equivalent to 'if (!show_bg || (!show_bg_left_8 && pixel < 8))'
         if (pixel < bg_clip_comp)
             bg_pixel_pat = 0;
@@ -432,6 +450,8 @@ static void do_pixel_output_and_sprite_0() {
     put_pixel(pixel, scanline, pal_to_rgb[palettes[pal_index] & grayscale_color_mask]);
 }
 
+// Shifts the background shift registers, reloading the upper eight bits and
+// the attribute bits every eight pixels
 static void do_shifts_and_reloads() {
     assert(at_latch_l <= 1);
     assert(at_latch_h <= 1);
@@ -481,6 +501,7 @@ static void do_shifts_and_reloads() {
     }
 }
 
+// Bumps the OAM and secondary OAM addresses, detecting overflow in either one
 static void move_to_next_oam_byte() {
     oam_addr     = (oam_addr     + 1) & 0xFF;
     sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
@@ -496,6 +517,9 @@ static void move_to_next_oam_byte() {
     }
 }
 
+// Performs sprite evaluation for the next scanline, during dots 65-256. A
+// linear search of the primary OAM is performed, and sprites found to be
+// within range are copied into the secondary OAM.
 static void do_sprite_evaluation() {
     if (dot == 65) {
         // TODO: Should these be cleared even if rendering is disabled?
@@ -593,6 +617,8 @@ static bool calculate_sprite_tile_address(uint8_t y, uint8_t index, uint8_t attr
     }
 }
 
+// Initializes the sprite output units with the sprites that were copied into
+// the secondary OAM during sprite evaluation
 static void do_sprite_loading() {
     // This is position-based in the hardware as well
     #define SPRITE_N ((dot - 257)/8)
@@ -670,6 +696,7 @@ static void do_sprite_loading() {
     #undef SPRITE_N
 }
 
+// Common operations for the visible lines (0-239) and the pre-render line (261)
 // Performance hotspot
 static void do_prerender_and_visible_lines_ops() {
     // We get a short dummy bg-related fetch here. Probably not worth
@@ -707,7 +734,8 @@ static void do_prerender_and_visible_lines_ops() {
     }
 }
 
-// Performance hotspot
+// Runs the PPU for one dot
+// Performance hotspot - ticks at ~5.4 MHz
 void tick_ppu() {
     // Move to next tick - doing this first mirrors how Visual 2C02 views it
     if (++dot == 341) {
@@ -816,31 +844,34 @@ static void do_2007_post_access_bump() {
     else v = (v + v_inc) & 0x7FFF;
 }
 
-uint8_t read_ppu() {
-    LOG_PPU_MEM("Read from PPU $%04X ", v);
-
+static uint8_t read_vram() {
     // Use ppu_open_bus to hold the result, updating it in the process
 
     switch (v & 0x3FFF) {
+
+    // Pattern tables
     case 0x0000 ... 0x1FFF:
-        LOG_PPU_MEM("(Pattern tables, $0000-$1FFF)\n");
         ppu_open_bus = ppu_data_reg;
         open_bus_refreshed();
         ppu_data_reg = chr_ref(v);
         break;
 
+    // Nametables
     case 0x2000 ... 0x3EFF:
-        LOG_PPU_MEM("(Nametables, $2000-$3EFF)");
         ppu_open_bus = ppu_data_reg;
         open_bus_refreshed();
         ppu_data_reg = read_nt(v);
         break;
 
+    // Palettes
     case 0x3F00 ... 0x3FFF:
-        LOG_PPU_MEM("(Palettes, $3F00-$3FFF)\n");
         ppu_open_bus = get_open_bus_bits_7_to_6() |
           (palettes[v & 0x1F] & grayscale_color_mask);
         open_bus_bits_5_to_0_refreshed();
+
+        // The data register is updated with the nametable byte that would
+        // appear "underneath" the palette
+        // (http://wiki.nesdev.com/w/index.php/PPU_memory_map)
         ppu_data_reg = read_nt(v);
         break;
 
@@ -853,31 +884,19 @@ uint8_t read_ppu() {
         printf("Warning: Reading PPUDATA during initial frame, at (%u,%u)\n", scanline, dot);
     }
 
-    do_2007_post_access_bump();
     return ppu_open_bus;
 }
 
-void write_ppu(uint8_t value) {
-    LOG_PPU_MEM("Write $%02X to PPU $%04X ", value, v);
-
+static void write_vram(uint8_t value) {
     switch (v & 0x3FFF) {
 
-    case 0x0000 ... 0x1FFF:
-        LOG_PPU_MEM("(Pattern tables, $0000-$1FFF)\n");
-        if (uses_chr_ram) chr_ref(v) = value;
-        break;
-
-    case 0x2000 ... 0x3EFF:
-        {
-        LOG_PPU_MEM("(Nametables, $2000-$3EFF)\n");
-        write_nt(v, value);
-        break;
-        }
-
+    // Pattern tables
+    case 0x0000 ... 0x1FFF: if (uses_chr_ram) chr_ref(v) = value; break;
+    // Nametables
+    case 0x2000 ... 0x3EFF: write_nt(v, value); break;
+    // Palettes
     case 0x3F00 ... 0x3FFF:
         {
-        LOG_PPU_MEM("(Palettes, $3F00-$3F1F)\n");
-
         // As the palette is read much more often than it is written, we
         // simulate mirroring by actually writing the mirrored values. For
         // unmirrored cell, the mirror map points back to the cell itself.
@@ -891,31 +910,21 @@ void write_ppu(uint8_t value) {
         palettes[palette_write_mirror[v & 0x1F]] = palettes[v & 0x001F] = value & 0x3F;
         break;
         }
-
     // GCC doesn't seem to infer this
     default: UNREACHABLE
     }
-
-    do_2007_post_access_bump();
 }
 
 uint8_t read_ppu_reg(unsigned n) {
     switch (n) {
 
-    case 0:
-        LOG_PPU_REG("Read PPUCTRL ($2000)\n");
-        return get_all_open_bus_bits();
-
-    case 1:
-        LOG_PPU_REG("Read PPUMASK ($2001)\n");
-        return get_all_open_bus_bits();
+    // Write-only registers
+    case 0: case 1: case 3: case 5: case 6: return get_all_open_bus_bits();
 
     case 2:
-        {
-        LOG_PPU_REG("Read PPUSTATUS ($2002)\n");
         if (scanline == 241) {
             // Quirkiness related to reading $2002 around the point where the
-            // VBlank flag is set. TODO: Explain why these values are correct.
+            // VBlank flag is set. TODO: Elaborate on timing.
             switch (dot) {
             case 1:
                 in_vblank    = false;
@@ -928,19 +937,13 @@ uint8_t read_ppu_reg(unsigned n) {
             }
         }
         write_flip_flop = false;
-        ppu_open_bus = (in_vblank << 7) | (sprite_zero_hit << 6) | (sprite_overflow << 5) |
-                       get_open_bus_bits_4_to_0();
+        ppu_open_bus    = (in_vblank << 7) | (sprite_zero_hit << 6) | (sprite_overflow << 5) |
+                          get_open_bus_bits_4_to_0();
+        in_vblank       = false;
         open_bus_bits_7_to_5_refreshed();
-        in_vblank = false;
         return ppu_open_bus;
-        }
-
-    case 3:
-        LOG_PPU_REG("Read OAMADDR ($2003)\n");
-        return get_all_open_bus_bits();
 
     case 4:
-        LOG_PPU_REG("Read OAMDATA ($2004)\n");
         // Micro machines reads this during rendering
         if (rendering_enabled && (scanline < 240 || scanline > 260)) {
             // TODO: Make this work automagically through proper emulation of
@@ -952,17 +955,12 @@ uint8_t read_ppu_reg(unsigned n) {
         open_bus_refreshed();
         return ppu_open_bus = ((oam_addr & 3) == 2) ? (oam[oam_addr] & 0xE3) : oam[oam_addr];
 
-    case 5:
-        LOG_PPU_REG("Read PPUSCROLL ($2005)\n");
-        return get_all_open_bus_bits();
-
-    case 6:
-        LOG_PPU_REG("Read PPUADDR ($2006)\n");
-        return get_all_open_bus_bits();
-
     case 7:
-        LOG_PPU_REG("Read PPUDATA ($2007)\n");
-        return read_ppu();
+        {
+        uint8_t const res = read_vram();
+        do_2007_post_access_bump();
+        return res;
+        }
 
     default: UNREACHABLE
     }
@@ -985,9 +983,8 @@ void write_ppu_reg(uint8_t value, unsigned n) {
 
     switch (n) {
 
-    case 0: // PPUCTRL
-        LOG_PPU_REG("Write $%02X to PPUCTRL ($2000)\n", value);
-
+    // PPUCTRL
+    case 0:
         {
         if (initial_frame) {
             printf("Warning: Writing PPUCTRL during initial frame, at (%u,%u)\n", scanline, dot);
@@ -1017,13 +1014,11 @@ void write_ppu_reg(uint8_t value, unsigned n) {
             nmi_asserted = false;
 
         nmi_on_vblank = new_nmi_on_vblank;
-
         break;
         }
 
-    case 1: // PPUMASK
-        LOG_PPU_REG("Write $%02X to PPUMASK ($2001)\n", value);
-
+    // PPUMASK
+    case 1:
         if (initial_frame) {
             printf("Warning: Writing PPUMASK during initial frame, at (%u,%u)\n", scanline, dot);
             return;
@@ -1046,24 +1041,17 @@ void write_ppu_reg(uint8_t value, unsigned n) {
 
         break;
 
-    case 2: // PPUSTATUS
-        LOG_PPU_REG("Write $%02X to PPUSTATUS ($2002)\n", value);
-        // Read-only
-        break;
+    // PPUSTATUS
+    case 2: break;
 
-    case 3: // OAMADDR
-        LOG_PPU_REG("Write $%02X to OAMADDR ($2003)\n", value);
-        oam_addr = value;
-        break;
+    // OAMADDR
+    case 3: oam_addr = value; break;
 
-    case 4: // OAMDATA
-        LOG_PPU_REG("Write $%02X to OAMDATA ($2004)\n", value);
-        write_oam_data_reg(value);
-        break;
+    // OAMDATA
+    case 4: write_oam_data_reg(value); break;
 
-    case 5: // PPUSCROLL
-        LOG_PPU_REG("Write $%02X to PPUSCROLL ($2005), at (%u,%u)\n", value, scanline, dot);
-
+    // PPUSCROLL
+    case 5:
         if (initial_frame) {
             printf("Warning: Writing PPUSCROLL during initial frame, at (%u,%u)\n", scanline, dot);
             return;
@@ -1074,7 +1062,7 @@ void write_ppu_reg(uint8_t value, unsigned n) {
             // fine_x = value: .... .ABC
             // t: ... .... ...D EFGH = value: DEFG H...
             fine_x = value & 7;
-            t = (t & 0x7FE0) | ((value & 0xF8) >> 3);
+            t      = (t & 0x7FE0) | ((value & 0xF8) >> 3);
         }
         else
             // Second write
@@ -1084,9 +1072,8 @@ void write_ppu_reg(uint8_t value, unsigned n) {
         write_flip_flop = !write_flip_flop;
         break;
 
-    case 6: // PPUADDR
-        LOG_PPU_REG("Write $%02X to PPUADDR ($2006), at (%u,%u)\n", value, scanline, dot);
-
+    // PPUADDR
+    case 6:
         if (initial_frame) {
             printf("Warning: Writing PPUADDR during initial frame, at (%u,%u)\n", scanline, dot);
             return;
@@ -1108,9 +1095,10 @@ void write_ppu_reg(uint8_t value, unsigned n) {
         write_flip_flop = !write_flip_flop;
         break;
 
-    case 7: // PPUDATA
-        LOG_PPU_REG("Write $%02X to PPUDATA ($2007), at (%u,%u)\n", value, scanline, dot);
-        write_ppu(value);
+    // PPUDATA
+    case 7:
+        write_vram(value);
+        do_2007_post_access_bump();
         break;
 
     default: UNREACHABLE

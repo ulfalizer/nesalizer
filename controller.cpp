@@ -11,8 +11,6 @@ static uint8_t controller_bits[2];
 static bool   strobe_latch;
 
 uint8_t read_controller(unsigned n) {
-    LOG_CONTROLLER("Read controller %u\n", n);
-
     // Results for standard controller:
     // D7-D5: Open bus (this usually results in an OR by $40)
     // D4-D1: Always 0
@@ -30,8 +28,6 @@ uint8_t read_controller(unsigned n) {
 }
 
 void write_controller_strobe(bool strobe) {
-    LOG_CONTROLLER("Write $%02X to controller %u\n", value, n);
-
     // On a real controller the button states are continuously reloaded while
     // the strobe latch is on. Emulate this by latching the button states when
     // it goes from set to unset.
