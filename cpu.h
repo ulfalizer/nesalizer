@@ -5,7 +5,6 @@ void run();
 
 void tick();
 uint8_t read(uint16_t addr);
-void write(uint8_t value, uint16_t addr);
 
 extern bool nmi_asserted;
 extern bool cart_irq, dmc_irq, frame_irq;

@@ -138,7 +138,7 @@ uint8_t read(uint16_t addr) {
     return res;
 }
 
-void write(uint8_t value, uint16_t addr) {
+static void write(uint8_t value, uint16_t addr) {
     // TODO: The write probably takes effect earlier within the CPU cycle than
     // after the three PPU ticks and the one APU tick
 
