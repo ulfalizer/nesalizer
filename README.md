@@ -1,15 +1,29 @@
 # Nesalizer #
 
-A work-in-progress NES emulator. Uses a low-level pixel-based renderer that
-simulates the real PPU, going to through the motions of sprite evaluation and
-pixel selection, and omits most prediction and catch-up for straightforward and
-easy-to-debug code. This makes many effects that require special handling in
-other emulators work automagically. The emulation thread peaks at around 37% of
-one core on my two-year-old 2600K Core i7, but there's still room for
-improvement.
+A work-in-progress NES emulator. Still lacks a GUI and persistent (on-disk)
+save states, so not worth using yet from a user's perspective. Includes a
+rewind feature that also reverses sound (see 
+![this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI)), and will
+include some other cool unique features later on. :)
 
-Still lacks a GUI and persistent save states, so not worth using yet from a
-user's perspective. Will include some cool unique features later on. :)
+See the end of the README for some screenshot.
+
+## Technical ##
+
+Uses a low-level pixel-based renderer that simulates the real PPU, going to
+through the motions of sprite evaluation and pixel selection, and omits most
+prediction and catch-up for straightforward and easy-to-debug code. This
+makes many effects that require special handling in other emulators work
+automagically. The emulator currently manages about 6x emulation speed on my
+two-year-old 2600K Core i7.
+
+## Compatibility ##
+
+iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 5 (including ExGrafix, split screen, and PRG RAM swapping), 7, 9, 11, 71, 232.
+
+Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, Uchuu Keibitai SDF, Just Breed, and Battletoads.
+
+<b>No PAL support yet.</b> PAL ROMs can often be recognized by having "(E)" in their name. PAL support will likely never be as good as NTSC support in any emulator due to much trickier and less explored timing (plus you lose 10 FPS for games that also have an NTSC version). 
 
 ## Building ##
 
@@ -53,16 +67,6 @@ A set of test ROMs listed in <b>test.cpp</b> can be run automatically with
 This requires https://github.com/christopherpow/nes-test-roms to first be
 cloned into a directory called <i>tests</i>. All tests listed are expected to
 pass.
-
-## Compatibility ##
-
-iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 5 (including ExGrafix, split screen, and PRG RAM swapping), 7, 9, 11, 71, 232.
-
-Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, Uchuu Keibitai SDF, Just Breed, and Battletoads.
-
-<b>No PAL support yet.</b> PAL support will likely never be as good as NTSC support in any emulator due to much
-trickier and less explored timing (plus you lose 10 FPS for games that also have an NTSC version). PAL ROMs can
-often be recognized by having "(E)" in their name.
 
 ## Screenshots ##
 
