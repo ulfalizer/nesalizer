@@ -4,7 +4,6 @@
 
 #include "log.h"
 #include "mapper.h"
-#include "rom.h"
 
 static unsigned temp_reg;
 static unsigned nth_write;

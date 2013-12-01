@@ -2,7 +2,6 @@
 
 #include "audio.h"
 #include "apu.h"
-#include "controller.h"
 #include "cpu.h"
 #include "input.h"
 #include "mapper.h"

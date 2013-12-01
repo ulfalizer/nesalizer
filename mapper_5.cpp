@@ -5,7 +5,6 @@
 #include "cpu.h"
 #include "mapper.h"
 #include "ppu.h"
-#include "sdl_backend.h"
 
 // 1 KB of extra on-chip memory
 static uint8_t exram[1024];

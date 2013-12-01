@@ -5,7 +5,6 @@
 #include "cpu.h"
 #include "mapper.h"
 #include "ppu.h"
-#include "rom.h"
 
 // Clock used by the APU and DMA circuitry, parts of which tick at half the CPU
 // frequency. Whether the initial tick is high or low seems to be random. The

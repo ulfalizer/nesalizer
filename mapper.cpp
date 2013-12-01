@@ -5,13 +5,13 @@
 #include "rom.h"
 
 static uint8_t nop_read(uint16_t) { return cpu_data_bus; } // Return open bus by default
-static void nop_write(uint8_t, uint16_t) {}
-static void nop_ppu_tick_callback() {}
+static void    nop_write(uint8_t, uint16_t) {}
+static void    nop_ppu_tick_callback() {}
 static uint8_t bad_nt_read(uint16_t addr) {
     fail("internal error: reading nametable address %04X with no read function defined",
          addr);
 }
-static void bad_nt_write(uint16_t addr, uint8_t value) {
+static void    bad_nt_write(uint16_t addr, uint8_t value) {
     fail("internal error: writing %02X to nametable address %04X with no write function defined",
          value, addr);
 }

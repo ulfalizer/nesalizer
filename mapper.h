@@ -1,24 +1,24 @@
 void init_mappers();
 
-typedef void write_fn(uint8_t value, uint16_t addr);
+typedef void    write_fn(uint8_t value, uint16_t addr);
 typedef uint8_t read_fn(uint16_t addr);
-typedef void ppu_tick_callback_fn();
 typedef uint8_t read_nt_fn(uint16_t addr);
-typedef void write_nt_fn(uint16_t addr, uint8_t value);
-typedef size_t state_fn(uint8_t*&);
+typedef void    write_nt_fn(uint16_t addr, uint8_t value);
+typedef size_t  state_fn(uint8_t*&);
+typedef void    ppu_tick_callback_fn();
 
 struct Mapper_fns {
-    void (*init)();
-    read_fn *read;
-    write_fn *write;
-    read_nt_fn *read_nt;
-    write_nt_fn *write_nt;
-    ppu_tick_callback_fn *ppu_tick_callback;
+    void                 (*init)();
+    read_fn               *read;
+    write_fn              *write;
+    read_nt_fn            *read_nt;
+    write_nt_fn           *write_nt;
+    ppu_tick_callback_fn  *ppu_tick_callback;
     state_fn *state_size, *save_state, *load_state;
 };
 
 extern uint8_t *prg_pages[4];
-extern bool prg_page_is_ram[4];
+extern bool     prg_page_is_ram[4];
 extern uint8_t *prg_ram_6000_page;
 
 inline uint8_t read_prg(uint16_t addr) {
@@ -35,7 +35,7 @@ void set_prg_32k_bank(unsigned bank);
 // MMC5 can map writeable PRG RAM into the $8000+ range - hence the 'is_rom'
 // argument
 void set_prg_16k_bank(unsigned n, unsigned bank, bool is_rom = true);
-void set_prg_8k_bank(unsigned n, unsigned bank, bool is_rom = true);
+void set_prg_8k_bank (unsigned n, unsigned bank, bool is_rom = true);
 // PRG RAM mapped at $6000-$7FFF
 void set_prg_6000_bank(unsigned bank);
 

@@ -1,6 +1,5 @@
 #include "common.h"
 
-#include "apu.h"
 #include "audio.h"
 #include "blip_buf.h"
 #include "save_states.h"
@@ -22,7 +21,7 @@ static bool     playback_started;
 // Offset in CPU cycles within the current frame
 static unsigned audio_frame_offset;
 
-unsigned audio_frame_len;
+unsigned        audio_frame_len;
 
 static blip_t  *blip;
 

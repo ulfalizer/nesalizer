@@ -1,6 +1,5 @@
 #include "common.h"
 
-#include "audio.h"
 #include "cpu.h"
 #include "rom.h"
 #include "sdl_backend.h"

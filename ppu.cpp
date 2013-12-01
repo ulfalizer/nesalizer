@@ -9,7 +9,6 @@
 #include "common.h"
 
 #include "cpu.h"
-#include "input.h"
 #include "ppu.h"
 #include "mapper.h"
 #include "rom.h"
