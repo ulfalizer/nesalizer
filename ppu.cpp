@@ -197,7 +197,7 @@ static void write_nt(uint16_t addr, uint8_t value) {
     case ONE_SCREEN_LOW:  ciram[addr & 0x03FF]                            = value; break;
     case ONE_SCREEN_HIGH: ciram[0x0400 | (addr & 0x03FF)]                 = value; break;
     case FOUR_SCREEN:     ciram[addr & 0x0FFF]                            = value; break;
-    case SPECIAL:         mapper_write_nt(addr, value);                            break;
+    case SPECIAL:         mapper_write_nt(value, addr);                            break;
     default: UNREACHABLE
     }
 }

@@ -11,7 +11,7 @@ static uint8_t bad_nt_read(uint16_t addr) {
     fail("internal error: reading nametable address %04X with no read function defined",
          addr);
 }
-static void    bad_nt_write(uint16_t addr, uint8_t value) {
+static void    bad_nt_write(uint8_t value, uint16_t addr) {
     fail("internal error: writing %02X to nametable address %04X with no write function defined",
          value, addr);
 }
@@ -91,7 +91,7 @@ void init_mappers() {
       void mapper_##n##_write(uint8_t, uint16_t);                             \
       void mapper_##n##_ppu_tick_callback();                                  \
       uint8_t mapper_##n##_read_nt(uint16_t);                                 \
-      void mapper_##n##_write_nt(uint16_t, uint8_t);                          \
+      void mapper_##n##_write_nt(uint8_t, uint16_t);                          \
       mapper_functions[n].init              = mapper_##n##_init;              \
       mapper_functions[n].read              = mapper_##n##_read;              \
       mapper_functions[n].write             = mapper_##n##_write;             \

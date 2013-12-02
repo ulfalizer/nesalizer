@@ -3,7 +3,7 @@ void init_mappers();
 typedef void    write_fn(uint8_t value, uint16_t addr);
 typedef uint8_t read_fn(uint16_t addr);
 typedef uint8_t read_nt_fn(uint16_t addr);
-typedef void    write_nt_fn(uint16_t addr, uint8_t value);
+typedef void    write_nt_fn(uint8_t value, uint16_t addr);
 typedef size_t  state_fn(uint8_t*&);
 typedef void    ppu_tick_callback_fn();
 
