@@ -34,8 +34,8 @@ inline void write_prg(uint16_t addr, uint8_t value) {
 void set_prg_32k_bank(unsigned bank);
 // MMC5 can map writeable PRG RAM into the $8000+ range - hence the 'is_rom'
 // argument
-void set_prg_16k_bank(unsigned n, unsigned bank, bool is_rom = true);
-void set_prg_8k_bank (unsigned n, unsigned bank, bool is_rom = true);
+void set_prg_16k_bank(unsigned n, int bank, bool is_rom = true);
+void set_prg_8k_bank (unsigned n, int bank, bool is_rom = true);
 // PRG RAM mapped at $6000-$7FFF
 void set_prg_6000_bank(unsigned bank);
 

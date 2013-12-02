@@ -3,7 +3,6 @@
 #include "common.h"
 
 #include "mapper.h"
-#include "rom.h"
 
 static uint8_t prg_bank;
 
@@ -13,7 +12,7 @@ static void apply_state() {
 
 void mapper_2_init() {
     // Last PRG bank and all CHR banks fixed
-    set_prg_16k_bank(1, prg_16k_banks - 1);
+    set_prg_16k_bank(1, -1);
     set_chr_8k_bank(0);
     prg_bank = 0;
     apply_state();

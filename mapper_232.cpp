@@ -6,7 +6,6 @@
 #include "common.h"
 
 #include "mapper.h"
-#include "rom.h"
 
 // 64 KB block, selected by 0x8000-0x9FFF. Represented as an offset in 16 KB
 // units - always a multiple of four.

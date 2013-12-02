@@ -3,7 +3,6 @@
 #include "common.h"
 
 #include "mapper.h"
-#include "rom.h"
 #include "ppu.h"
 
 static unsigned chr_bank_0FDx, chr_bank_0FEx;
@@ -27,9 +26,9 @@ static void apply_state() {
 
 void mapper_9_init() {
     // Last three 8K PRG banks fixed
-    set_prg_8k_bank(1, 2*prg_16k_banks - 3);
-    set_prg_8k_bank(2, 2*prg_16k_banks - 2);
-    set_prg_8k_bank(3, 2*prg_16k_banks - 1);
+    set_prg_8k_bank(1, -3);
+    set_prg_8k_bank(2, -2);
+    set_prg_8k_bank(3, -1);
 
     // Guess at defaults
     set_prg_8k_bank(0, 0);

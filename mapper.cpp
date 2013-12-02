@@ -146,6 +146,13 @@ uint8_t *prg_ram_6000_page;
 // Each 1 KB big
 uint8_t *chr_pages[8];
 
+// Memory remapping functions. 'n' specifies the slot, 'bank' the bank to map
+// there. Both are in units corresponding to the function.
+//
+// Negative bank numbers to set_prg_16/8k_bank() assign banks from the end, so
+// that e.g. set_prg_16k_bank(0, -2) assigns the second-to-last 16 KB bank to
+// the first 16 KB slot.
+
 void set_prg_32k_bank(unsigned bank) {
     if (prg_16k_banks == 1) {
         // The only configuration for a single 16k PRG bank is to be mirrored
@@ -162,8 +169,11 @@ void set_prg_32k_bank(unsigned bank) {
     }
 }
 
-void set_prg_16k_bank(unsigned n, unsigned bank, bool is_rom /* = true */) {
+void set_prg_16k_bank(unsigned n, int bank, bool is_rom /* = true */) {
     assert(n < 2);
+
+    if (bank < 0)
+        bank = max(int(prg_16k_banks + bank), 0);
 
     uint8_t *base;
     unsigned mask;
@@ -183,8 +193,11 @@ void set_prg_16k_bank(unsigned n, unsigned bank, bool is_rom /* = true */) {
     }
 }
 
-void set_prg_8k_bank(unsigned n, unsigned bank, bool is_rom /* = true */) {
+void set_prg_8k_bank(unsigned n, int bank, bool is_rom /* = true */) {
     assert(n < 4);
+
+    if (bank < 0)
+        bank = max(int(2*prg_16k_banks + bank), 0);
 
     uint8_t *base;
     unsigned mask;

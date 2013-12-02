@@ -3,7 +3,6 @@
 #include "cpu.h"
 #include "mapper.h"
 #include "ppu.h"
-#include "rom.h"
 
 static unsigned reg_8000;
 
@@ -24,11 +23,11 @@ static void apply_state() {
     if (!(reg_8000 & 0x40)) {
         // [ regs[6] | regs[7] | {-2} | {-1} ]
         set_prg_8k_bank(0, regs[6]);
-        set_prg_8k_bank(2, 2*prg_16k_banks - 2);
+        set_prg_8k_bank(2, -2);
     }
     else {
         // [ {-2} | regs[7] | regs[6] | {-1} ]
-        set_prg_8k_bank(0, 2*prg_16k_banks - 2);
+        set_prg_8k_bank(0, -2);
         set_prg_8k_bank(2, regs[6]);
     }
 
@@ -53,7 +52,7 @@ static void apply_state() {
 void mapper_4_init() {
     init_array(regs, (unsigned)0);
     horizontal_mirroring = true; // Guess
-    set_prg_8k_bank(3, 2*prg_16k_banks - 1); // Last PRG 8K page fixed
+    set_prg_8k_bank(3, -1); // Last PRG 8K page fixed
     irq_period = irq_period_cnt = 0;
     irq_enabled = false;
     apply_state();
