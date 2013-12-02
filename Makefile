@@ -24,8 +24,8 @@ ifneq ($(V),1)
     q := @
 endif
 
-# 1 if "clang" occurs in CXX, otherwise 0
-is_clang := $(if $(findstring clang,$(CXX)),1,0)
+# 1 if "clang" occurs in the output of CXX -v, otherwise 0
+is_clang := $(if $(findstring clang,$(shell "$(CXX)" -v 2>&1)),1,0)
 
 #
 # Source files and libraries
