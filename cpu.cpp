@@ -338,17 +338,15 @@ static uint8_t rla(uint8_t arg) {
 }
 
 static uint8_t rol(uint8_t arg) {
-    bool const new_carry_flag = arg & 0x80;
-    zero_negative_flag = arg /* (uint8_t) */ = (arg << 1) | carry_flag;
-    carry_flag = new_carry_flag;
-    return arg;
+    zero_negative_flag = uint8_t((arg << 1) | carry_flag);
+    carry_flag = arg & 0x80;
+    return zero_negative_flag;
 }
 
 static uint8_t ror(uint8_t arg) {
-    bool const new_carry_flag = arg & 1;
-    zero_negative_flag = arg = (carry_flag << 7) | (arg >> 1);
-    carry_flag = new_carry_flag;
-    return arg;
+    zero_negative_flag = (carry_flag << 7) | (arg >> 1);
+    carry_flag = arg & 1;
+    return zero_negative_flag;
 }
 
 // Unofficial
