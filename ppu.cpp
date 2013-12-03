@@ -609,7 +609,7 @@ static void do_sprite_loading() {
 
 // Common operations for the visible lines (0-239) and the pre-render line (261)
 // Performance hotspot
-static void do_prerender_and_visible_lines_ops() {
+static void do_render_line_ops() {
     // We get a short dummy bg-related fetch here. Probably not worth
     // emulating the exact address.
     // TODO: This breaks mmc3_test_2 - look into it more
@@ -645,9 +645,69 @@ static void do_prerender_and_visible_lines_ops() {
     }
 }
 
+// Called for dots on the visible lines (0-239)
+static void do_visible_line_ops() {
+    if (dot >= 2 && dot <= 257)
+        do_pixel_output_and_sprite_0();
+
+    if (rendering_enabled) {
+        do_render_line_ops();
+
+        switch (dot) {
+        case 1 ... 64:
+            // Secondary OAM clear
+            if (dot & 1)
+                oam_data = 0xFF;
+            else {
+                sec_oam[sec_oam_addr] = oam_data;
+                // Should this be done when setting oam_data? Extremely
+                // obscure.
+                sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
+            }
+            break;
+
+        case 65 ... 256:
+            do_sprite_evaluation();
+        }
+    }
+}
+
+// Called for dots on line 241
+static void do_line_241_ops() {
+    if (dot == 1) {
+        in_vblank = true;
+        nmi_asserted = nmi_on_vblank;
+    }
+}
+
+// Called for dots on the prerender line (261)
+static void do_prerender_line_ops() {
+    // This might be one tick off due to the possibility of reading the flags
+    // really shortly after they are cleared in the preferred alignment
+    if (dot == 1) sprite_overflow = sprite_zero_hit = initial_frame = false;
+    // TODO: Explain why the timing works out like this (and is it cycle-perfect?)
+    if (dot == 2) in_vblank = false;
+
+    if (rendering_enabled) {
+        do_render_line_ops();
+
+        // This is where s0_on_next_scanline is initialized on the
+        // prerender line the hardware. There's an "in visible frame"
+        // condition on the value the flag is initialized to - hence it
+        // always becomes false.
+        if (dot == 66)
+            s0_on_next_scanline = false;
+
+        if (dot >= 280 && dot <= 304)
+            copy_vert();
+    }
+}
+
 // Runs the PPU for one dot
 // Performance hotspot - ticks at ~5.4 MHz
 void tick_ppu() {
+    ++ppu_cycle;
+
     // Move to next tick - doing this first mirrors how Visual 2C02 views it
     if (++dot == 341) {
         dot = 0;
@@ -675,73 +735,13 @@ void tick_ppu() {
             ppu_addr_bus = v & 0x3FFF;
     }
 
-    ++ppu_cycle;
-
     switch (scanline) {
-    case 0 ... 239:
-        if (dot >= 2 && dot <= 257)
-            do_pixel_output_and_sprite_0();
-
-        if (rendering_enabled) {
-            do_prerender_and_visible_lines_ops();
-
-            // Secondary OAM clear
-            //
-            // Timing:
-            // Dots 1-64:
-            // Odd cycles: Read $FF, increment sec_oam_addr
-            // Even cycles: Write
-            // Lasts for the entire cycle
-            if (dot >= 1 && dot <= 64) {
-                if (dot & 1)
-                    oam_data = 0xFF;
-                else {
-                    sec_oam[sec_oam_addr] = oam_data;
-                    // Is this visible in any way?
-                    sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
-                }
-            }
-
-            if (dot >= 65 && dot <= 256)
-                do_sprite_evaluation();
-        }
-
-        break;
-
-    case 241:
-        if (dot == 1) {
-            in_vblank = true;
-            nmi_asserted = nmi_on_vblank;
-        }
-        break;
-
-    case 261:
-        // This might be one tick off due to the possibility of reading the
-        // flags really shortly after they are cleared in the preferred
-        // alignment
-        if (dot == 1)
-            sprite_overflow = sprite_zero_hit = initial_frame = false;
-        // TODO: Explain why the timing works out like this (and is it cycle-perfect?)
-        if (dot == 2)
-            in_vblank = false;
-
-        if (rendering_enabled) {
-            // This is where s0_on_next_scanline is initialized on the
-            // prerender line the hardware. There's an "in visible frame"
-            // condition on the value the flag is initialized to - hence it
-            // always becomes false.
-            if (dot == 66)
-                s0_on_next_scanline = false;
-
-            do_prerender_and_visible_lines_ops();
-
-            if (dot >= 280 && dot <= 304)
-                copy_vert();
-        }
-
-        break;
+    case 0 ... 239: do_visible_line_ops();   break;
+    case 241      : do_line_241_ops();       break;
+    case 261      : do_prerender_line_ops();
     }
 
+    // Mapper-specific operations - usually to snoop on ppu_addr_bus
     ppu_tick_callback();
 }
 
