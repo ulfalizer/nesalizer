@@ -214,31 +214,26 @@ static void bump_horiz() {
 
 // Bumps the vertical bits in v at the end of each scanline during rendering
 static void bump_vert() {
-    // Fine y != 7?
-    if (~v & 0x7000) {
+    // Fine y equal to 7?
+    if ((v & 0x7000) == 0x7000)
+        // Check coarse y
+        switch (v & 0x03E0) {
+
+        // Coarse y equal to 29. Switch vertical nametable (XOR by 0x0800) and
+        // clear fine y and coarse y in the same operation (possible since we
+        // know their value).
+        case 29 << 5: v ^= 0x7800 | (29 << 5); break;
+
+        // Coarse y equal to 31. Clear fine y and coarse y without switching
+        // vertical nametable (this occurs for vertical scroll values > 240).
+        case 31 << 5: v &= ~0x73E0; break;
+
+        // Clear fine y and increment coarse y
+        default: v = (v & ~0x7000) + 0x0020;
+        }
+    else
         // Bump fine y
         v += 0x1000;
-        return;
-    }
-
-    // Bump coarse y
-
-    unsigned coarse_y = (v >> 5) & 0x1F;
-    switch (coarse_y) {
-    case 29:
-        // Switch vertical nametable
-        v ^= 0x0800;
-        // Fall-through
-    case 31:
-        coarse_y = 0;
-        break;
-
-    default:
-        ++coarse_y;
-    }
-
-    // Clear fine y and put coarse y back into v
-    v = (v & (~0x7000 & ~0x03E0)) | (coarse_y << 5);
 }
 
 // Restores the horizontal bits in v from t at the end of each scanline during
