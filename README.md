@@ -17,6 +17,8 @@ makes many effects that require special handling in other emulators work
 automagically. The emulator currently manages about 6x emulation speed on my
 two-year-old 2600K Core i7.
 
+See <b>coding-style.txt</b> for notes on coding style and a bit of religion.
+
 ## Compatibility ##
 
 iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 5 (including ExGrafix, split screen, and PRG RAM swapping), 7, 9, 11, 71, 232.
