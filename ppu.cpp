@@ -180,9 +180,9 @@ static uint8_t &chr_ref(unsigned chr_addr) {
 static uint8_t read_nt(uint16_t addr) {
     switch (mirroring) {
     case VERTICAL:        return ciram[addr & 0x07FF];                            break;
-    case HORIZONTAL:      return ciram[((addr >> 1) & 0x0400) | (addr & 0x03FF)]; break;
+    case HORIZONTAL:      return ciram[((addr >> 1) & 0x0400) + (addr & 0x03FF)]; break;
     case ONE_SCREEN_LOW:  return ciram[addr & 0x03FF];                            break;
-    case ONE_SCREEN_HIGH: return ciram[0x0400 | (addr & 0x03FF)];                 break;
+    case ONE_SCREEN_HIGH: return ciram[0x0400 + (addr & 0x03FF)];                 break;
     case FOUR_SCREEN:     return ciram[addr & 0x0FFF];                            break;
     case SPECIAL:         return mapper_read_nt(addr);                            break;
     default: UNREACHABLE
@@ -192,9 +192,9 @@ static uint8_t read_nt(uint16_t addr) {
 static void write_nt(uint16_t addr, uint8_t value) {
     switch (mirroring) {
     case VERTICAL:        ciram[addr & 0x07FF]                            = value; break;
-    case HORIZONTAL:      ciram[((addr >> 1) & 0x0400) | (addr & 0x03FF)] = value; break;
+    case HORIZONTAL:      ciram[((addr >> 1) & 0x0400) + (addr & 0x03FF)] = value; break;
     case ONE_SCREEN_LOW:  ciram[addr & 0x03FF]                            = value; break;
-    case ONE_SCREEN_HIGH: ciram[0x0400 | (addr & 0x03FF)]                 = value; break;
+    case ONE_SCREEN_HIGH: ciram[0x0400 + (addr & 0x03FF)]                 = value; break;
     case FOUR_SCREEN:     ciram[addr & 0x0FFF]                            = value; break;
     case SPECIAL:         mapper_write_nt(value, addr);                            break;
     default: UNREACHABLE
