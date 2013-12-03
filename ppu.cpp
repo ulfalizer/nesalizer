@@ -37,10 +37,9 @@ static uint8_t        palettes[0x20];
 static uint8_t        oam     [0x100];
 static uint8_t        sec_oam [0x20];
 
-// VRAM address and scroll regs
-// Possible optimization: Make some of these a natural size for the
-// implementation architecture
-static uint16_t       t, v;
+// VRAM address/scroll regs. 15 bits long. Use 'unsigned' rather than
+// 'uint16_t' as it gives neater code and these are quite hot.
+static unsigned       t, v;
 static uint8_t        fine_x;
 // v is not immediately updated from t on the second write to $2006. This
 // variable implements the delay.
