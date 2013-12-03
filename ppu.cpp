@@ -205,8 +205,7 @@ static void write_nt(uint16_t addr, uint8_t value) {
 // Bumps the horizontal bits in v every eight pixels during rendering
 static void bump_horiz() {
     // Coarse x equal to 31?
-    // Another variant is 'if (!(~v & 0x001F))'.
-    if (!((v + 1) & 0x1F))
+    if ((v & 0x1F) == 0x1F)
         // Set coarse x to 0 and switch horizontal nametable. The bit twiddling
         // to clear the lower five bits relies on them being 1.
         v ^= 0x041F;
