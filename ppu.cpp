@@ -543,39 +543,39 @@ static void do_sprite_loading() {
         sec_oam_addr = 0;
 
     switch ((dot - 1) % 8) {
+
+    // Load sprite attributes from secondary OAM
+
     case 0:
         // TODO: How does the sprite_y/index loading work in detail?
 
-        // Dummy NT fetch. Not 100% confirmed, but probably uses the same
-        // address as the BG fetching logic at this location.
+        // Dummy NT fetch
         ppu_addr_bus = 0x2000 | (v & 0x0FFF);
 
         sprite_y = sec_oam[sec_oam_addr];
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
         break;
-
     case 1:
         sprite_index = sec_oam[sec_oam_addr];
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
         break;
-
     case 2:
-        // The "dummy AT fetch" during sprite loading is an NT fetch too
+        // Dummy "AT" fetch, which is actually an NT fetch too
         ppu_addr_bus = 0x2000 | (v & 0x0FFF);
 
         sprite_attribs[SPRITE_N] = sec_oam[sec_oam_addr];
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
         break;
-
     case 3:
         sprite_positions[SPRITE_N] = sec_oam[sec_oam_addr];
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
         break;
 
+    // Load low sprite tile byte
+
     case 4:
         sprite_in_range = calculate_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[SPRITE_N], false);
         break;
-
     case 5:
         {
         unsigned const sprite_n = SPRITE_N;
@@ -586,10 +586,11 @@ static void do_sprite_loading() {
         break;
         }
 
+    // Load high sprite tile byte
+
     case 6:
         sprite_in_range = calculate_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[SPRITE_N], true);
         break;
-
     case 7:
         {
         unsigned const sprite_n = SPRITE_N;
