@@ -78,6 +78,8 @@ uint8_t         cpu_data_bus;
 
 // PPU and APU interface {{{
 
+// Called once per CPU cycle. Currently assumes NTSC timing, with three PPU
+// cycles per CPU cycles.
 void tick() {
     tick_ppu();
     tick_ppu();
