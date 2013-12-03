@@ -87,3 +87,7 @@ pass.
 ### Rad Racer 2 ###
 
 ![Rad Racer 2](https://raw.github.com/ulfalizer/nesalizer/screenshots/radracer2.png)
+
+## License ##
+
+![GPLv2](http://www.gnu.org/licenses/gpl-2.0.html)
