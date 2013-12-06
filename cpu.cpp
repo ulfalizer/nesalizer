@@ -78,12 +78,29 @@ uint8_t         cpu_data_bus;
 
 // PPU and APU interface {{{
 
-// Called once per CPU cycle. Currently assumes NTSC timing, with three PPU
-// cycles per CPU cycles.
+// Down-counter for adding an extra PPU tick for PAL
+static unsigned pal_extra_tick;
+
+// Called once per CPU cycle. For NTSC, there are exactly three PPU ticks per
+// CPU cycle. For PAL the number is 3.2, which is emulated by adding an extra
+// PPU tick every fifth call (this isn't perfect, but about as good as we can
+// do without getting into super-obscure hardware behavior, including PPU
+// half-ticks and analog effects).
 void tick() {
-    tick_ppu();
-    tick_ppu();
-    tick_ppu();
+    if (is_pal) {
+        if (--pal_extra_tick == 0) {
+            pal_extra_tick = 5;
+            tick_pal_ppu();
+        }
+        tick_pal_ppu();
+        tick_pal_ppu();
+        tick_pal_ppu();
+    }
+    else {
+        tick_ntsc_ppu();
+        tick_ntsc_ppu();
+        tick_ntsc_ppu();
+    }
 
     tick_apu();
 
@@ -197,7 +214,7 @@ static void write(uint8_t value, uint16_t addr) {
                 report_status_and_end_test(value, (char*)prg_ram_6000_page + 4);
             else if (value == 0x81)
                 // Wait 150 ms before resetting
-                ticks_till_reset = 0.15*ntsc_cpu_clock_rate;
+                ticks_till_reset = 0.15*cpu_clock_rate;
         }
 #endif
 
@@ -1750,6 +1767,8 @@ static void set_cpu_cold_boot_state() {
 
     cpu_is_reading = true;
 
+    pal_extra_tick = 5;
+
     // TODO: Might be better to do this in conjunction with loading a new ROM
 #ifdef LOG_INSTRUCTIONS
     init_array(breakpoint_at, false);
@@ -1782,6 +1801,9 @@ void transfer_cpu_state(uint8_t *&buf) {
     T(cpu_data_bus)
     T(cart_irq) T(dmc_irq) T(frame_irq) T(irq_line) T(nmi_asserted)
     T(pending_irq) T(pending_nmi)
+
+    if (is_pal)
+        T(pal_extra_tick)
 
     #undef T
     #undef T_MEM

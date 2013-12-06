@@ -1,11 +1,16 @@
 #include "common.h"
 
+#include "apu.h"
 #include "audio.h"
 #include "mapper.h"
+#ifdef RECORD_MOVIE
+#  include "movie.h"
+#endif
 #include "md5.h"
 #include "ppu.h"
 #include "rom.h"
 #include "save_states.h"
+#include "timing.h"
 
 static uint8_t *rom_buf;
 
@@ -18,6 +23,8 @@ unsigned        prg_ram_8k_banks;
 uint8_t        *chr_base;
 bool            uses_chr_ram;
 unsigned        chr_8k_banks;
+
+bool            is_pal;
 
 bool            has_battery;
 bool            has_trainer;
@@ -44,10 +51,13 @@ char const*const mirroring_to_str[N_MIRRORING_MODES] =
 static void do_rom_specific_overrides();
 
 void load_rom(char const*filename, bool print_info) {
+    #define PRINT_INFO(...) do { if (print_info) printf(__VA_ARGS__); } while(0)
+
+    is_pal = strstr(filename, "(E)") || strstr(filename, "PAL");
+    PRINT_INFO("Guessing %s based on filename\n", is_pal ? "PAL" : "NTSC");
+
     size_t rom_buf_size;
     rom_buf = get_file_buffer(filename, rom_buf_size);
-
-    #define PRINT_INFO(...) do { if (print_info) printf(__VA_ARGS__); } while(0)
 
     fail_if(rom_buf_size < 16,
       "'%s' is too short to be a valid iNES file "
@@ -120,6 +130,8 @@ void load_rom(char const*filename, bool print_info) {
     has_bus_conflicts = false;
 
     do_rom_specific_overrides();
+    // Needs to come after a possible override
+    prerender_line = is_pal ? 311 : 261;
 
     PRINT_INFO("mirroring: %s\n", mirroring_to_str[mirroring]);
 
@@ -178,7 +190,18 @@ void load_rom(char const*filename, bool print_info) {
     mapper_save_state = mapper_functions[mapper].save_state;
     mapper_load_state = mapper_functions[mapper].load_state;
 
-    init_save_states();
+    // Needs to come first, as it sets NTSC/PAL timing parameters used by some
+    // of the other initialization functions
+    init_timing_for_rom();
+
+    init_apu_for_rom();
+    init_audio_for_rom();
+    init_ppu_for_rom();
+    init_save_states_for_rom();
+#ifdef RECORD_MOVIE
+    // Needs to know whether PAL or NTSC, so can't be done in main()
+    init_movie();
+#endif
 }
 
 void unload_rom() {
@@ -191,7 +214,11 @@ void unload_rom() {
         free_array_set_null(chr_base);
     free_array_set_null(prg_ram_base);
 
-    deinit_save_states();
+    deinit_audio_for_rom();
+    deinit_save_states_for_rom();
+#ifdef RECORD_MOVIE
+    end_movie();
+#endif
 }
 
 // ROM detection from a PRG MD5 digest. Needed to infer and correct information
@@ -210,6 +237,11 @@ static void enable_bus_conflicts() {
     has_bus_conflicts = true;
 }
 
+static void set_pal() {
+    puts("Setting PAL mode based on ROM checksum");
+    is_pal = true;
+}
+
 static void do_rom_specific_overrides() {
     static MD5_CTX md5_ctx;
     static unsigned char md5[16];
@@ -218,10 +250,19 @@ static void do_rom_specific_overrides() {
     MD5_Update(&md5_ctx, (void*)prg_base, 16*1024*prg_16k_banks);
     MD5_Final(md5, &md5_ctx);
 
-    if (!memcmp(md5, "\x44\x6F\xCD\x30\x75\x61\x00\xA9\x94\x35\x9A\xD4\xC5\xF8\x76\x67", 16))
-        // Rad Racer 2
-        correct_mirroring(FOUR_SCREEN);
-    else if (!memcmp(md5, "\xAC\x5F\x53\x53\x59\x87\x58\x45\xBC\xBD\x1B\x6F\x31\x30\x7D\xEC", 16))
+#if 0
+    for (unsigned i = 0; i < 16; ++i)
+        printf("%02X", md5[i]);
+    putchar('\n');
+#endif
+
+    if (!memcmp(md5, "\xAC\x5F\x53\x53\x59\x87\x58\x45\xBC\xBD\x1B\x6F\x31\x30\x7D\xEC", 16))
         // Cybernoid
         enable_bus_conflicts();
+    else if (!memcmp(md5, "\x60\xC6\x21\xF5\xB5\x09\xD4\x14\xBB\x4A\xFB\x9B\x56\x95\xC0\x73", 16))
+        // High hopes
+        set_pal();
+    else if (!memcmp(md5, "\x44\x6F\xCD\x30\x75\x61\x00\xA9\x94\x35\x9A\xD4\xC5\xF8\x76\x67", 16))
+        // Rad Racer 2
+        correct_mirroring(FOUR_SCREEN);
 }

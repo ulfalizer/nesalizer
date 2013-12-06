@@ -5,9 +5,6 @@
 #include "cpu.h"
 #include "input.h"
 #include "mapper.h"
-#ifdef RECORD_MOVIE
-#  include "movie.h"
-#endif
 #include "ppu.h"
 #include "rom.h"
 #include "sdl_backend.h"
@@ -23,14 +20,10 @@ static char const *rom_filename;
 static int emulation_thread(void*) {
     // One-time initialization of various components
     init_apu();
-    init_audio();
     init_cpu();
     init_debug();
     init_input();
     init_mappers();
-#ifdef RECORD_MOVIE
-    init_movie();
-#endif
 
 #ifdef RUN_TESTS
     run_tests();
@@ -38,10 +31,6 @@ static int emulation_thread(void*) {
     load_rom(rom_filename, true);
     run();
     unload_rom();
-#endif
-    deinit_audio();
-#ifdef RECORD_MOVIE
-    end_movie();
 #endif
 
     return 0;

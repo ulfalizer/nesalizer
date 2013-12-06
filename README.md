@@ -25,7 +25,7 @@ iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3,
 
 Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, Uchuu Keibitai SDF, Just Breed, and Battletoads.
 
-<b>No PAL support yet.</b> PAL ROMs can often be recognized by having "(E)" in their name. PAL support will likely never be as good as NTSC support in any emulator due to much trickier and less explored timing (plus you lose 10 FPS for games that also have an NTSC version). 
+Supports both PAL and NTSC. NTSC ROMs are recommended due to 10 extra FPS and PAL conversions often being half-assed. PAL roms can usually be recognized from having "(E)" in their name.
 
 ## Building ##
 

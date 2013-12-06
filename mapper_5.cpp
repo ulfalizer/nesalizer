@@ -5,6 +5,7 @@
 #include "cpu.h"
 #include "mapper.h"
 #include "ppu.h"
+#include "rom.h"
 
 // 1 KB of extra on-chip memory
 static uint8_t exram[1024];
@@ -435,7 +436,7 @@ void mapper_5_ppu_tick_callback() {
     // It is not known exactly how the MMC5 detects scanlines. Cheat by looking
     // at the current rendering position and status.
 
-    if (!rendering_enabled || (scanline >= 240 && scanline != 261)) {
+    if (!rendering_enabled || (scanline >= 240 && scanline != prerender_line)) {
         in_frame = false;
         // Uchuu Keibitai SDF reads nametable data from CHR and seems to expect
         // this.
@@ -450,8 +451,7 @@ void mapper_5_ppu_tick_callback() {
         use_bg_chr();
     // 336 here shakes up Laser Invasion
     else if (dot == 337) {
-        switch (scanline) {
-        case 0 ... 239: case 261:
+        if (scanline < 240 || scanline == prerender_line) {
             if (!in_frame) {
                 in_frame = true;
                 scanline_cnt = 0;

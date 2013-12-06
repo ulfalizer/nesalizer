@@ -133,7 +133,7 @@ void handle_rewind(bool do_rewind) {
         handle_forwards_frame();
 }
 
-void init_save_states() {
+void init_save_states_for_rom() {
     state_size = transfer_system_state<true, false>(0);
     size_t const rewind_buf_size = state_size*n_rewind_frames;
 #ifndef RUN_TESTS
@@ -151,7 +151,7 @@ void init_save_states() {
     rewind_buf_i = 0;
 }
 
-void deinit_save_states() {
+void deinit_save_states_for_rom() {
     free_array_set_null(state);
     free_array_set_null(rewind_buf);
     free_array_set_null(frame_len);

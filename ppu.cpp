@@ -33,6 +33,10 @@ bool const            starts_on_initial_frame = false;
 // Nametable memory of variable size, initialized when loading the ROM
 uint8_t              *ciram;
 
+// The number of the last line in the frame, at the end of the VBlank interval.
+// Differs between PAL and NTSC.
+unsigned              prerender_line;
+
 static uint8_t        palettes[0x20];
 static uint8_t        oam     [0x100];
 static uint8_t        sec_oam [0x20];
@@ -136,8 +140,13 @@ unsigned              ppu_addr_bus;
 static uint8_t        ppu_open_bus;
 static uint64_t       ppu_bit_7_to_6_write_cycle, ppu_bit_5_write_cycle, ppu_bit_4_to_0_write_cycle;
 
-// PPU open bus values fade after about 600 ms
-unsigned const        open_bus_decay_cycles = 0.6*ntsc_ppu_clock_rate;
+static unsigned       open_bus_decay_cycles;
+
+void init_ppu_for_rom() {
+    prerender_line = is_pal ? 311 : 261;
+    // PPU open bus values fade after about 600 ms
+    open_bus_decay_cycles = 0.6*ppu_clock_rate;
+}
 
 static void open_bus_refreshed() {
     ppu_bit_7_to_6_write_cycle = ppu_bit_5_write_cycle = ppu_bit_4_to_0_write_cycle = ppu_cycle;
@@ -242,7 +251,7 @@ static void copy_horiz() {
     v = (v & ~0x041F) | (t & 0x041F);
 }
 
-// Initializes the vertical bits in v from t on the pre-render line (line 261)
+// Initializes the vertical bits in v from t on the pre-render line
 static void copy_vert() {
     // v: IHG F.ED CBA. .... = t: IHG F.ED CBA. ....
     v = (v & ~0x7BE0) | (t & 0x7BE0);
@@ -608,7 +617,7 @@ static void do_sprite_loading() {
     #undef SPRITE_N
 }
 
-// Common operations for the visible lines (0-239) and the pre-render line (261)
+// Common operations for the visible lines (0-239) and the pre-render line
 // Performance hotspot
 static void do_render_line_ops() {
     // We get a short dummy bg-related fetch here. Probably not worth
@@ -681,7 +690,7 @@ static void do_line_241_ops() {
     }
 }
 
-// Called for dots on the prerender line (261)
+// Called for dots on the pre-render line
 static void do_prerender_line_ops() {
     // This might be one tick off due to the possibility of reading the flags
     // really shortly after they are cleared in the preferred alignment
@@ -705,8 +714,14 @@ static void do_prerender_line_ops() {
 }
 
 // Runs the PPU for one dot
-// Performance hotspot - ticks at ~5.4 MHz
-void tick_ppu() {
+// Performance hotspot - ticks at ~5.3 MHz
+//
+// IS_PAL is set true for PAL emulation, with PRERENDER_LINE set accordingly to
+// the scanline number of the pre-render line (the final line of the frame).
+// These are also available as 'is_pal' and 'prerender_line', but kept as
+// compile-time constants here for performance.
+template<bool IS_PAL, unsigned PRERENDER_LINE>
+static void tick_ppu() {
     ++ppu_cycle;
 
     // Move to next tick - doing this first mirrors how Visual 2C02 views it
@@ -722,32 +737,42 @@ void tick_ppu() {
             ppu_addr_bus = v & 0x3FFF;
             break;
 
-        case 262:
+        case PRERENDER_LINE + 1:
             scanline = 0;
-            if (rendering_enabled && odd_frame) ++dot;
-            odd_frame = !odd_frame;
+            if (!IS_PAL) {
+                if (rendering_enabled && odd_frame) ++dot;
+                odd_frame = !odd_frame;
+            }
         }
     }
 
     if (pending_v_update > 0 && --pending_v_update == 0) {
         v = t;
-        if ((scanline >= 240 && scanline <= 260) || !rendering_enabled)
+        if ((scanline >= 240 && scanline < PRERENDER_LINE) || !rendering_enabled)
             // The PPU address bus mirrors v outside of rendering
             ppu_addr_bus = v & 0x3FFF;
     }
 
     switch (scanline) {
-    case 0 ... 239: do_visible_line_ops();   break;
-    case 241      : do_line_241_ops();       break;
-    case 261      : do_prerender_line_ops();
+    case 0 ... 239     : do_visible_line_ops();   break;
+    case 241           : do_line_241_ops();       break;
+    case PRERENDER_LINE: do_prerender_line_ops();
     }
 
     // Mapper-specific operations - usually to snoop on ppu_addr_bus
     ppu_tick_callback();
 }
 
+void tick_ntsc_ppu() {
+    tick_ppu<false, 261>();
+}
+
+void tick_pal_ppu() {
+    tick_ppu<true, 311>();
+}
+
 static void do_2007_post_access_bump() {
-    if (rendering_enabled && (scanline < 240 || scanline > 260)) {
+    if (rendering_enabled && (scanline < 240 || scanline == prerender_line)) {
         // Accessing $2007 during rendering performs this glitch. Used by Young
         // Indiana Jones Chronicles to shake the screen.
         bump_horiz();
@@ -863,7 +888,7 @@ uint8_t read_ppu_reg(unsigned n) {
 
     case 4:
         // Micro machines reads this during rendering
-        if (rendering_enabled && (scanline < 240 || scanline > 260)) {
+        if (rendering_enabled && (scanline < 240 || scanline == prerender_line)) {
             // TODO: Make this work automagically through proper emulation of
             // the interval after the sprite fetches
             if (dot >= 323)
@@ -890,7 +915,7 @@ void write_oam_data_reg(uint8_t value) {
     // rendering do perform a glitchy oam_addr increment however, but that
     // might be hard to pin down (could depend on current sprite evaluation
     // status for example) and not worth emulating.
-    if (rendering_enabled && (scanline < 240 || scanline > 260))
+    if (rendering_enabled && (scanline < 240 || scanline == prerender_line))
         return;
     oam[oam_addr++] = value;
 }

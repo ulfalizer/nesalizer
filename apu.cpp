@@ -5,6 +5,7 @@
 #include "cpu.h"
 #include "mapper.h"
 #include "ppu.h"
+#include "rom.h"
 
 // Clock used by the APU and DMA circuitry, parts of which tick at half the CPU
 // frequency. Whether the initial tick is high or low seems to be random. The
@@ -313,11 +314,14 @@ void write_noise_reg_0(uint8_t value) {
 
 uint16_t const ntsc_noise_periods[] =
   { 4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068 };
+uint16_t const pal_noise_periods[]  =
+  { 4, 8, 14, 30, 60, 88, 118, 148, 188, 236, 354, 472, 708,  944, 1890, 3778 };
+static uint16_t const *noise_periods;
 
 // $400E
 void write_noise_reg_1(uint8_t value) {
     noise_feedback_bit = (value & 0x80) ? 6 : 1;
-    noise_period       = ntsc_noise_periods[value & 0x0F];
+    noise_period       = noise_periods[value & 0x0F];
 }
 
 // $400F
@@ -368,8 +372,11 @@ static unsigned dmc_sample_cur_addr; // 15 bits wide
 static unsigned dmc_bytes_remaining;
 static unsigned dmc_bits_remaining;
 
-uint16_t const dmc_ntsc_periods[] =
- { 428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54 };
+uint16_t const ntsc_dmc_periods[] =
+ { 428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106,  84,  72,  54 };
+uint16_t const pal_dmc_periods[] =
+ { 398, 354, 316, 298, 276, 236, 210, 198, 176, 148, 132, 118,  98,  78,  66,  50 };
+static uint16_t const *dmc_periods;
 
 // $4010
 void write_dmc_reg_0(uint8_t value) {
@@ -378,7 +385,7 @@ void write_dmc_reg_0(uint8_t value) {
         update_irq_status();
     }
     dmc_loop_sample = value & 0x40;
-    dmc_period      = dmc_ntsc_periods[value & 0x0F];
+    dmc_period      = dmc_periods[value & 0x0F];
 }
 
 // $4011
@@ -610,8 +617,12 @@ static void check_frame_irq() {
 
 // The actual frame counter counts at half the CPU frequency, but the half and
 // quarter frame signals are delayed by one CPU cycle, making it easier to
-// treat it as counting in CPU cycles
-static void clock_frame_counter() {
+// treat it as counting in CPU cycles.
+//
+// T1-T5 are the times in CPU ticks for the quarter frame and half frame
+// signals, in ascending order. They differ between NTSC and PAL.
+template<unsigned T1, unsigned T2, unsigned T3, unsigned T4, unsigned T5>
+static void clock_frame_counter_generic() {
     // Possible optimization: Could be sped up with a down-counter instead of a
     // switch
 
@@ -620,31 +631,27 @@ static void clock_frame_counter() {
         if (delayed_frame_timer_reset > 0 && --delayed_frame_timer_reset == 0)
             frame_counter_clock = 0;
         else {
-            if (++frame_counter_clock == 2*14915) {
+            if (++frame_counter_clock == T4 + 2) {
                 frame_counter_clock = 0;
                 check_frame_irq();
             }
         }
 
         switch (frame_counter_clock) {
-        case 2*3278 + 1:
+        case T1 + 1: case T3 + 1:
             clock_env_and_tri_lin();
             break;
 
-        case 2*7456 + 1:
+        case T2 + 1:
             clock_len_and_sweep();
             clock_env_and_tri_lin();
             break;
 
-        case 2*11185 + 1:
-            clock_env_and_tri_lin();
-            break;
-
-        case 2*14914:
+        case T4:
             check_frame_irq();
             break;
 
-        case 2*14914 + 1:
+        case T4 + 1:
             check_frame_irq();
             clock_len_and_sweep();
             clock_env_and_tri_lin();
@@ -656,18 +663,16 @@ static void clock_frame_counter() {
         if (delayed_frame_timer_reset > 0 && --delayed_frame_timer_reset == 0)
             frame_counter_clock = 0;
         else
-            if (++frame_counter_clock == 2*18641)
+            if (++frame_counter_clock == T5 + 2)
                 frame_counter_clock = 0;
 
         switch (frame_counter_clock) {
-        case 2*7456 + 1:
-        case 2*18640 + 1:
+        case T2 + 1: case T5 + 1:
             clock_len_and_sweep();
             clock_env_and_tri_lin();
             break;
 
-        case 2*3278 + 1:
-        case 2*11185 + 1:
+        case T1 + 1: case T3 + 1:
             clock_env_and_tri_lin();
             break;
         }
@@ -676,6 +681,9 @@ static void clock_frame_counter() {
     default: UNREACHABLE
     }
 }
+
+// Points to the correct instantiated version for NTSC/PAL
+static void (*clock_frame_counter)();
 
 //
 // Status
@@ -755,6 +763,30 @@ void init_apu() {
         tri_noi_dmc_mixer_table[n] = 163.67/(24329.0/n + 100.0);
 }
 
+void init_apu_for_rom() {
+    // Frame counter timing:
+    //   http://wiki.nesdev.com/w/index.php/APU_Frame_Counter
+    //   http://forums.nesdev.com/viewtopic.php?t=9011
+    //
+    // TODO: Docs specify 20780 for the final clock in PAL mode, but 20782
+    // makes tests pass (including for the next clock after that). Investigate
+    // further.
+
+    if (is_pal) {
+        clock_frame_counter =
+          clock_frame_counter_generic<2*4156, 2*8313, 2*12469, 2*16626, 2*20782>;
+
+        dmc_periods         = pal_dmc_periods;
+        noise_periods       = pal_noise_periods;
+    }
+    else {
+        clock_frame_counter =
+          clock_frame_counter_generic<2*3728, 2*7456, 2*11185, 2*14914, 2*18640>;
+
+        dmc_periods         = ntsc_dmc_periods;
+        noise_periods       = ntsc_noise_periods;
+    }
+}
 
 void tick_apu() {
     apu_clk1_is_high = !apu_clk1_is_high;
@@ -851,7 +883,7 @@ void reset_apu() {
     // Noise channel
 
     noise_enabled     = false;
-    noise_period      = noise_period_cnt = ntsc_noise_periods[0];
+    noise_period      = noise_period_cnt = noise_periods[0];
     noise_len_cnt     = 0;
     noise_shift_reg   = 1; // Essential for LFSR to work
     noise_env_vol     = 0;
@@ -859,7 +891,7 @@ void reset_apu() {
 
     // DMC channel
 
-    dmc_period_cnt             = dmc_period = dmc_ntsc_periods[0];
+    dmc_period_cnt             = dmc_period = dmc_periods[0];
     dmc_sample_cur_addr        = 0x4000;
     dmc_bytes_remaining        = 0;
     dmc_sample_buffer_has_data = false;

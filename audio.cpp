@@ -25,10 +25,12 @@ unsigned        audio_frame_len;
 
 static blip_t  *blip;
 
-// Leave some extra room in the buffer to allow audio to be slowed down.
-// (The expression is equivalent to 1.3*sample_rate/frames_per_second, but a
-// compile-time constant in C++03. TODO: Make dependent on max_adjust.)
-static int16_t  blip_samples[1300*sample_rate/milliframes_per_second];
+// Leave some extra room in the buffer to allow audio to be slowed down. Assume
+// PAL, which gives a slightly larger buffer than NTSC. (The expression is
+// equivalent to 1.3*sample_rate/frames_per_second, but a compile-time constant
+// in C++03.)
+// TODO: Make dependent on max_adjust.
+static int16_t  blip_samples[1300*sample_rate/pal_milliframes_per_second];
 
 void set_audio_signal_level(int16_t level) {
     // TODO: Do something to reduce the initial pop here?
@@ -91,7 +93,7 @@ void end_audio_frame() {
         // towards it
 
         double const fudge_factor = 1.0 + 2*max_adjust*(0.5 - audio_buf_fill_level());
-        blip_set_rates(blip, ntsc_cpu_clock_rate, sample_rate*fudge_factor);
+        blip_set_rates(blip, cpu_clock_rate, sample_rate*fudge_factor);
     }
     else {
         if (audio_buf_fill_level() >= 0.5) {
@@ -116,12 +118,12 @@ void end_audio_frame() {
 void tick_audio() { ++audio_frame_offset; }
 
 
-void init_audio() {
+void init_audio_for_rom() {
     // Maximum number of unread samples the buffer can hold
     blip = blip_new(sample_rate/10);
-    blip_set_rates(blip, ntsc_cpu_clock_rate, sample_rate);
+    blip_set_rates(blip, cpu_clock_rate, sample_rate);
 }
 
-void deinit_audio() {
+void deinit_audio_for_rom() {
     blip_delete(blip);
 }

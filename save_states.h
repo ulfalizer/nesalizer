@@ -1,5 +1,5 @@
-void init_save_states();
-void deinit_save_states();
+void init_save_states_for_rom();
+void deinit_save_states_for_rom();
 
 void save_state();
 void load_state();

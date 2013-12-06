@@ -3,18 +3,19 @@
 
 #include "common.h"
 
-extern "C" {
-#include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include "libavutil/avstring.h"
-#include "libavutil/avutil.h"
-#include "libavutil/fifo.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/pixdesc.h"
-#include "libswscale/swscale.h"
-}
+#include "rom.h"
 #include "sdl_backend.h"
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avstring.h>
+#include <libavutil/avutil.h>
+#include <libavutil/fifo.h>
+#include <libavutil/mathematics.h>
+#include <libavutil/pixdesc.h>
+#include <libswscale/swscale.h>
+}
 #include <SDL_endian.h>
 
 unsigned const                 vid_scale_factor = 3;
@@ -158,10 +159,11 @@ static void init_audio() {
       "can not resample from %d Hz to %d channels at %d Hz",
       sample_rate, audio_encoder_ctx->sample_rate, audio_encoder_ctx->channels);
 
-    // Size of audio FIFO and temporary buffer, calculated assuming ~60 audio
-    // frames per second. TODO: Generalize once PAL support is added.
+    double const fps = is_pal ? 50.0 : 60.0;
+
+    // Size of audio FIFO and temporary buffer
     unsigned const audio_buf_size =
-      3*max(audio_frame_bsize, int(sample_bsize*(audio_encoder_ctx->sample_rate/60.0)));
+      3*max(audio_frame_bsize, int(sample_bsize*(audio_encoder_ctx->sample_rate/fps)));
 
     fail_if(!(audio_fifo = av_fifo_alloc(audio_buf_size)), "failed to allocate audio FIFO");
     audio_tmp_buf = (uint8_t*)av_malloc(audio_buf_size);
@@ -179,8 +181,7 @@ static void init_video() {
     // Generic parameters
     video_encoder_ctx->width         = vid_scale_factor*256;
     video_encoder_ctx->height        = vid_scale_factor*240;
-    // Assume NTSC for now and adjust to exactly 60 FPS
-    video_encoder_ctx->time_base.den = 60;
+    video_encoder_ctx->time_base.den = is_pal ? 50 : 60;
     video_encoder_ctx->time_base.num = 1;
     video_encoder_ctx->pix_fmt       = PIX_FMT_YUV444P;
 
