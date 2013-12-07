@@ -541,15 +541,15 @@ static bool calculate_sprite_tile_address(uint8_t y, uint8_t index, uint8_t attr
 // the secondary OAM during sprite evaluation
 static void do_sprite_loading() {
     // This is position-based in the hardware as well
-    #define SPRITE_N ((dot - 257)/8)
+    unsigned const sprite_n = (dot - 257)/8;
+
+    if (dot == 257)
+        sec_oam_addr = 0;
 
     // Sprite 0 flag timing:
     //  - s0_on_next_scanline is initialized at dot = 66.5-67 (during sprite evaluation for sprite 0)
     //  - It is copied over to s0_on_cur_scanline at dot 257.5-258, 258.5-259, ..., 319.5-320
     s0_on_cur_scanline = s0_on_next_scanline;
-
-    if (dot == 257)
-        sec_oam_addr = 0;
 
     switch ((dot - 1) % 8) {
 
@@ -572,49 +572,40 @@ static void do_sprite_loading() {
         // Dummy "AT" fetch, which is actually an NT fetch too
         ppu_addr_bus = 0x2000 | (v & 0x0FFF);
 
-        sprite_attribs[SPRITE_N] = sec_oam[sec_oam_addr];
+        sprite_attribs[sprite_n] = sec_oam[sec_oam_addr];
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
         break;
     case 3:
-        sprite_positions[SPRITE_N] = sec_oam[sec_oam_addr];
+        sprite_positions[sprite_n] = sec_oam[sec_oam_addr];
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
         break;
 
     // Load low sprite tile byte
 
     case 4:
-        sprite_in_range = calculate_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[SPRITE_N], false);
+        sprite_in_range = calculate_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[sprite_n], false);
         break;
     case 5:
-        {
-        unsigned const sprite_n = SPRITE_N;
         sprite_pat_l[sprite_n] = sprite_in_range ? chr_ref(ppu_addr_bus) : 0;
         // Horizontal flipping
         if (sprite_attribs[sprite_n] & 0x40)
             sprite_pat_l[sprite_n] = rev_byte(sprite_pat_l[sprite_n]);
         break;
-        }
 
     // Load high sprite tile byte
 
     case 6:
-        sprite_in_range = calculate_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[SPRITE_N], true);
+        sprite_in_range = calculate_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[sprite_n], true);
         break;
     case 7:
-        {
-        unsigned const sprite_n = SPRITE_N;
         sprite_pat_h[sprite_n] = sprite_in_range ? chr_ref(ppu_addr_bus) : 0;
         // Horizontal flipping
         if (sprite_attribs[sprite_n] & 0x40)
             sprite_pat_h[sprite_n] = rev_byte(sprite_pat_h[sprite_n]);
-
         break;
-        }
 
     default: UNREACHABLE
     }
-
-    #undef SPRITE_N
 }
 
 // Common operations for the visible lines (0-239) and the pre-render line
