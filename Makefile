@@ -13,6 +13,9 @@ EXTRA_LINK        :=
 # "debug", "release", or "release-debug". "release-debug" adds debugging
 # information in addition to optimizing.
 CONF              := debug
+# If "1", includes a simple debugger (see cpu.cpp) for internal use. Has
+# readline dependency.
+INCLUDE_DEBUGGER  := 0
 # If "1", a movie is recorded to movie.mp4 using libav (movie.cpp)
 RECORD_MOVIE      := 0
 # If "1", passes -rdynamic to add symbols for backtraces
@@ -53,7 +56,10 @@ c_objects   := $(addprefix $(OBJDIR)/,$(c_sources:=.o))
 objects     := $(c_objects) $(cpp_objects)
 deps        := $(addprefix $(OBJDIR)/,$(c_sources:=.d) $(cpp_sources:=.d))
 
-LDLIBS := -lreadline $(shell sdl2-config --libs) -lrt
+LDLIBS := $(shell sdl2-config --libs) -lrt
+ifeq ($(INCLUDE_DEBUGGER),1)
+    LDLIBS += -lreadline
+endif
 ifeq ($(RECORD_MOVIE),1)
     LDLIBS += -lavcodec -lavformat -lavutil -lswscale
 endif
@@ -131,6 +137,10 @@ endif
 
 ifeq ($(TEST),1)
     compile_flags += -DRUN_TESTS
+endif
+
+ifeq ($(INCLUDE_DEBUGGER),1)
+    compile_flags += -DINCLUDE_DEBUGGER
 endif
 
 # Gives nicer errors for large files (even though we don't support them on

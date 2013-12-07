@@ -16,8 +16,10 @@
 #include "sdl_backend.h"
 #include "timing.h"
 
-#include <readline/history.h>
-#include <readline/readline.h>
+#ifdef INCLUDE_DEBUGGER
+#  include <readline/history.h>
+#  include <readline/readline.h>
+#endif
 
 // Set true to break out of the CPU emulation loop
 bool            end_emulation;
@@ -777,7 +779,7 @@ extern uint8_t const polls_irq_after_first_cycle[256];
 
 // Main CPU loop {{{
 
-#ifdef LOG_INSTRUCTIONS
+#ifdef INCLUDE_DEBUGGER
 static void log_instruction();
 #endif
 static void set_cpu_cold_boot_state();
@@ -836,7 +838,7 @@ void run() {
             process_pending_events();
         }
 
-#ifdef LOG_INSTRUCTIONS
+#ifdef INCLUDE_DEBUGGER
         log_instruction();
 #endif
 
@@ -1291,7 +1293,7 @@ void run() {
 
 // Tracing and logging {{{
 
-#ifdef LOG_INSTRUCTIONS
+#ifdef INCLUDE_DEBUGGER
 
 static int read_without_side_effects(uint16_t addr) {
     switch (pc) {
@@ -1629,7 +1631,7 @@ static void log_instruction() {
         }
     }
 }
-#endif // LOG_INSTRUCTION
+#endif // INCLUDE_DEBUGGER
 
 // }}}
 
@@ -1655,8 +1657,8 @@ static void set_cpu_cold_boot_state() {
 
     pal_extra_tick = 5;
 
+#ifdef INCLUDE_DEBUGGER
     // TODO: Might be better to do this in conjunction with loading a new ROM
-#ifdef LOG_INSTRUCTIONS
     init_array(breakpoint_at, false);
 #endif
 }

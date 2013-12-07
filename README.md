@@ -29,10 +29,10 @@ Supports both PAL and NTSC. NTSC ROMs are recommended due to 10 extra FPS and PA
 
 ## Building ##
 
-Linux-only so far. Dependencies are <b>readline</b> and <b>SDL 2</b>. Build
-with (Ubuntu 13.10)
+Linux-only so far. The only dependency is <b>SDL 2</b>. Build with (Ubuntu
+13.10)
 
-    $ apt-get install libreadline-dev libsdl2-dev
+    $ apt-get install libsdl2-dev
     $ make CONF=release
 
 See the <b>Makefile</b> for other options, including movie recording using
