@@ -38,9 +38,12 @@ objects :=                                      \
   mapper_4.o mapper_5.o mapper_7.o mapper_9.o   \
   mapper_11.o mapper_71.o mapper_232.o ppu.o    \
   rom.o save_states.o sdl_backend.o timing.o    \
-  test.o util.o
+  util.o
 ifeq ($(RECORD_MOVIE),1)
     objects += movie.o
+endif
+ifeq ($(TEST),1)
+    objects += test.o
 endif
 sources        := $(objects:.o=.cpp)
 objdir_objects := $(addprefix $(OBJDIR)/,$(objects))
