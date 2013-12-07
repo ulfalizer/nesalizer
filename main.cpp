@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "usage: %s <rom file>\n", program_name);
         exit(EXIT_FAILURE);
     }
-#endif
     rom_filename = argv[1];
+#endif
 
     init_sdl();
 
