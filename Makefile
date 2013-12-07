@@ -3,6 +3,7 @@
 #
 
 CXX               := g++
+CC                := gcc
 NAME              := nesalizer
 # Separate build directory
 OBJDIR            := build
@@ -31,23 +32,26 @@ is_clang := $(if $(findstring clang,$(shell "$(CXX)" -v 2>&1)),1,0)
 # Source files and libraries
 #
 
-objects :=                                      \
-  audio.o apu.o blip_buf.o controller.o cpu.o   \
-  debug.o error.o input.o main.o md5.o mapper.o \
-  mapper_0.o mapper_1.o mapper_2.o mapper_3.o   \
-  mapper_4.o mapper_5.o mapper_7.o mapper_9.o   \
-  mapper_11.o mapper_71.o mapper_232.o ppu.o    \
-  rom.o save_states.o sdl_backend.o timing.o    \
-  util.o
+cpp_sources :=                                  \
+  audio apu blip_buf controller cpu debug error \
+  input main md5 mapper mapper_0 mapper_1       \
+  mapper_2 mapper_3 mapper_4 mapper_5 mapper_7  \
+  mapper_9 mapper_11 mapper_71 mapper_232 ppu   \
+  rom save_states sdl_backend timing util
+# Use C99 for the handy designated initializers feature
+c_sources   := tables
+
 ifeq ($(RECORD_MOVIE),1)
-    objects += movie.o
+    cpp_sources += movie
 endif
 ifeq ($(TEST),1)
-    objects += test.o
+    cpp_sources += test
 endif
-sources        := $(objects:.o=.cpp)
-objdir_objects := $(addprefix $(OBJDIR)/,$(objects))
-objdir_deps    := $(addprefix $(OBJDIR)/,$(sources:.cpp=.d))
+
+cpp_objects := $(addprefix $(OBJDIR)/,$(cpp_sources:=.o))
+c_objects   := $(addprefix $(OBJDIR)/,$(c_sources:=.o))
+objects     := $(c_objects) $(cpp_objects)
+deps        := $(addprefix $(OBJDIR)/,$(c_sources:=.d) $(cpp_sources:=.d))
 
 LDLIBS := -lreadline $(shell sdl2-config --libs) -lrt
 ifeq ($(RECORD_MOVIE),1)
@@ -70,7 +74,7 @@ else
     optimizations := -Ofast -mfpmath=sse -funsafe-loop-optimizations
 endif
 
-optimizations += -msse3 -flto -fno-exceptions -fno-stack-protector -fno-rtti -DNDEBUG
+optimizations += -msse3 -flto -fno-exceptions -fno-stack-protector -DNDEBUG
 # Flags passed in addition to the above during linking
 link_optimizations := -fuse-linker-plugin
 
@@ -142,19 +146,23 @@ compile_flags += -fno-strict-aliasing
 # Targets
 #
 
-$(OBJDIR)/$(NAME): $(objdir_objects)
+$(OBJDIR)/$(NAME): $(objects)
 	@echo Linking $@
 	$(q)$(CXX) $(link_flags) $(EXTRA_LINK) $^ $(LDLIBS) -o $@
 
-$(OBJDIR)/%.o : %.cpp
+$(cpp_objects): $(OBJDIR)/%.o: %.cpp
 	@echo Compiling $<
 	$(q)$(CXX) -c $(compile_flags) $(EXTRA) $< -o $@
+
+$(c_objects): $(OBJDIR)/%.o: %.c
+	@echo Compiling $<
+	$(q)$(CC) -c -std=c99 $(compile_flags) $(EXTRA) $< -o $@
 
 # Automatic generation of prerequisites:
 # http://www.gnu.org/software/make/manual/make.html#Automatic-Prerequisites
 # Modified to use a separate build directory and a list of sources (via a
 # static pattern rule) rather than a catch-all wildcard.
-$(objdir_deps): $(OBJDIR)/%.d: %.cpp
+$(deps): $(OBJDIR)/%.d: %.cpp
 	@set -e; rm -f $@;                                              \
 	  $(CXX) -MM $(shell sdl2-config --cflags) $< > $@.$$$$;        \
 	  sed 's,\($*\)\.o[ :]*,$(OBJDIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
@@ -163,14 +171,14 @@ $(objdir_deps): $(OBJDIR)/%.d: %.cpp
 ifneq ($(MAKECMDGOALS),clean)
     # The .d files that hold the automatically generated dependencies. One per
     # source file.
-    -include $(objdir_deps)
+    -include $(deps)
 endif
 
 $(OBJDIR): ; $(q)mkdir $(OBJDIR)
 # The objects and automatic prerequisite files need the build directory to
 # exist, but shouldn't be affected by modifications to its contents. Hence an
 # order-only dependency.
-$(objdir_objects) $(objdir_deps): | $(OBJDIR)
+$(objects) $(deps): | $(OBJDIR)
 
 .PHONY: clean
 clean: ; $(q)-rm -rf $(OBJDIR)

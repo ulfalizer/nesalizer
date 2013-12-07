@@ -20,7 +20,6 @@ static char const *rom_filename;
 static int emulation_thread(void*) {
     // One-time initialization of various components
     init_apu();
-    init_cpu();
     init_debug();
     init_input();
     init_mappers();

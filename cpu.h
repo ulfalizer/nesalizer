@@ -1,4 +1,3 @@
-void           init_cpu();
 void           run();
 void           tick();
 
