@@ -126,9 +126,6 @@ static void write_tick() {
 
 // Reading and writing {{{
 
-// Forward declaration
-static void poll_for_interrupt();
-
 uint8_t read(uint16_t addr) {
     read_tick();
 
@@ -401,6 +398,10 @@ static void xaa(uint8_t arg) {
 }
 
 // Conditional branches
+
+// Forward declaration
+static void poll_for_interrupt();
+
 static void branch_if(bool cond) {
     ++pc;
     if (cond) {
