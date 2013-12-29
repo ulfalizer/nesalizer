@@ -878,6 +878,7 @@ uint8_t read_ppu_reg(unsigned n) {
         return ppu_open_bus;
 
     case 4:
+        {
         // Micro machines reads this during rendering
         if (rendering_enabled && (scanline < 240 || scanline == prerender_line)) {
             // TODO: Make this work automagically through proper emulation of
@@ -887,7 +888,11 @@ uint8_t read_ppu_reg(unsigned n) {
             return oam_data;
         }
         open_bus_refreshed();
-        return ppu_open_bus = ((oam_addr & 3) == 2) ? (oam[oam_addr] & 0xE3) : oam[oam_addr];
+
+        // Some of the attribute bits do not exist and always read back as zero
+        static uint8_t const mask_lut[] = { 0xFF, 0xFF, 0xE3, 0xFF };
+        return ppu_open_bus = oam[oam_addr] & mask_lut[oam_addr & 3];
+        }
 
     case 7:
         {
