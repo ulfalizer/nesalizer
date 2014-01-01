@@ -50,21 +50,21 @@ static uint8_t  a, s, x, y;
 
 // Status flags
 
-// The value the zero and negative flags are based on. Doing it like this turns
-// the setting of these flags into a simple assignment in most cases.
+// The value the zero and negative flags are based on. Storing these together
+// turns the setting of the flags into a simple assignment in most cases.
 //
-//  - !(zero_negative_flag & 0xFF) means the zero flag is set.
-//  - zero_negative_flag & 0x180 means the negative flag is set.
+//  - !(zn & 0xFF) means the zero flag is set.
+//  - zn & 0x180 means the negative flag is set.
 //
-// Having zero_negative_flag & 0x100 also indicate that the negative flag is
-// set allows the two flags to be set separately, which is required by the BIT
-// instruction and when pulling flags from the stack.
-static unsigned zero_negative_flag;
+// Having zn & 0x100 also indicate that the negative flag is set allows the two
+// flags to be set separately, which is required by the BIT instruction and
+// when pulling flags from the stack.
+static unsigned zn;
 
-static bool     carry_flag;
-static bool     irq_disable_flag;
-static bool     decimal_flag;
-static bool     overflow_flag;
+static bool     carry;
+static bool     irq_disable;
+static bool     decimal;
+static bool     overflow;
 
 // The byte after the opcode byte. Always fetched, so factoring out the fetch
 // saves logic.
@@ -231,18 +231,17 @@ static void write(uint8_t value, uint16_t addr) {
 
 // Core instruction logic, reused for different addressing modes {{{
 
-// Forward declarations
 static void and_(uint8_t);
 static uint8_t lsr(uint8_t);
 static void sbc(uint8_t);
 
 static void adc(uint8_t arg) {
-    unsigned const sum = a + arg + carry_flag;
-    carry_flag = sum > 0xFF;
+    unsigned const sum = a + arg + carry;
+    carry = sum > 0xFF;
     // The overflow flag is set when the sign of the addends is the same and
     // differs from the sign of the sum
-    overflow_flag = ~(a ^ arg) & (a ^ sum) & 0x80;
-    zero_negative_flag = a /* (uint8_t) */ = sum;
+    overflow = ~(a ^ arg) & (a ^ sum) & 0x80;
+    zn = a /* (uint8_t) */ = sum;
 }
 
 // Unofficial
@@ -253,50 +252,50 @@ static void alr(uint8_t arg) {
 // Unofficial
 static void anc(uint8_t arg) {
     and_(arg);
-    carry_flag = zero_negative_flag & 0x180; // Assign negative flag
+    carry = zn & 0x180; // Copy negative flag to carry flag
 }
 
 // 'and' is an operator in C++, so we need the underscore
 static void and_(uint8_t arg) {
-    zero_negative_flag = a = a & arg;
+    zn = (a &= arg);
 }
 
 // Unofficial
 static void arr(uint8_t arg) {
-    zero_negative_flag = a = (carry_flag << 7) | ((a & arg) >> 1);
-    carry_flag = a & 0x40;
-    overflow_flag = (a ^ (a << 1)) & 0x40;
+    zn = a = (carry << 7) | ((a & arg) >> 1);
+    carry = a & 0x40;
+    overflow = (a ^ (a << 1)) & 0x40;
 }
 
 static uint8_t asl(uint8_t arg) {
-    carry_flag = arg & 0x80;
-    return zero_negative_flag = (arg << 1) & 0xFF;
+    carry = arg & 0x80;
+    return zn = (arg << 1) & 0xFF;
 }
 
 // Unofficial
 static void atx(uint8_t arg) {
     // Assume '(A | 0xFF) & arg' is calculated, which is the same as just 'arg':
     // http://forums.nesdev.com/viewtopic.php?t=3831
-    zero_negative_flag = x = a = arg;
+    zn = x = a = arg;
 }
 
 // Unofficial
 static void axs(uint8_t arg) {
-    carry_flag = (a & x) >= arg;
-    zero_negative_flag = x /* (uint8_t) */ = (a & x) - arg;
+    carry = (a & x) >= arg;
+    zn = x /* (uint8_t) */ = (a & x) - arg;
 }
 
 static void bit(uint8_t arg) {
-    overflow_flag = arg & 0x40;
-    // Set the zero and negative flags separately by using bit 8 of
-    // zero_negative_flag for the negative flag
-    zero_negative_flag = ((arg << 1) & 0x100) | (a & arg);
+    overflow = arg & 0x40;
+    // Set the zero and negative flags separately by using bit 8 of zn for the
+    // negative flag
+    zn = ((arg << 1) & 0x100) | (a & arg);
 }
 
 // CMP, CPX, CPY
 static void comp(uint8_t reg, uint8_t arg) {
-    carry_flag = reg >= arg;
-    zero_negative_flag = uint8_t(reg - arg);
+    carry = reg >= arg;
+    zn = uint8_t(reg - arg);
 }
 
 // Unofficial
@@ -308,38 +307,38 @@ static uint8_t dcp(uint8_t arg) {
 static uint8_t dec(uint8_t arg) {
     // Works without & 0xFF here since bit 8 (the additional negative flag bit)
     // will only get set if arg is 0, in which case bit 7 gets set as well
-    return zero_negative_flag = arg - 1;
+    return zn = arg - 1;
 }
 
 static void eor(uint8_t arg) {
-    zero_negative_flag = (a ^= arg);
+    zn = (a ^= arg);
 }
 
 static uint8_t inc(uint8_t arg) {
-    return zero_negative_flag = (arg + 1) & 0xFF;
+    return zn = (arg + 1) & 0xFF;
 }
 
 // Unofficial
 static void las(uint8_t arg) {
-    zero_negative_flag = a = x = s = arg & s;
+    zn = a = x = s = arg & s;
 }
 
 // Unofficial
 static void lax(uint8_t arg) {
-    zero_negative_flag = a = x = arg;
+    zn = a = x = arg;
 }
 
-static void lda(uint8_t arg) { zero_negative_flag = a = arg; }
-static void ldx(uint8_t arg) { zero_negative_flag = x = arg; }
-static void ldy(uint8_t arg) { zero_negative_flag = y = arg; }
+static void lda(uint8_t arg) { zn = a = arg; }
+static void ldx(uint8_t arg) { zn = x = arg; }
+static void ldy(uint8_t arg) { zn = y = arg; }
 
 static uint8_t lsr(uint8_t arg) {
-    carry_flag = arg & 1;
-    return zero_negative_flag = arg >> 1;
+    carry = arg & 1;
+    return zn = arg >> 1;
 }
 
 static void ora(uint8_t arg) {
-    zero_negative_flag = (a |= arg);
+    zn = (a |= arg);
 }
 
 // Unofficial
@@ -350,45 +349,44 @@ static uint8_t isc(uint8_t arg) {
 
 // Unofficial
 static uint8_t rla(uint8_t arg) {
-    bool const new_carry_flag = arg & 0x80;
-    and_(arg = (arg << 1) | carry_flag);
-    carry_flag = new_carry_flag;
-    return arg;
+    uint8_t const res = (arg << 1) | carry;
+    carry = arg & 0x80;
+    and_(res);
+    return res;
 }
 
 static uint8_t rol(uint8_t arg) {
-    zero_negative_flag = uint8_t((arg << 1) | carry_flag);
-    carry_flag = arg & 0x80;
-    return zero_negative_flag;
+    zn = uint8_t((arg << 1) | carry);
+    carry = arg & 0x80;
+    return zn;
 }
 
 static uint8_t ror(uint8_t arg) {
-    zero_negative_flag = (carry_flag << 7) | (arg >> 1);
-    carry_flag = arg & 1;
-    return zero_negative_flag;
+    zn = (carry << 7) | (arg >> 1);
+    carry = arg & 1;
+    return zn;
 }
 
 // Unofficial
 static uint8_t rra(uint8_t arg) {
-    bool const new_carry_flag = arg & 1;
-    arg = (carry_flag << 7) | (arg >> 1);
-    carry_flag = new_carry_flag;
-    adc(arg);
-    return arg;
+    uint8_t const res = (carry << 7) | (arg >> 1);
+    carry = arg & 1;
+    adc(res);
+    return res;
 }
 
 static void sbc(uint8_t arg) { adc(~arg); /* -arg - 1 */ }
 
 // Unofficial
 static uint8_t slo(uint8_t arg) {
-    carry_flag = arg & 0x80;
+    carry = arg & 0x80;
     ora(arg <<= 1);
     return arg;
 }
 
 // Unofficial
 static uint8_t sre(uint8_t arg) {
-    carry_flag = arg & 1;
+    carry = arg & 1;
     eor(arg >>= 1);
     return arg;
 }
@@ -397,7 +395,7 @@ static uint8_t sre(uint8_t arg) {
 static void xaa(uint8_t arg) {
     // http://visual6502.org/wiki/index.php?title=6502_Opcode_8B_%28XAA,_ANE%29
     // Nestopia uses 0xEE as the magic constant.
-    zero_negative_flag = a = (a | 0xEE) & x & arg;
+    zn = a = (a | 0xEE) & x & arg;
 }
 
 // Conditional branches
@@ -436,14 +434,14 @@ static uint8_t pull() {
 
 static void push_flags(bool with_break_bit_set) {
     push(
-      (!!(zero_negative_flag & 0x180) << 7) | // Negative
-      (overflow_flag                  << 6) |
-      (1                              << 5) |
-      (with_break_bit_set             << 4) |
-      (decimal_flag                   << 3) |
-      (irq_disable_flag               << 2) |
-      (!(zero_negative_flag & 0xFF)   << 1) | // Zero
-      carry_flag);
+      (!!(zn & 0x180)     << 7) | // Negative
+      (overflow           << 6) |
+      (1                  << 5) |
+      (with_break_bit_set << 4) |
+      (decimal            << 3) |
+      (irq_disable        << 2) |
+      (!(zn & 0xFF)       << 1) | // Zero
+      carry);
 }
 
 static void pull_flags() {
@@ -453,14 +451,14 @@ static void pull_flags() {
     // ^2            flips the zero flag, since we want 0 if it's set.
     //
     // << 1          moves the negative flag into the extra negative flag bit in
-    //               zero_negative_flag, so that the negative and zero flags can
-    //               be set separately. The zero flag moves to bit 3, which
-    //               won't affect the result.
-    zero_negative_flag = ((flags & 0x82) ^ 2) << 1;
-    overflow_flag      = flags & 0x40;
-    decimal_flag       = flags & 0x08;
-    irq_disable_flag   = flags & 0x04;
-    carry_flag         = flags & 0x01;
+    //               zn, so that the negative and zero flags can be set
+    //               separately. The zero flag moves to bit 3, which won't
+    //               affect the result.
+    zn          = ((flags & 0x82) ^ 2) << 1;
+    overflow    = flags & 0x40;
+    decimal     = flags & 0x08;
+    irq_disable = flags & 0x04;
+    carry       = flags & 0x01;
 }
 
 // Helpers for read-modify-write instructions, which perform a dummy write-back
@@ -741,7 +739,7 @@ static void do_interrupt(Interrupt_type type) {
 
         push_flags(type == Int_BRK);
     }
-    irq_disable_flag = true;
+    irq_disable = true;
     // No interrupt polling happens here; the first instruction of the
     // interrupt handler always executes before another interrupt is serviced
     pc  = read(vec_addr);
@@ -764,7 +762,7 @@ static void poll_for_interrupt() {
         nmi_asserted = false;
         pending_event = pending_nmi = true;
     }
-    else if (irq_line && !irq_disable_flag)
+    else if (irq_line && !irq_disable)
         pending_event = pending_irq = true;
 }
 
@@ -897,7 +895,7 @@ void run() {
         case PLA:
             read_tick(); // Corresponds to incrementing s
             poll_for_interrupt();
-            zero_negative_flag = a = pull();
+            zn = a = pull();
             break;
 
         case PLP:
@@ -911,25 +909,25 @@ void run() {
         case ROL_ACC: a = rol(a); break;
         case ROR_ACC: a = ror(a); break;
 
-        case CLC: carry_flag       = false; break;
-        case CLD: decimal_flag     = false; break;
-        case CLI: irq_disable_flag = false; break;
-        case CLV: overflow_flag    = false; break;
-        case SEC: carry_flag       = true;  break;
-        case SED: decimal_flag     = true;  break;
-        case SEI: irq_disable_flag = true;  break;
+        case CLC: carry       = false; break;
+        case CLD: decimal     = false; break;
+        case CLI: irq_disable = false; break;
+        case CLV: overflow    = false; break;
+        case SEC: carry       = true;  break;
+        case SED: decimal     = true;  break;
+        case SEI: irq_disable = true;  break;
 
-        case DEX: zero_negative_flag = --x; break;
-        case DEY: zero_negative_flag = --y; break;
-        case INX: zero_negative_flag = ++x; break;
-        case INY: zero_negative_flag = ++y; break;
+        case DEX: zn = --x; break;
+        case DEY: zn = --y; break;
+        case INX: zn = ++x; break;
+        case INY: zn = ++y; break;
 
-        case TAX: zero_negative_flag = x = a; break;
-        case TAY: zero_negative_flag = y = a; break;
-        case TSX: zero_negative_flag = x = s; break;
-        case TXA: zero_negative_flag = a = x; break;
-        case TXS:                      s = x; break;
-        case TYA: zero_negative_flag = a = y; break;
+        case TAX: zn = x = a; break;
+        case TAY: zn = y = a; break;
+        case TSX: zn = x = s; break;
+        case TXA: zn = a = x; break;
+        case TXS:      s = x; break;
+        case TYA: zn = a = y; break;
 
         // The "official" NOP
         case NOP:
@@ -1267,14 +1265,14 @@ void run() {
         // Branch instructions
         //
 
-        case BCC: branch_if(!carry_flag);                   break;
-        case BCS: branch_if(carry_flag);                    break;
-        case BVC: branch_if(!overflow_flag);                break;
-        case BVS: branch_if(overflow_flag);                 break;
-        case BEQ: branch_if(!(zero_negative_flag & 0xFF));  break;
-        case BMI: branch_if(zero_negative_flag & 0x180);    break;
-        case BNE: branch_if(zero_negative_flag & 0xFF);     break;
-        case BPL: branch_if(!(zero_negative_flag & 0x180)); break;
+        case BCC: branch_if(!carry);        break;
+        case BCS: branch_if(carry);         break;
+        case BVC: branch_if(!overflow);     break;
+        case BVS: branch_if(overflow);      break;
+        case BEQ: branch_if(!(zn & 0xFF));  break;
+        case BMI: branch_if(zn & 0x180);    break;
+        case BNE: branch_if(zn & 0xFF);     break;
+        case BPL: branch_if(!(zn & 0x180)); break;
 
         //
         // KIL instructions (hang the CPU)
@@ -1502,9 +1500,8 @@ static void print_state() {
     printf("A: %02X  X: %02X  Y: %02X  S: %02X  "
            "Carry: %d  Zero: %d  I disable: %d  Decimal: %d  Overflow: %d  Negative: %d  (%u,%u) PPU cycle: %"PRIu64" apu_clk1: %s",
            a, x, y, s,
-           carry_flag, !(zero_negative_flag & 0xFF), irq_disable_flag, decimal_flag,
-           overflow_flag, !!(zero_negative_flag & 0x180), scanline, dot, ppu_cycle,
-           apu_clk1_is_high ? "high" : "low");
+           carry, !(zn & 0xFF), irq_disable, decimal, overflow, !!(zn & 0x180),
+           scanline, dot, ppu_cycle, apu_clk1_is_high ? "high" : "low");
 }
 
 static void log_instruction() {
@@ -1644,11 +1641,11 @@ static void set_cpu_cold_boot_state() {
     // s is later decremented to 0xFD during the reset operation
     a = s = x = y = 0;
 
-    zero_negative_flag = 1; // Neither negative nor zero
-    overflow_flag      = false;
-    decimal_flag       = false;
-    irq_disable_flag   = false; // Later set by reset
-    carry_flag         = false;
+    zn          = 1    ; // Neither negative nor zero
+    overflow    = false;
+    decimal     = false;
+    irq_disable = false; // Later set by reset
+    carry       = false;
 
     irq_line     = pending_irq = cart_irq = false;
     nmi_asserted = pending_nmi = false;
@@ -1683,7 +1680,7 @@ void transfer_cpu_state(uint8_t *&buf) {
     if (prg_ram_base) T_MEM(prg_ram_base, 0x2000*prg_ram_8k_banks)
     T(pc)
     T(a) T(s) T(x) T(y)
-    T(zero_negative_flag) T(carry_flag) T(irq_disable_flag) T(decimal_flag) T(overflow_flag)
+    T(zn) T(carry) T(irq_disable) T(decimal) T(overflow)
     T(op_1)
     T(cpu_is_reading)
     T(cpu_data_bus)
