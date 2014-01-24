@@ -86,9 +86,9 @@ static unsigned pal_extra_tick;
 
 // Called once per CPU cycle. For NTSC, there are exactly three PPU ticks per
 // CPU cycle. For PAL the number is 3.2, which is emulated by adding an extra
-// PPU tick every fifth call (this isn't perfect, but about as good as we can
+// PPU tick every fifth call. (This isn't perfect, but about as good as we can
 // do without getting into super-obscure hardware behavior, including PPU
-// half-ticks and analog effects).
+// half-ticks and analog effects.)
 void tick() {
     if (is_pal) {
         if (--pal_extra_tick == 0) {
@@ -166,8 +166,8 @@ static void write(uint8_t value, uint16_t addr) {
     cpu_data_bus = value;
 
     switch (addr) {
-    case 0x0000 ... 0x1FFF: ram[addr & 0x7FF] = value;           break;
-    case 0x2000 ... 0x3FFF: write_ppu_reg(value, addr & 0x0007); break;
+    case 0x0000 ... 0x1FFF: ram[addr & 0x7FF] = value;      break;
+    case 0x2000 ... 0x3FFF: write_ppu_reg(value, addr & 7); break;
 
     // Pulse 1
     case 0x4000: write_pulse_reg_0(0, value); break;
