@@ -863,13 +863,11 @@ void run() {
             break;
 
         case RTI:
-            {
             read_tick(); // Corresponds to incrementing s
             pull_flags();
             pc = pull();
             poll_for_interrupt();
             pc |= (pull() << 8);
-            }
             break;
 
         case RTS:
@@ -1227,7 +1225,6 @@ void run() {
 
         // Unofficial
         case AXA_IND_Y:
-        {
             ++pc;
             read_tick(); // Fetch effective address low
             read_tick(); // Fetch effective address high
@@ -1235,7 +1232,6 @@ void run() {
               (ram[(op_1 + 1) & 0xFF] << 8) | ram[op_1], // Address
               a & x, y);
             break;
-        }
 
         case STA_IND_Y: ind_y_write_a(); break;
 
