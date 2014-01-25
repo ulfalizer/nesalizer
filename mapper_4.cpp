@@ -98,8 +98,7 @@ void mapper_4_write(uint8_t value, uint16_t addr) {
 
     case 6: // 0xE000
         LOG_MAPPER("MMC3: Clearing IRQ enabled flag and IRQ line, at scanline = %u, dot = %u\n", scanline, dot);
-        cart_irq = irq_enabled = false;
-        update_irq_status();
+        set_cart_irq((irq_enabled = false));
         break;
 
     case 7: // 0xE001
@@ -135,8 +134,7 @@ static void clock_scanline_counter() {
     if (irq_period_cnt == 0 && irq_enabled) {
         LOG_MAPPER("MMC3: Asserting IRQ at scanline = %u, dot = %u\n", scanline, dot);
         //delayed_irq = 3;
-        cart_irq = true;
-        update_irq_status();
+        set_cart_irq(true);
     }
 }
 
@@ -145,12 +143,8 @@ static uint64_t last_a12_high_cycle;
 unsigned const min_a12_rise_diff = 16;
 
 void mapper_4_ppu_tick_callback() {
-    //if (delayed_irq > 0) {
-        //if (--delayed_irq == 0) {
-            //cart_irq = true;
-            //update_irq_status();
-        //}
-    //}
+    //if (delayed_irq > 0 && --delayed_irq == 0)
+        //set_cart_irq(true);
 
     if (ppu_addr_bus & 0x1000) {
         if (ppu_cycle - last_a12_high_cycle >= min_a12_rise_diff)

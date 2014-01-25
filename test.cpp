@@ -14,7 +14,7 @@ void report_status_and_end_test(uint8_t status, char const *msg) {
     else
         printf("%-60s FAILED\nvvv TEST OUTPUT START vvv\n%s\n^^^ TEST OUTPUT END ^^^\n",
                filename, msg);
-    end_emulation = true;
+    end_emulation();
 }
 
 static void run_test(char const *file) {

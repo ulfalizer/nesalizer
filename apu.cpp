@@ -380,10 +380,8 @@ static uint16_t const *dmc_periods;
 
 // $4010
 void write_dmc_reg_0(uint8_t value) {
-    if (!(dmc_irq_enabled = value & 0x80)) {
-        dmc_irq = false;
-        update_irq_status();
-    }
+    if (!(dmc_irq_enabled = value & 0x80))
+        set_dmc_irq(false);
     dmc_loop_sample = value & 0x40;
     dmc_period      = dmc_periods[value & 0x0F];
 }
@@ -446,10 +444,8 @@ static void load_dmc_sample_byte() {
             dmc_bytes_remaining = dmc_sample_len;
         }
         else
-            if (dmc_irq_enabled) {
-                dmc_irq = true;
-                update_irq_status();
-            }
+            if (dmc_irq_enabled)
+                set_dmc_irq(true);
     }
 }
 
@@ -590,10 +586,8 @@ static void clock_len_and_sweep() {
 // $4017
 void write_frame_counter(uint8_t value) {
     frame_counter_mode = (Frame_counter_mode)(value >> 7);
-    if ((inhibit_frame_irq = value & 0x40)) {
-        frame_irq = false;
-        update_irq_status();
-    }
+    if ((inhibit_frame_irq = value & 0x40))
+        set_frame_irq(false);
 
     // There is a delay before the frame counter is reset, the length of which
     // varies depending on if the write happens while apu_clk1 is high or low:
@@ -609,10 +603,8 @@ void write_frame_counter(uint8_t value) {
 // The frame IRQ is set during three consecutive CPU ticks at the end of the
 // frame period when in four-step mode, so we factor out this helper
 static void check_frame_irq() {
-    if (!inhibit_frame_irq) {
-        frame_irq = true;
-        update_irq_status();
-    }
+    if (!inhibit_frame_irq)
+        set_frame_irq(true);
 }
 
 // The actual frame counter counts at half the CPU frequency, but the half and
@@ -700,8 +692,9 @@ uint8_t read_apu_status() {
       ((tri_len_cnt         > 0) << 2) |
       ((pulse[1].len_cnt    > 0) << 1) |
        (pulse[0].len_cnt    > 0);
-    frame_irq = false;
-    update_irq_status();
+
+    set_frame_irq(false);
+
     return res;
 }
 
@@ -725,8 +718,7 @@ void write_apu_status(uint8_t value) {
     // We need to clear the DMC IRQ before handling the DMC enable/disable in
     // case a one-byte sample is loaded below, which will immediately fire a
     // DMC IRQ
-    dmc_irq = false;
-    update_irq_status();
+    set_dmc_irq(false);
 
     // DMC enable bit. We model DMC enabled/disabled through the number of
     // sample bytes that remain (greater than zero => enabled).
@@ -907,7 +899,8 @@ void reset_apu() {
 
     // IRQ sources
 
-    dmc_irq = frame_irq = false;
+    set_dmc_irq(false);
+    set_frame_irq(false);
 
     if (frame_counter_mode == FIVE_STEP) {
         clock_env_and_tri_lin();

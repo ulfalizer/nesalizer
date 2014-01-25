@@ -225,8 +225,7 @@ uint8_t mapper_5_read(uint16_t addr) {
           (irq_pending  << 7) |
           (in_frame     << 6) |
           (cpu_data_bus & 0x3F);
-        cart_irq = irq_pending = false;
-        update_irq_status();
+        set_cart_irq((irq_pending = false));
         return res;
     }
 
@@ -286,8 +285,7 @@ void mapper_5_write(uint8_t value, uint16_t addr) {
     case 0x5203: irq_scanline = value; break;
     case 0x5204:
         irq_enabled = value & 0x80;
-        cart_irq = irq_enabled && irq_pending;
-        update_irq_status();
+        set_cart_irq(irq_enabled && irq_pending);
         break;
 
     case 0x5205: multiplicand = value; break;
@@ -455,15 +453,12 @@ void mapper_5_ppu_tick_callback() {
             if (!in_frame) {
                 in_frame = true;
                 scanline_cnt = 0;
-                cart_irq = irq_pending = false;
-                update_irq_status();
+                set_cart_irq((irq_pending = false));
             }
             else if (++scanline_cnt == irq_scanline) {
                 irq_pending = true;
-                if (irq_enabled) {
-                    cart_irq = true;
-                    update_irq_status();
-                }
+                if (irq_enabled)
+                    set_cart_irq(true);
             }
         }
     }

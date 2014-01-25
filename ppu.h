@@ -11,7 +11,6 @@ void    write_oam_data_reg(uint8_t value);
 
 enum Sprite_size { EIGHT_BY_EIGHT = 0, EIGHT_BY_SIXTEEN };
 
-extern bool     pending_frame_completion;
 extern unsigned prerender_line;
 extern unsigned scanline, dot;
 extern unsigned ppu_addr_bus;

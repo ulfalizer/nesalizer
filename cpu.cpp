@@ -21,20 +21,42 @@
 #  include <readline/readline.h>
 #endif
 
-// Set true to break out of the CPU emulation loop
-bool            end_emulation;
-
 // Set true when an event needs to be handled at the next instruction boundary.
 // Avoids having to check them all for each instruction. This includes
-// interrupts, end-of-frame operations, state transfers, and (soft) reset.
-bool            pending_event;
+// interrupts, end-of-frame operations, state transfers, (soft) reset, and
+// shutdown.
+static bool     pending_event;
+
+// Set true to break out of the CPU emulation loop at the next instruction
+// boundary
+static bool     pending_end_emulation;
+
+// Set true at the end of the visible part of the frame to trigger end-of-frame
+// operations at the next instruction boundary. This simplifies state transfers
+// as the current location within the CPU emulation loop is part of the state.
+static bool     pending_frame_completion;
+
+// Set true to perform a soft reset at the next instruction boundary
+static bool     pending_reset;
+
+// Signaling of pending events
+
+void end_emulation() {
+    pending_event = pending_end_emulation = true;
+}
+
+void frame_completed() {
+    pending_event = pending_frame_completion = true;
+}
+
+void soft_reset() {
+    pending_event = pending_reset = true;
+}
 
 #ifdef RUN_TESTS
 // The system is soft-reset when this goes from 1 to 0. Used by test ROMs.
 static unsigned ticks_till_reset;
 #endif
-// Set true to perform a soft reset at the next instruction boundary
-bool            pending_reset;
 
 // RAM, registers, status flags, and misc. variables {{{
 
@@ -668,10 +690,10 @@ static void unoff_addr_write(uint16_t addr, uint8_t value, uint8_t index) {
 
 // Interrupts {{{
 
-// Interrupt variables. 'true' means asserted.
+// Interrupt sources. 'true' means asserted.
 
 // IRQ from mapper hardware on the cart
-bool        cart_irq;
+static bool cart_irq;
 
 // IRQ from the DMC channel
 // Set by the last sample byte being loaded, unless inhibited or looping is set
@@ -693,12 +715,35 @@ bool        frame_irq;
 static bool irq_line;
 
 // Set true when a falling edge occurs on the NMI input
-bool        nmi_asserted;
+static bool nmi_asserted;
 
 // Set true if interrupt polling detects a pending IRQ or NMI. The next
 // "instruction" executed is the interrupt sequence in that case.
 static bool pending_irq;
 static bool pending_nmi;
+
+static void update_irq_status() {
+    irq_line = cart_irq || dmc_irq || frame_irq;
+}
+
+void set_nmi(bool s) {
+    nmi_asserted = s;
+}
+
+void set_cart_irq(bool s) {
+    cart_irq = s;
+    update_irq_status();
+}
+
+void set_dmc_irq(bool s) {
+    dmc_irq = s;
+    update_irq_status();
+}
+
+void set_frame_irq(bool s) {
+    frame_irq = s;
+    update_irq_status();
+}
 
 enum Interrupt_type { Int_BRK = 0, Int_IRQ, Int_NMI, Int_reset };
 
@@ -766,10 +811,6 @@ static void poll_for_interrupt() {
         pending_event = pending_irq = true;
 }
 
-void update_irq_status() {
-    irq_line = cart_irq || dmc_irq || frame_irq;
-}
-
 // Defined in tables.c. Indexed by opcode.
 extern uint8_t const polls_irq_after_first_cycle[256];
 
@@ -821,19 +862,22 @@ static void process_pending_events() {
 }
 
 void run() {
-    end_emulation = false;
-
     set_apu_cold_boot_state();
     set_cpu_cold_boot_state();
     set_ppu_cold_boot_state();
+
     init_timing();
 
     do_interrupt(Int_reset);
-    while (!end_emulation) {
+
+    for (;;) {
 
         if (pending_event) {
             pending_event = false;
             process_pending_events();
+
+            if (pending_end_emulation)
+                break;
         }
 
 #ifdef INCLUDE_DEBUGGER
@@ -1277,7 +1321,7 @@ void run() {
         case KI0: case KI1: case KI2: case KI3: case KI4: case KI5:
         case KI6: case KI7: case KI8: case KI9: case K10: case K11:
             puts("KIL instruction executed, system hung");
-            end_emulation = true;
+            end_emulation();
             exit_sdl_thread();
         }
     }
@@ -1611,7 +1655,7 @@ static void log_instruction() {
                     break;
 
                 case 'q':
-                    end_emulation = true;
+                    end_emulation();
                     exit_sdl_thread();
                     return;
 
@@ -1643,8 +1687,10 @@ static void set_cpu_cold_boot_state() {
     irq_disable = false; // Later set by reset
     carry       = false;
 
-    irq_line     = pending_irq = cart_irq = false;
-    nmi_asserted = pending_nmi = false;
+    pending_event         = false;
+    pending_end_emulation = false;
+    irq_line              = pending_irq = cart_irq = false;
+    nmi_asserted          = pending_nmi = false;
 
     cpu_is_reading = true;
 

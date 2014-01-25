@@ -153,7 +153,7 @@ void handle_ui_keys() {
     handle_rewind(keys[SDL_SCANCODE_R]);
 
     if (reset_pushed)
-        pending_reset = true;
+        soft_reset();
 
     SDL_UnlockMutex(event_lock);
 }
@@ -168,7 +168,7 @@ static void process_events() {
     SDL_LockMutex(event_lock);
     while (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
-            end_emulation = true;
+            end_emulation();
             exit_sdl_thread_loop = true;
 #ifdef RUN_TESTS
             end_testing = true;

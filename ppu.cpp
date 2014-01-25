@@ -20,11 +20,6 @@
 // Points to the current palette as determined by the color tint bits
 static uint32_t const*pal_to_rgb;
 
-// Set true at the end of the visible part of the frame to trigger end-of-frame
-// operations at the next instruction boundary. This simplifies state transfers
-// as the current location within the CPU emulation loop is part of the state.
-bool                  pending_frame_completion;
-
 // If true, treat the emulated code as the first code that runs (i.e., not the
 // situation on PowerPak), which means writes to certain registers will be
 // inhibited during the initial frame. This breaks some demos.
@@ -677,7 +672,7 @@ static void do_visible_line_ops() {
 static void do_line_241_ops() {
     if (dot == 1) {
         in_vblank = true;
-        nmi_asserted = nmi_on_vblank;
+        set_nmi(nmi_on_vblank);
     }
 }
 
@@ -723,7 +718,7 @@ static void tick_ppu() {
         // here and use below (SCANLINE_0_TO_239, SCANLINE_241, etc.)
         switch (scanline) {
         case 240:
-            pending_event = pending_frame_completion = true;
+            frame_completed();
             // The PPU address bus mirrors v outside of rendering
             ppu_addr_bus = v & 0x3FFF;
             break;
@@ -861,12 +856,12 @@ uint8_t read_ppu_reg(unsigned n) {
             // VBlank flag is set. TODO: Elaborate on timing.
             switch (dot) {
             case 1:
-                in_vblank    = false;
-                nmi_asserted = false;
+                in_vblank = false;
+                set_nmi(false);
                 break;
 
             case 2: case 3:
-                nmi_asserted = false;
+                set_nmi(false);
                 break;
             }
         }
@@ -944,13 +939,13 @@ void write_ppu_reg(uint8_t value, unsigned n) {
             // equals nmi_on_vblank AND in_vblank (though it's active low
             // instead): http://wiki.nesdev.com/w/index.php/NMI
             if (!nmi_on_vblank && in_vblank)
-                nmi_asserted = true;
+                set_nmi(true);
         }
         else
             // This ensures that no NMI is generated if NMIs are disabled right
             // around where the vblank flag is set. We might get a short NMI
             // pulse in that case, but it won't be seen.
-            nmi_asserted = false;
+            set_nmi(false);
 
         nmi_on_vblank = new_nmi_on_vblank;
         break;
