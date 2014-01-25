@@ -18,8 +18,6 @@ void report_status_and_end_test(uint8_t status, char const *msg) {
 }
 
 static void run_test(char const *file) {
-    if (end_testing) return;
-
     filename = file;
     load_rom(file, false);
     run();
@@ -39,6 +37,8 @@ void run_tests() {
     // Look into these too:
     //   dmc_tests
 
+    // Do it like this to avoid extra newlines being printed when aborting
+    // testing
     #define RUN_TEST(file) run_test(file); if (end_testing) goto end;
 
     RUN_TEST("tests/ppu_vbl_nmi/rom_singles/01-vbl_basics.nes");
