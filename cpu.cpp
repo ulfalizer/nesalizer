@@ -1253,7 +1253,7 @@ void run() {
             uint16_t const addr = (read(pc + 1) << 8) | op_1;
             pc = read(addr);
             poll_for_interrupt();
-            pc |= (read((addr & 0xFF00) | ((addr + 1) & 0xFF)) << 8);
+            pc |= read((addr & 0xFF00) | ((addr + 1) & 0xFF)) << 8;
             break;
             }
 
