@@ -191,29 +191,24 @@ static void write(uint8_t value, uint16_t addr) {
     case 0x0000 ... 0x1FFF: ram[addr & 0x7FF] = value;      break;
     case 0x2000 ... 0x3FFF: write_ppu_reg(value, addr & 7); break;
 
-    // Pulse 1
     case 0x4000: write_pulse_reg_0(0, value); break;
     case 0x4001: write_pulse_reg_1(0, value); break;
     case 0x4002: write_pulse_reg_2(0, value); break;
     case 0x4003: write_pulse_reg_3(0, value); break;
 
-    // Pulse 2
     case 0x4004: write_pulse_reg_0(1, value); break;
     case 0x4005: write_pulse_reg_1(1, value); break;
     case 0x4006: write_pulse_reg_2(1, value); break;
     case 0x4007: write_pulse_reg_3(1, value); break;
 
-    // Triangle
     case 0x4008: write_triangle_reg_0(value); break;
     case 0x400A: write_triangle_reg_1(value); break;
     case 0x400B: write_triangle_reg_2(value); break;
 
-    // Noise
     case 0x400C: write_noise_reg_0(value); break;
     case 0x400E: write_noise_reg_1(value); break;
     case 0x400F: write_noise_reg_2(value); break;
 
-    // DMC
     case 0x4010: write_dmc_reg_0(value); break;
     case 0x4011: write_dmc_reg_1(value); break;
     case 0x4012: write_dmc_reg_2(value); break;
@@ -971,10 +966,10 @@ void run() {
         case TXS:      s = x; break;
         case TYA: zn = a = y; break;
 
-        // The "official" NOP
-        case NOP:
-        // Various unofficial NOPs with accumulator/implied addressing
-        case NO0: case NO1: case NO2: case NO3: case NO4: case NO5: break;
+        // The "official" NOP and various unofficial NOPs with
+        // accumulator/implied addressing
+        case NOP: case NO0: case NO1: case NO2: case NO3: case NO4: case NO5:
+            break;
 
         //
         // Immediate addressing
@@ -1001,7 +996,9 @@ void run() {
         case XAA_IMM: xaa(op_1);     ++pc; break; // Unofficial
 
         // Unofficial NOPs with immediate addressing
-        case NO0_IMM: case NO1_IMM: case NO2_IMM: case NO3_IMM: case NO4_IMM: ++pc; break;
+        case NO0_IMM: case NO1_IMM: case NO2_IMM: case NO3_IMM: case NO4_IMM:
+            ++pc;
+            break;
 
         //
         // Absolute addressing
@@ -1150,8 +1147,8 @@ void run() {
         case STY_ZERO_X: zero_xy_write(y, x);     break;
 
         // Unofficial NOPs with indexed zero page addressing (acts like reads)
-        case NO0_ZERO_X: case NO1_ZERO_X: case NO2_ZERO_X: case NO3_ZERO_X: case NO4_ZERO_X:
-        case NO5_ZERO_X:
+        case NO0_ZERO_X: case NO1_ZERO_X: case NO2_ZERO_X: case NO3_ZERO_X:
+        case NO4_ZERO_X: case NO5_ZERO_X:
             get_zero_xy_op(x);
             break;
 

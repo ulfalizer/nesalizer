@@ -168,7 +168,8 @@ static uint8_t get_open_bus_bits_4_to_0() {
 static uint8_t get_all_open_bus_bits() {
     return
       get_open_bus_bits_7_to_6()                                                              |
-      ((ppu_cycle - ppu_bit_5_write_cycle > open_bus_decay_cycles) ? 0 : ppu_open_bus & 0x20) |
+      ((ppu_cycle - ppu_bit_5_write_cycle > open_bus_decay_cycles) ?
+         0 : ppu_open_bus & 0x20) |
       get_open_bus_bits_4_to_0();
 }
 
@@ -292,7 +293,7 @@ static void do_bg_fetches() {
     }
 }
 
-// Looks for an in-range sprite pixel at the current location
+// Looks for an in-range sprite pixel at the current location.
 // Performance hotspot!
 // Possible optimization: Set flag if any sprites on the line
 static unsigned get_sprite_pixel(unsigned &spr_pal, bool &spr_behind_bg, bool &spr_is_s0) {
@@ -408,7 +409,8 @@ static void do_shifts_and_reloads() {
         // Equivalent to the following:
         // unsigned const coarse_x = v & 0x1F;
         // unsigned const coarse_y = (v >> 5) & 0x1F;
-        // unsigned const at_bits = at_byte >> 2*((coarse_y & 0x02) | (((coarse_x - 1) & 0x02) >> 1));
+        // unsigned const at_bits =
+        //   at_byte >> 2*((coarse_y & 0x02) | (((coarse_x - 1) & 0x02) >> 1));
         unsigned const at_bits = at_byte >> (((v >> 4) & 4) | ((v - 1) & 2));
 
         at_latch_l = at_bits & 1;
@@ -502,7 +504,7 @@ static void do_sprite_evaluation() {
 }
 
 // Returns 'true' if the sprite is in range
-static bool calculate_sprite_tile_address(uint8_t y, uint8_t index, uint8_t attrib, bool is_high) {
+static bool calc_sprite_tile_address(uint8_t y, uint8_t index, uint8_t attrib, bool is_high) {
     // Internal sprite address calculation in the PPU (ab = VRAM address bus):
     //
     //   ab12  : low bit of sprite index if using 8x16 sprites, otherwise
@@ -542,8 +544,10 @@ static void do_sprite_loading() {
         sec_oam_addr = 0;
 
     // Sprite 0 flag timing:
-    //  - s0_on_next_scanline is initialized at dot = 66.5-67 (during sprite evaluation for sprite 0)
-    //  - It is copied over to s0_on_cur_scanline at dot 257.5-258, 258.5-259, ..., 319.5-320
+    //  - s0_on_next_scanline is initialized at dot = 66.5-67 (during sprite
+    //    evaluation for sprite 0)
+    //  - It is copied over to s0_on_cur_scanline during dots
+    //    257.5-258, 258.5-259, ..., 319.5-320
     s0_on_cur_scanline = s0_on_next_scanline;
 
     switch ((dot - 1) % 8) {
@@ -578,7 +582,8 @@ static void do_sprite_loading() {
     // Load low sprite tile byte
 
     case 4:
-        sprite_in_range = calculate_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[sprite_n], false);
+        sprite_in_range =
+          calc_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[sprite_n], false);
         break;
     case 5:
         sprite_pat_l[sprite_n] = sprite_in_range ? chr_ref(ppu_addr_bus) : 0;
@@ -590,7 +595,8 @@ static void do_sprite_loading() {
     // Load high sprite tile byte
 
     case 6:
-        sprite_in_range = calculate_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[sprite_n], true);
+        sprite_in_range =
+          calc_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[sprite_n], true);
         break;
     case 7:
         sprite_pat_h[sprite_n] = sprite_in_range ? chr_ref(ppu_addr_bus) : 0;
@@ -603,8 +609,8 @@ static void do_sprite_loading() {
     }
 }
 
-// Common operations for the visible lines (0-239) and the pre-render line
-// Performance hotspot
+// Common operations for the visible lines (0-239) and the pre-render line.
+// Performance hotspot!
 static void do_render_line_ops() {
     // We get a short dummy bg-related fetch here. Probably not worth
     // emulating the exact address.
@@ -699,7 +705,7 @@ static void do_prerender_line_ops() {
     }
 }
 
-// Runs the PPU for one dot
+// Runs the PPU for one dot.
 // Performance hotspot - ticks at ~5.3 MHz
 //
 // IS_PAL is set true for PAL emulation, with PRERENDER_LINE set accordingly to
