@@ -783,7 +783,7 @@ static void do_interrupt(Interrupt_type type) {
     // No interrupt polling happens here; the first instruction of the
     // interrupt handler always executes before another interrupt is serviced
     pc  = read(vec_addr);
-    pc |= (read(vec_addr + 1) << 8);
+    pc |= read(vec_addr + 1) << 8;
 }
 
 // The interrupt lines are polled at the end of the second-to-last tick for
@@ -906,7 +906,7 @@ void run() {
             pull_flags();
             pc = pull();
             poll_for_interrupt();
-            pc |= (pull() << 8);
+            pc |= pull() << 8;
             break;
 
         case RTS:
