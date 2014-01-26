@@ -21,25 +21,30 @@
 #  include <readline/readline.h>
 #endif
 
+//
+// Event signaling
+//
+
 // Set true when an event needs to be handled at the next instruction boundary.
 // Avoids having to check them all for each instruction. This includes
 // interrupts, end-of-frame operations, state transfers, (soft) reset, and
 // shutdown.
-static bool     pending_event;
+static bool pending_event;
 
 // Set true to break out of the CPU emulation loop at the next instruction
 // boundary
-static bool     pending_end_emulation;
-
+static bool pending_end_emulation;
 // Set true at the end of the visible part of the frame to trigger end-of-frame
 // operations at the next instruction boundary. This simplifies state transfers
 // as the current location within the CPU emulation loop is part of the state.
-static bool     pending_frame_completion;
-
+static bool pending_frame_completion;
 // Set true to perform a soft reset at the next instruction boundary
-static bool     pending_reset;
+static bool pending_reset;
 
-// Signaling of pending events
+// Set true if interrupt polling detects a pending IRQ or NMI. The next
+// "instruction" executed is the interrupt sequence.
+static bool pending_irq;
+static bool pending_nmi;
 
 void end_emulation() {
     pending_event = pending_end_emulation = true;
@@ -58,7 +63,9 @@ void soft_reset() {
 static unsigned ticks_till_reset;
 #endif
 
-// RAM, registers, status flags, and misc. variables {{{
+//
+// RAM, registers, status flags, and misc. state
+//
 
 static uint8_t  ram[0x800];
 
@@ -88,6 +95,7 @@ static bool     irq_disable;
 static bool     decimal;
 static bool     overflow;
 
+
 // The byte after the opcode byte. Always fetched, so factoring out the fetch
 // saves logic.
 static uint8_t  op_1;
@@ -95,13 +103,12 @@ static uint8_t  op_1;
 // Current CPU read/write state. Needed to get the timing for APU DMC sample
 // loading right (tested by the sprdma_and_dmc_dma tests).
 bool            cpu_is_reading;
-
 // Last value put on the CPU data bus. Used to implement open bus reads.
 uint8_t         cpu_data_bus;
 
-// }}}
-
-// PPU and APU interface {{{
+//
+// PPU and APU interface
+//
 
 // Down-counter for adding an extra PPU tick for PAL
 static unsigned pal_extra_tick;
@@ -135,6 +142,10 @@ void tick() {
 #endif
 }
 
+//
+// CPU reading and writing
+//
+
 // Optimization for read/write ticks without visible side effects
 
 static void read_tick() {
@@ -147,9 +158,6 @@ static void write_tick() {
     tick();
 }
 
-// }}}
-
-// Reading and writing {{{
 
 uint8_t read(uint16_t addr) {
     read_tick();
@@ -244,9 +252,9 @@ static void write(uint8_t value, uint16_t addr) {
     write_mapper(value, addr);
 }
 
-// }}}
-
-// Core instruction logic, reused for different addressing modes {{{
+//
+// Core instruction logic (reused for different addressing modes)
+//
 
 static void and_(uint8_t);
 static uint8_t lsr(uint8_t);
@@ -437,6 +445,7 @@ static void branch_if(bool cond) {
     }
 }
 
+
 // Stack manipulation
 
 static void push(uint8_t value) {
@@ -478,6 +487,7 @@ static void pull_flags() {
     carry       = flags & 0x01;
 }
 
+
 // Helpers for read-modify-write instructions, which perform a dummy write-back
 // of the unmodified value
 
@@ -514,15 +524,14 @@ static void pull_flags() {
         ram[addr] = fn(ram[addr]);                      \
     } while(0)
 
-// }}}
-
-// Addressing modes {{{
-
-// The _addr functions return addresses, the _op functions resolved operands
-
 //
+// Addressing modes
+//
+
+// The *_addr() functions return addresses, the *_op() functions resolved
+// operands
+
 // Zero page addressing
-//
 
 static uint8_t get_zero_op() {
     ++pc;
@@ -556,9 +565,8 @@ static void zero_xy_write(uint8_t val, uint8_t index) {
     ram[(op_1 + index) & 0xFF] = val;
 }
 
-//
+
 // Absolute addressing
-//
 
 static uint16_t get_abs_addr() {
     ++pc;
@@ -577,9 +585,8 @@ static void abs_write(uint8_t val) {
     write(val, addr);
 }
 
-//
+
 // Absolute,X/Y addressing
-//
 
 // Absolute,X/Y address fetching for write and read-modify-write instructions
 static uint16_t get_abs_xy_addr_write(uint8_t index) {
@@ -606,9 +613,8 @@ static void abs_xy_write_a(uint8_t index) {
     write(a, addr);
 }
 
-//
+
 // (Indirect,X) addressing
-//
 
 static uint16_t get_ind_x_addr() {
     ++pc;
@@ -631,9 +637,8 @@ static void ind_x_write(uint8_t val) {
     write(val, addr);
 }
 
-//
+
 // (Indirect),Y addressing
-//
 
 // (Indirect),Y helper for fetching the address from zero page
 static uint16_t get_addr_from_zero_page() {
@@ -681,9 +686,9 @@ static void unoff_addr_write(uint16_t addr, uint8_t value, uint8_t index) {
             new_addr);                                        // No page crossing
 }
 
-// }}}
-
-// Interrupts {{{
+//
+// Interrupts
+//
 
 // Interrupt sources. 'true' means asserted.
 
@@ -712,10 +717,6 @@ static bool irq_line;
 // Set true when a falling edge occurs on the NMI input
 static bool nmi_asserted;
 
-// Set true if interrupt polling detects a pending IRQ or NMI. The next
-// "instruction" executed is the interrupt sequence in that case.
-static bool pending_irq;
-static bool pending_nmi;
 
 static void update_irq_status() {
     irq_line = cart_irq || dmc_irq || frame_irq;
@@ -809,9 +810,9 @@ static void poll_for_interrupt() {
 // Defined in tables.c. Indexed by opcode.
 extern uint8_t const polls_irq_after_first_cycle[256];
 
-// }}}
-
-// Main CPU loop {{{
+//
+// Main CPU loop
+//
 
 #ifdef INCLUDE_DEBUGGER
 static void log_instruction();
@@ -1105,7 +1106,9 @@ void run() {
         case STY_ZERO: zero_write(y);     break;
 
         // Unofficial NOPs with zero page addressing (acts like reads)
-        case NO0_ZERO: case NO1_ZERO: case NO2_ZERO: get_zero_op(); break;
+        case NO0_ZERO: case NO1_ZERO: case NO2_ZERO:
+            get_zero_op();
+            break;
 
         //
         // Zero page indexed addressing
@@ -1324,9 +1327,9 @@ void run() {
     }
 }
 
-// }}}
-
-// Tracing and logging {{{
+//
+// Tracing and logging
+//
 
 #ifdef INCLUDE_DEBUGGER
 
@@ -1667,9 +1670,9 @@ static void log_instruction() {
 }
 #endif // INCLUDE_DEBUGGER
 
-// }}}
-
-// Initialization and resetting {{{
+//
+// Initialization and resetting
+//
 
 static void set_cpu_cold_boot_state() {
     init_array(ram, (uint8_t)0xFF);
@@ -1706,9 +1709,9 @@ static void reset_cpu() {
     do_interrupt(Int_reset);
 }
 
-// }}}
-
-// State transfers {{{
+//
+// State transfers
+//
 
 template<bool calculating_size, bool is_save>
 void transfer_cpu_state(uint8_t *&buf) {
@@ -1741,5 +1744,3 @@ template void transfer_cpu_state<true, false>(uint8_t*&);
 template void transfer_cpu_state<false, true>(uint8_t*&);
 // Loading state from buffer
 template void transfer_cpu_state<false, false>(uint8_t*&);
-
-// }}}
