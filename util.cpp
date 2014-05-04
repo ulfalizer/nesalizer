@@ -34,9 +34,9 @@ uint8_t *get_file_buffer(char const *filename, size_t &size_out) {
     // We do not support large files on 32-bit systems
 
     errno_fail_if(!(file = fopen(filename, "rb")), "failed to open '%s'", filename);
-    errno_fail_if(fseek(file, 0, SEEK_END), "failed to seek to end of '%s'", filename);
-    errno_fail_if((file_size = ftell(file)) < 0, "failed to get size of '%s'", filename);
-    errno_fail_if(fseek(file, 0, SEEK_SET), "failed to seek back to beginning of '%s'", filename);
+    errno_fail_if(fseek(file, 0, SEEK_END) == -1, "failed to seek to end of '%s'", filename);
+    errno_fail_if((file_size = ftell(file)) == -1, "failed to get size of '%s'", filename);
+    errno_fail_if(fseek(file, 0, SEEK_SET) == -1, "failed to seek back to beginning of '%s'", filename);
 
     fail_if(!(file_buf = new (std::nothrow) unsigned char[file_size]),
             "failed to allocate %ld-byte buffer for '%s'", file_size, filename);
@@ -46,7 +46,7 @@ uint8_t *get_file_buffer(char const *filename, size_t &size_out) {
         fail_if(ferror(file), "I/O error while reading '%s'", filename);
         fail("unknown error while reading '%s'", filename);
     }
-    errno_fail_if(fclose(file) < 0, "failed to close '%s'", filename);
+    errno_fail_if(fclose(file) == EOF, "failed to close '%s'", filename);
 
     size_out = file_size;
     return file_buf;
