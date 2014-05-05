@@ -13,10 +13,6 @@ void           frame_completed();
 void           soft_reset();
 void           end_emulation();
 
-// TODO: Might want to move these to apu.cpp (along with moving cart_irq)
-extern bool    dmc_irq;
-extern bool    frame_irq;
-
 extern bool    cpu_is_reading;
 
 extern uint8_t cpu_data_bus;

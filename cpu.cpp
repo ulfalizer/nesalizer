@@ -690,33 +690,14 @@ static void unoff_addr_write(uint16_t addr, uint8_t value, uint8_t index) {
 // Interrupts
 //
 
-// Interrupt sources. 'true' means asserted.
-
 // IRQ from mapper hardware on the cart
 static bool cart_irq;
 
-// IRQ from the DMC channel
-// Set by the last sample byte being loaded, unless inhibited or looping is set
-// Cleared by
-//  * the reset signal,
-//  * writing $4015,
-//  * and clearing the IRQ enable flag in $4010
-bool        dmc_irq;
-
-// IRQ from the frame counter
-// Set by the frame counter in 4-step mode, unless inhibited
-// Cleared by (derived from Visual 2A03)
-//  * the reset signal,
-//  * setting the inhibit IRQ flag,
-//  * and reading $4015
-bool        frame_irq;
-
-// The OR of the above IRQ sources. Updated in update_irq_status().
+// The OR of all IRQ sources. Updated in update_irq_status().
 static bool irq_line;
 
 // Set true when a falling edge occurs on the NMI input
 static bool nmi_asserted;
-
 
 static void update_irq_status() {
     irq_line = cart_irq || dmc_irq || frame_irq;

@@ -34,5 +34,8 @@ void do_oam_dma(uint8_t addr);
 
 void tick_apu();
 
+extern bool dmc_irq;
+extern bool frame_irq;
+
 template<bool calculating_size, bool is_save>
 void transfer_apu_state(uint8_t *&buf);

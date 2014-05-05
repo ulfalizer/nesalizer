@@ -348,6 +348,12 @@ static void clock_noise_generator() {
 // Counter value directly determines output level
 static unsigned dmc_counter;
 
+// Set by the last sample byte being loaded, unless inhibited or looping is set
+// Cleared by
+//  * the reset signal,
+//  * writing $4015,
+//  * and clearing the IRQ enable flag in $4010
+bool            dmc_irq;
 // $4010
 static bool     dmc_irq_enabled;
 static bool     dmc_loop_sample;
@@ -480,6 +486,13 @@ static void clock_dmc() {
 //
 // Frame counter
 //
+
+// Set by the frame counter in 4-step mode, unless inhibited
+// Cleared by (derived from Visual 2A03)
+//  * the reset signal,
+//  * setting the inhibit IRQ flag,
+//  * and reading $4015
+bool        frame_irq;
 
 static enum Frame_counter_mode { FOUR_STEP = 0, FIVE_STEP = 1 } frame_counter_mode;
 static bool inhibit_frame_irq;
