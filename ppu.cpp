@@ -447,58 +447,62 @@ static void do_sprite_evaluation() {
     if (dot & 1) {
         // On odd ticks, data is read from OAM
         oam_data = oam[oam_addr];
+        return;
+    }
+
+    // We need the original value to implement sprite overflow checking. It
+    // might get overwritten below.
+    uint8_t const orig_oam_data = oam_data;
+
+    // On even ticks, data is written into secondary OAM...
+    if (!(oam_addr_overflow || sec_oam_addr_overflow))
+        sec_oam[sec_oam_addr] = oam_data;
+    else
+        // ...unless we have OAM or secondary OAM overflow, in which case we
+        // get a read from secondary OAM instead
+        oam_data = sec_oam[sec_oam_addr];
+
+    if (copy_sprite_signal > 0) {
+        // We're currently copying data for a sprite
+        --copy_sprite_signal;
+        move_to_next_oam_byte();
+        return;
+    }
+
+    // Is the current sprite in range?
+    bool const in_range = (scanline - orig_oam_data) < (sprite_size == EIGHT_BY_EIGHT ? 8 : 16);
+    // At dot 66 we're evaluating sprite zero. This is how the hardware does it.
+    if (dot == 66)
+        s0_on_next_scanline = in_range;
+
+    if (in_range && !(oam_addr_overflow || sec_oam_addr_overflow)) {
+        // In-range sprite found. Copy it.
+        copy_sprite_signal = 3;
+        move_to_next_oam_byte();
+        return;
+    }
+
+    // Sprite is not in range (or we have OAM or secondary OAM overflow)
+
+    if (!overflow_detection) {
+        // Clear low bits, bump high (HW does this, even though the low
+        // clearing wouldn't usually be noticeable)
+        oam_addr = (oam_addr + 4) & 0xFC;
+        if (oam_addr == 0)
+            oam_addr_overflow = true;
     }
     else {
-        // We need the original value to implement sprite overflow checking. It
-        // might get overwritten below.
-        uint8_t const orig_oam_data = oam_data;
-
-        // On even ticks, data is written into secondary OAM...
-        if (!(oam_addr_overflow || sec_oam_addr_overflow))
-            sec_oam[sec_oam_addr] = oam_data;
-        else
-            // ...unless we have OAM or secondary OAM overflow, in which case we
-            // get a read from secondary OAM instead
-            oam_data = sec_oam[sec_oam_addr];
-
-        if (copy_sprite_signal > 0) {
-            --copy_sprite_signal;
-            move_to_next_oam_byte();
+        if (in_range && !oam_addr_overflow) {
+            sprite_overflow = true;
+            overflow_detection = false;
         }
         else {
-            bool const in_range =
-              (scanline - orig_oam_data) < (sprite_size == EIGHT_BY_EIGHT ? 8 : 16);
-            // At dot 66 we're evaluating the first sprite. This is how the
-            // hardware does it.
-            if (dot == 66)
-                s0_on_next_scanline = in_range;
-            if (in_range && !(oam_addr_overflow || sec_oam_addr_overflow)) {
-                copy_sprite_signal = 3;
-                move_to_next_oam_byte();
-            }
-            else {
-                if (!overflow_detection) {
-                    // Clear low bits, bump high (HW does this, even though the low
-                    // clearing wouldn't usually be noticeable)
-                    oam_addr = (oam_addr + 4) & 0xFC;
-                    if (oam_addr == 0)
-                        oam_addr_overflow = true;
-                }
-                else {
-                    if (in_range && !oam_addr_overflow) {
-                        sprite_overflow = true;
-                        overflow_detection = false;
-                    }
-                    else {
-                        // Glitchy oam_addr increment after exactly eight
-                        // sprites have been found:
-                        // http://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation
-                        oam_addr = ((oam_addr + 4) & 0xFC) | ((oam_addr + 1) & 3);
-                        if ((oam_addr & 0xFC) == 0)
-                            oam_addr_overflow = true;
-                    }
-                }
-            }
+            // Glitchy oam_addr increment after exactly eight
+            // sprites have been found:
+            // http://wiki.nesdev.com/w/index.php/PPU_sprite_evaluation
+            oam_addr = ((oam_addr + 4) & 0xFC) | ((oam_addr + 1) & 3);
+            if ((oam_addr & 0xFC) == 0)
+                oam_addr_overflow = true;
         }
     }
 }
