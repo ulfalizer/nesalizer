@@ -72,22 +72,22 @@ void mapper_9_write(uint8_t value, uint16_t addr) {
     apply_state();
 }
 
-static bool non_magic() {
-    unsigned const magic_bits = ppu_addr_bus & 0xFFF0;
-    return magic_bits != 0x0FD0 && magic_bits != 0x0FE0 &&
-           magic_bits != 0x1FD0 && magic_bits != 0x1FE0;
-}
-
 void mapper_9_ppu_tick_callback() {
-    // TODO: Optimize (beyond just moving stuff inside)
-    switch (previous_magic_bits) {
-    case 0x0FD0: if (non_magic()) low_bank_uses_0FDx  = true ; apply_state(); break;
-    case 0x0FE0: if (non_magic()) low_bank_uses_0FDx  = false; apply_state(); break;
-    case 0x1FD0: if (non_magic()) high_bank_uses_1FDx = true ; apply_state(); break;
-    case 0x1FE0: if (non_magic()) high_bank_uses_1FDx = false; apply_state(); break;
+    unsigned const magic_bits = ppu_addr_bus & 0xFFF0;
+
+    if (magic_bits != 0x0FD0 && magic_bits != 0x0FE0 &&
+        magic_bits != 0x1FD0 && magic_bits != 0x1FE0) {
+        // ppu_addr_bus is non-magic
+
+        switch (previous_magic_bits) {
+        case 0x0FD0: low_bank_uses_0FDx  = true ; apply_state(); break;
+        case 0x0FE0: low_bank_uses_0FDx  = false; apply_state(); break;
+        case 0x1FD0: high_bank_uses_1FDx = true ; apply_state(); break;
+        case 0x1FE0: high_bank_uses_1FDx = false; apply_state(); break;
+        }
     }
 
-    previous_magic_bits = ppu_addr_bus & 0xFFF0;
+    previous_magic_bits = magic_bits;
 }
 
 MAPPER_STATE_START(9)
