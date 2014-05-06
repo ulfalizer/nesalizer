@@ -921,6 +921,14 @@ void write_oam_data_reg(uint8_t value) {
     oam[oam_addr++] = value;
 }
 
+static void set_derived_ppumask_vars() {
+    rendering_enabled = show_bg || show_sprites;
+    bg_clip_comp      = !show_bg      ? 256 : show_bg_left_8      ? 0 : 8;
+    sprite_clip_comp  = !show_sprites ? 256 : show_sprites_left_8 ? 0 : 8;
+    // The status of the tint bits determines the current palette
+    pal_to_rgb        = nes_to_rgb[tint_bits];
+}
+
 void write_ppu_reg(uint8_t value, unsigned n) {
     ppu_open_bus = value;
     open_bus_refreshed();
@@ -975,13 +983,7 @@ void write_ppu_reg(uint8_t value, unsigned n) {
         show_sprites         = value & 0x10;
         tint_bits            = (value >> 5) & 7;
 
-        // The status of the tint bits determines the current palette
-        pal_to_rgb = nes_to_rgb[tint_bits];
-
-        // Optimizations
-        rendering_enabled = show_bg || show_sprites;
-        bg_clip_comp      = !show_bg      ? 256 : show_bg_left_8      ? 0 : 8;
-        sprite_clip_comp  = !show_sprites ? 256 : show_sprites_left_8 ? 0 : 8;
+        set_derived_ppumask_vars();
 
         break;
 
@@ -1177,13 +1179,8 @@ void transfer_ppu_state(uint8_t *&buf) {
     T(show_bg)
     T(show_sprites)
     T(tint_bits)
-    if (!is_save) {
-        rendering_enabled = show_bg || show_sprites;
-        // TODO: Factor out helper to avoid having this in two locations
-        bg_clip_comp      = !show_bg      ? 256 : show_bg_left_8      ? 0 : 8;
-        sprite_clip_comp  = !show_sprites ? 256 : show_sprites_left_8 ? 0 : 8;
-        pal_to_rgb = nes_to_rgb[tint_bits];
-    }
+    if (!is_save)
+        set_derived_ppumask_vars();
 
     T(sprite_overflow) T(sprite_zero_hit) T(in_vblank)
 
