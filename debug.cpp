@@ -5,7 +5,7 @@
 #include <execinfo.h>
 #include <signal.h>
 
-#define SAFE_STDERR_PRINT(msg) write(2, msg, ARRAY_LEN(msg) - 1)
+#define SAFE_STDERR_PRINT(msg) write(STDERR_FILENO, msg, ARRAY_LEN(msg) - 1)
 
 // Backtrace generation on segfault
 
@@ -43,8 +43,8 @@ static void sigsegv_handler(int) {
     SAFE_STDERR_PRINT(addr2line_msg);
 
     sprintf(addr2line_cmd_buf, "addr2line -Cfip -e '%s'", program_name);
-    // TODO: Could use lower-level APIs to avoid libc and find the program in a
-    // more robust way (e.g. via /proc)
+    // Could use lower-level APIs to avoid libc and find the program in a more
+    // robust way (e.g. via /proc) too
     FILE *const f = popen(addr2line_cmd_buf, "w");
     if (!f) {
         SAFE_STDERR_PRINT(addr2line_open_fail_msg);
