@@ -109,7 +109,7 @@ static unsigned       at_shift_l, at_shift_h;
 static unsigned       at_latch_l, at_latch_h;
 
 static uint8_t        sprite_attribs[8];
-static uint8_t        sprite_positions[8];
+static uint8_t        sprite_x[8];
 static uint8_t        sprite_pat_l[8];
 static uint8_t        sprite_pat_h[8];
 
@@ -303,7 +303,7 @@ static unsigned get_sprite_pixel(unsigned &spr_pal, bool &spr_behind_bg, bool &s
         return 0;
 
     for (unsigned i = 0; i < 8; ++i) {
-        unsigned const offset = pixel - sprite_positions[i];
+        unsigned const offset = pixel - sprite_x[i];
         if (offset < 8) { // offset >= 0 && offset < 8
             unsigned const pat_res = (NTH_BIT(sprite_pat_h[i], 7 - offset) << 1) |
                                       NTH_BIT(sprite_pat_l[i], 7 - offset);
@@ -579,7 +579,7 @@ static void do_sprite_loading() {
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
         break;
     case 3:
-        sprite_positions[sprite_n] = sec_oam[sec_oam_addr];
+        sprite_x[sprite_n] = sec_oam[sec_oam_addr];
         sec_oam_addr = (sec_oam_addr + 1) & 0x1F;
         break;
 
@@ -1129,10 +1129,10 @@ void set_ppu_cold_boot_state() {
     sprite_y = sprite_index = 0;
     sprite_in_range = false;
 
-    init_array(sprite_attribs  , (uint8_t)0);
-    init_array(sprite_positions, (uint8_t)0);
-    init_array(sprite_pat_l    , (uint8_t)0);
-    init_array(sprite_pat_h    , (uint8_t)0);
+    init_array(sprite_attribs, (uint8_t)0);
+    init_array(sprite_x      , (uint8_t)0);
+    init_array(sprite_pat_l  , (uint8_t)0);
+    init_array(sprite_pat_h  , (uint8_t)0);
 }
 
 void reset_ppu() {
@@ -1204,7 +1204,7 @@ void transfer_ppu_state(uint8_t *&buf) {
     T(at_latch_l) T(at_latch_h)
 
     T(sprite_attribs)
-    T(sprite_positions)
+    T(sprite_x)
     T(sprite_pat_l)
     T(sprite_pat_h)
 
