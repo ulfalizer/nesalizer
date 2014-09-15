@@ -6,7 +6,7 @@
 
 bool end_testing;
 
-static char const*filename;
+static char const *filename;
 
 void report_status_and_end_test(uint8_t status, char const *msg) {
     if (status == 0)

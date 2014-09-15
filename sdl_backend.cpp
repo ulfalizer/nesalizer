@@ -133,7 +133,7 @@ static void sdl_audio_callback(void*, Uint8 *stream, int len) {
 // Input
 //
 
-Uint8 const*keys;
+Uint8 const *keys;
 
 //
 // SDL thread and events
@@ -141,8 +141,6 @@ Uint8 const*keys;
 
 // Runs from emulation thread
 void handle_ui_keys() {
-    extern Uint8 const*keys;
-
     SDL_LockMutex(event_lock);
 
     if (keys[SDL_SCANCODE_S])

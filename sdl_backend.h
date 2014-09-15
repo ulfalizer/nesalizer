@@ -30,4 +30,4 @@ int    const sample_rate = 44100;
 void handle_ui_keys();
 
 extern SDL_mutex *event_lock;
-extern Uint8 const*keys;
+extern Uint8 const *keys;

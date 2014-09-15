@@ -9,7 +9,7 @@ public:
 
     // Writes up to 'len' samples from 'samples' to the ring buffer. In case of
     // overflow, writes as many samples as possible and returns 'false'.
-    bool write_samples(int16_t const*samples, size_t len);
+    bool write_samples(int16_t const *samples, size_t len);
 
     // Moves up to 'len' samples from the ring buffer to 'out'. In case of
     // underflow, moves all remaining samples, zeroes the remainder of 'out'
@@ -35,7 +35,7 @@ Audio_ring_buffer<LENGTH>::Audio_ring_buffer() :
   start_index(0), end_index(0), prev_op_was_read(true) {}
 
 template<size_t LENGTH>
-bool Audio_ring_buffer<LENGTH>::write_samples(int16_t const*samples, size_t len) {
+bool Audio_ring_buffer<LENGTH>::write_samples(int16_t const *samples, size_t len) {
     // Copy samples from 'samples' to the ring buffer by memcpy()ing contiguous
     // segments
 

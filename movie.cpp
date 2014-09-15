@@ -20,7 +20,7 @@ extern "C" {
 
 unsigned const                 vid_scale_factor = 3;
 
-char const*const               filename = "movie.mp4";
+char const *const              filename = "movie.mp4";
 
 static AVFormatContext        *output_ctx;
 static AVOutputFormat         *output_fmt;
@@ -89,8 +89,8 @@ static void print_audio_encoder_info(AVCodec *c) {
     if (!c->sample_fmts)
         puts(" (unknown)");
     else
-        for (AVSampleFormat const*f = c->sample_fmts; *f != -1; ++f) {
-            char const*const s_str = av_get_sample_fmt_name(*f);
+        for (AVSampleFormat const *f = c->sample_fmts; *f != -1; ++f) {
+            char const *const s_str = av_get_sample_fmt_name(*f);
             printf(" %s", s_str ? s_str : "(unrecognized format)");
         }
     putchar('\n');
@@ -103,8 +103,8 @@ static void print_video_encoder_info(AVCodec *c) {
     if (!c->pix_fmts)
         puts(" (Unknown)");
     else
-        for (PixelFormat const*p = c->pix_fmts; *p != -1; ++p) {
-            char const*const p_str = av_get_pix_fmt_name(*p);
+        for (PixelFormat const *p = c->pix_fmts; *p != -1; ++p) {
+            char const *const p_str = av_get_pix_fmt_name(*p);
             printf(" %s", p_str ? p_str : "(unrecognized format)");
         }
     putchar('\n');
@@ -404,7 +404,7 @@ void add_movie_video_frame(uint32_t *frame_data) {
       PIX_FMT_ARGB,
 #endif
       256, 240);
-    sws_scale(video_conv_ctx, (uint8_t const*const*)frame_pic.data, frame_pic.linesize,
+    sws_scale(video_conv_ctx, (uint8_t const *const*)frame_pic.data, frame_pic.linesize,
       0, 240, video_frame->data, video_frame->linesize);
 
     if (output_ctx->oformat->flags & AVFMT_RAWPICTURE) {

@@ -7,7 +7,7 @@ static void fail_helper(bool include_errno, char const *format, va_list args) {
     fprintf(stderr, "%s: ", program_name);
     vfprintf(stderr, format, args);
     if (include_errno) {
-        char const*const err_str = strerror(errno);
+        char const *const err_str = strerror(errno);
         fprintf(stderr, ": %s (errno = %d)", err_str ? err_str : "unknown error", errno);
     }
     putc('\n', stderr);

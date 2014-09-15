@@ -1324,14 +1324,14 @@ static int read_without_side_effects(uint16_t addr) {
     }
 }
 
-static char const*decode_addr(uint16_t addr) {
+static char const *decode_addr(uint16_t addr) {
     static char addr_str[64];
 
-    static char const*const desc_2000_regs[]
+    static char const *const desc_2000_regs[]
       = { "PPUCTRL", "PPUMASK"  , "PPUSTATUS", "OAMADDR",
           "OAMDATA", "PPUSCROLL", "PPUADDR"  , "PPUDATA" };
 
-    static char const*const desc_4000_regs[]
+    static char const *const desc_4000_regs[]
       = { // $4000-$4007
           "Pulse 1 duty, loop, and volume", "Pulse 1 sweep unit"           ,
           "Pulse 1 timer low"             , "Pulse 1 length and timer high",
@@ -1352,7 +1352,7 @@ static char const*decode_addr(uint16_t addr) {
           "OAM DMA", "APU status", "Read controller 1",
           "Frame counter and read controller 2" };
 
-    char const*addr_desc;
+    char const *addr_desc;
     if (addr >= 0x2000 && addr <= 0x3FFF)
         addr_desc = desc_2000_regs[addr & 7];
     else if (addr >= 0x4000 && addr <= 0x4017)

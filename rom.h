@@ -12,5 +12,5 @@ extern bool     is_pal;
 
 extern bool     has_bus_conflicts;
 
-void load_rom(char const*filename, bool print_info);
+void load_rom(char const *filename, bool print_info);
 void unload_rom();

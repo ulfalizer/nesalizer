@@ -39,7 +39,7 @@ bool            has_bus_conflicts;
 
 unsigned        mapper;
 
-char const*const mirroring_to_str[N_MIRRORING_MODES] =
+char const *const mirroring_to_str[N_MIRRORING_MODES] =
   { "horizontal",
     "vertical",
     "one-screen, low",
@@ -50,7 +50,7 @@ char const*const mirroring_to_str[N_MIRRORING_MODES] =
 // Forward declaration
 static void do_rom_specific_overrides();
 
-void load_rom(char const*filename, bool print_info) {
+void load_rom(char const *filename, bool print_info) {
     #define PRINT_INFO(...) do { if (print_info) printf(__VA_ARGS__); } while(0)
 
     is_pal = strstr(filename, "(E)") || strstr(filename, "PAL");
