@@ -179,31 +179,30 @@ static uint8_t &chr_ref(unsigned chr_addr) {
 }
 
 // Nametable reading and writing
-// Could factor out the address determination, but keep it straightforward and
-// fast.
 
-static uint8_t read_nt(uint16_t addr) {
+// Returns the physical CIRAM address after mirroring
+static uint16_t get_mirrored_address(uint16_t addr) {
     switch (mirroring) {
-    case VERTICAL:        return ciram[addr & 0x07FF];                            break;
-    case HORIZONTAL:      return ciram[((addr >> 1) & 0x0400) + (addr & 0x03FF)]; break;
-    case ONE_SCREEN_LOW:  return ciram[addr & 0x03FF];                            break;
-    case ONE_SCREEN_HIGH: return ciram[0x0400 + (addr & 0x03FF)];                 break;
-    case FOUR_SCREEN:     return ciram[addr & 0x0FFF];                            break;
-    case SPECIAL:         return mapper_read_nt(addr);                            break;
-    default: UNREACHABLE
+    case VERTICAL:        return addr & 0x07FF;
+    case HORIZONTAL:      return ((addr >> 1) & 0x0400) + (addr & 0x03FF);
+    case ONE_SCREEN_LOW:  return addr & 0x03FF;
+    case ONE_SCREEN_HIGH: return 0x0400 + (addr & 0x03FF);
+    case FOUR_SCREEN:     return addr & 0x0FFF;
+    default: UNREACHABLE;
     }
 }
 
+static uint8_t read_nt(uint16_t addr) {
+    return (mirroring == SPECIAL) ?
+      mapper_read_nt(addr) :
+      ciram[get_mirrored_address(addr)];
+}
+
 static void write_nt(uint16_t addr, uint8_t value) {
-    switch (mirroring) {
-    case VERTICAL:        ciram[addr & 0x07FF]                            = value; break;
-    case HORIZONTAL:      ciram[((addr >> 1) & 0x0400) + (addr & 0x03FF)] = value; break;
-    case ONE_SCREEN_LOW:  ciram[addr & 0x03FF]                            = value; break;
-    case ONE_SCREEN_HIGH: ciram[0x0400 + (addr & 0x03FF)]                 = value; break;
-    case FOUR_SCREEN:     ciram[addr & 0x0FFF]                            = value; break;
-    case SPECIAL:         mapper_write_nt(value, addr);                            break;
-    default: UNREACHABLE
-    }
+    if (mirroring == SPECIAL)
+        mapper_write_nt(value, addr);
+    else
+        ciram[get_mirrored_address(addr)] = value;
 }
 
 // Bumps the horizontal bits in v every eight pixels during rendering
