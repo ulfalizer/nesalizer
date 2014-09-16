@@ -167,7 +167,7 @@ static uint8_t get_open_bus_bits_4_to_0() {
 
 static uint8_t get_all_open_bus_bits() {
     return
-      get_open_bus_bits_7_to_6()                                                              |
+      get_open_bus_bits_7_to_6() |
       ((ppu_cycle - ppu_bit_5_write_cycle > open_bus_decay_cycles) ?
          0 : ppu_open_bus & 0x20) |
       get_open_bus_bits_4_to_0();
