@@ -187,46 +187,46 @@ uint8_t read(uint16_t addr) {
     return res;
 }
 
-static void write(uint8_t value, uint16_t addr) {
+static void write(uint8_t val, uint16_t addr) {
     // TODO: The write probably takes effect earlier within the CPU cycle than
     // after the three PPU ticks and the one APU tick
 
     write_tick();
 
-    cpu_data_bus = value;
+    cpu_data_bus = val;
 
     switch (addr) {
-    case 0x0000 ... 0x1FFF: ram[addr & 0x7FF] = value;      break;
-    case 0x2000 ... 0x3FFF: write_ppu_reg(value, addr & 7); break;
+    case 0x0000 ... 0x1FFF: ram[addr & 0x7FF] = val;      break;
+    case 0x2000 ... 0x3FFF: write_ppu_reg(val, addr & 7); break;
 
-    case 0x4000: write_pulse_reg_0(0, value); break;
-    case 0x4001: write_pulse_reg_1(0, value); break;
-    case 0x4002: write_pulse_reg_2(0, value); break;
-    case 0x4003: write_pulse_reg_3(0, value); break;
+    case 0x4000: write_pulse_reg_0(0, val); break;
+    case 0x4001: write_pulse_reg_1(0, val); break;
+    case 0x4002: write_pulse_reg_2(0, val); break;
+    case 0x4003: write_pulse_reg_3(0, val); break;
 
-    case 0x4004: write_pulse_reg_0(1, value); break;
-    case 0x4005: write_pulse_reg_1(1, value); break;
-    case 0x4006: write_pulse_reg_2(1, value); break;
-    case 0x4007: write_pulse_reg_3(1, value); break;
+    case 0x4004: write_pulse_reg_0(1, val); break;
+    case 0x4005: write_pulse_reg_1(1, val); break;
+    case 0x4006: write_pulse_reg_2(1, val); break;
+    case 0x4007: write_pulse_reg_3(1, val); break;
 
-    case 0x4008: write_triangle_reg_0(value); break;
-    case 0x400A: write_triangle_reg_1(value); break;
-    case 0x400B: write_triangle_reg_2(value); break;
+    case 0x4008: write_triangle_reg_0(val); break;
+    case 0x400A: write_triangle_reg_1(val); break;
+    case 0x400B: write_triangle_reg_2(val); break;
 
-    case 0x400C: write_noise_reg_0(value); break;
-    case 0x400E: write_noise_reg_1(value); break;
-    case 0x400F: write_noise_reg_2(value); break;
+    case 0x400C: write_noise_reg_0(val); break;
+    case 0x400E: write_noise_reg_1(val); break;
+    case 0x400F: write_noise_reg_2(val); break;
 
-    case 0x4010: write_dmc_reg_0(value); break;
-    case 0x4011: write_dmc_reg_1(value); break;
-    case 0x4012: write_dmc_reg_2(value); break;
-    case 0x4013: write_dmc_reg_3(value); break;
+    case 0x4010: write_dmc_reg_0(val); break;
+    case 0x4011: write_dmc_reg_1(val); break;
+    case 0x4012: write_dmc_reg_2(val); break;
+    case 0x4013: write_dmc_reg_3(val); break;
 
-    case 0x4014: do_oam_dma(value); break;
+    case 0x4014: do_oam_dma(val); break;
 
-    case 0x4015: write_apu_status(value);            break;
-    case 0x4016: write_controller_strobe(value & 1); break;
-    case 0x4017: write_frame_counter(value);         break;
+    case 0x4015: write_apu_status(val);            break;
+    case 0x4016: write_controller_strobe(val & 1); break;
+    case 0x4017: write_frame_counter(val);         break;
 
     case 0x6000 ... 0x7FFF:
         // SRAM/WRAM/PRG RAM
@@ -235,21 +235,21 @@ static void write(uint8_t value, uint16_t addr) {
         // blargg's test ROMs write the test status to $6000 and a
         // corresponding text string to $6004
         if (addr == 0x6000) {
-            if (value < 0x80)
-                report_status_and_end_test(value, (char*)prg_ram_6000_page + 4);
-            else if (value == 0x81)
+            if (val < 0x80)
+                report_status_and_end_test(val, (char*)prg_ram_6000_page + 4);
+            else if (val == 0x81)
                 // Wait 150 ms before resetting
                 ticks_till_reset = 0.15*cpu_clock_rate;
         }
 #endif
 
-        if (prg_ram_6000_page) prg_ram_6000_page[addr & 0x1FFF] = value;
+        if (prg_ram_6000_page) prg_ram_6000_page[addr & 0x1FFF] = val;
         break;
 
-    case 0x8000 ... 0xFFFF: write_prg(addr, value); break;
+    case 0x8000 ... 0xFFFF: write_prg(addr, val); break;
     }
 
-    write_mapper(value, addr);
+    write_mapper(val, addr);
 }
 
 //
@@ -448,9 +448,9 @@ static void branch_if(bool cond) {
 
 // Stack manipulation
 
-static void push(uint8_t value) {
+static void push(uint8_t val) {
     write_tick();
-    ram[0x100 + s--] = value;
+    ram[0x100 + s--] = val;
 }
 
 static uint8_t pull() {
@@ -676,13 +676,13 @@ static void ind_y_write_a() {
 // (AXA, XAS, TAS, SAY) that are influenced by the high byte of the address
 // plus one (due to an internal bus conflict). In page crossings, the high byte
 // of the target address is corrupted similarly to the value.
-static void unoff_addr_write(uint16_t addr, uint8_t value, uint8_t index) {
+static void unoff_addr_write(uint16_t addr, uint8_t val, uint8_t index) {
     uint16_t const new_addr = addr + index;
     read((addr & 0xFF00) | (new_addr & 0x00FF)); // Dummy read
     poll_for_interrupt();
-    write(value & ((addr >> 8) + 1),
+    write(val & ((addr >> 8) + 1),
           ((addr ^ new_addr) & 0x100) ?
-            (new_addr & (value << 8)) | (new_addr & 0x00FF) : // Page crossing
+            (new_addr & (val << 8)) | (new_addr & 0x00FF) : // Page crossing
             new_addr);                                        // No page crossing
 }
 
