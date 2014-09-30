@@ -635,12 +635,11 @@ static void clock_frame_counter_generic() {
     case FOUR_STEP:
         if (delayed_frame_timer_reset > 0 && --delayed_frame_timer_reset == 0)
             frame_counter_clock = 0;
-        else {
+        else
             if (++frame_counter_clock == T4 + 2) {
                 frame_counter_clock = 0;
                 check_frame_irq();
             }
-        }
 
         switch (frame_counter_clock) {
         case T1 + 1: case T3 + 1:
