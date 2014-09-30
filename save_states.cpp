@@ -118,9 +118,8 @@ static void handle_backwards_frame() {
     // Do not pop the top state if we just started rewinding (i.e., if
     // !is_backwards_frame). We want to run it again backwards first to
     // get a clean transition in the sound.
-    if (is_backwards_frame)
-        if (n_recorded_frames > 1)
-            pop_state();
+    if (is_backwards_frame && n_recorded_frames > 1)
+        pop_state();
     load_top_state();
 
     is_backwards_frame = true;
