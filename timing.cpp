@@ -45,7 +45,7 @@ static void add_to_timespec(timespec &ts, long nano_secs) {
 }
 
 void init_timing() {
-    errno_fail_if(clock_gettime(CLOCK_MONOTONIC, &clock_previous) < 0,
+    errno_fail_if(clock_gettime(CLOCK_MONOTONIC, &clock_previous) == -1,
       "failed to fetch initial synchronization timestamp from clock_gettime()");
 }
 
@@ -56,6 +56,6 @@ again:
       clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &clock_previous, 0);
     if (res == EINTR) goto again;
     errno_val_fail_if(res != 0, res, "failed to sleep with clock_nanosleep()");
-    errno_fail_if(clock_gettime(CLOCK_MONOTONIC, &clock_previous) < 0,
+    errno_fail_if(clock_gettime(CLOCK_MONOTONIC, &clock_previous) == -1,
       "failed to fetch synchronization timestamp from clock_gettime()");
 }
