@@ -198,11 +198,11 @@ static uint8_t read_nt(uint16_t addr) {
       ciram[get_mirrored_address(addr)];
 }
 
-static void write_nt(uint16_t addr, uint8_t value) {
+static void write_nt(uint16_t addr, uint8_t val) {
     if (mirroring == SPECIAL)
-        mapper_write_nt(value, addr);
+        mapper_write_nt(val, addr);
     else
-        ciram[get_mirrored_address(addr)] = value;
+        ciram[get_mirrored_address(addr)] = val;
 }
 
 // Bumps the horizontal bits in v every eight pixels during rendering
@@ -825,13 +825,13 @@ static uint8_t read_vram() {
     return ppu_open_bus;
 }
 
-static void write_vram(uint8_t value) {
+static void write_vram(uint8_t val) {
     switch (v & 0x3FFF) {
 
     // Pattern tables
-    case 0x0000 ... 0x1FFF: if (uses_chr_ram) chr_ref(v) = value; break;
+    case 0x0000 ... 0x1FFF: if (uses_chr_ram) chr_ref(v) = val; break;
     // Nametables
-    case 0x2000 ... 0x3EFF: write_nt(v, value); break;
+    case 0x2000 ... 0x3EFF: write_nt(v, val); break;
     // Palettes
     case 0x3F00 ... 0x3FFF:
         {
@@ -845,7 +845,7 @@ static void write_vram(uint8_t value) {
             0x00, 0x11, 0x12, 0x13, 0x04, 0x15, 0x16, 0x17,
             0x08, 0x19, 0x1A, 0x1B, 0x0C, 0x1D, 0x1E, 0x1F };
 
-        palettes[palette_write_mirror[v & 0x1F]] = palettes[v & 0x1F] = value & 0x3F;
+        palettes[palette_write_mirror[v & 0x1F]] = palettes[v & 0x1F] = val & 0x3F;
         break;
         }
     // GCC doesn't seem to infer this
@@ -910,14 +910,14 @@ uint8_t read_ppu_reg(unsigned n) {
 }
 
 // $2004
-void write_oam_data_reg(uint8_t value) {
+void write_oam_data_reg(uint8_t val) {
     // OAM updates are inhibited during rendering. $2004 writes during
     // rendering do perform a glitchy oam_addr increment however, but that
     // might be hard to pin down (could depend on current sprite evaluation
     // status for example) and not worth emulating.
     if (rendering_enabled && (scanline < 240 || scanline == prerender_line))
         return;
-    oam[oam_addr++] = value;
+    oam[oam_addr++] = val;
 }
 
 static void set_derived_ppumask_vars() {
@@ -928,8 +928,8 @@ static void set_derived_ppumask_vars() {
     pal_to_rgb        = nes_to_rgb[tint_bits];
 }
 
-void write_ppu_reg(uint8_t value, unsigned n) {
-    ppu_open_bus = value;
+void write_ppu_reg(uint8_t val, unsigned n) {
+    ppu_open_bus = val;
     open_bus_refreshed();
 
     switch (n) {
@@ -943,13 +943,13 @@ void write_ppu_reg(uint8_t value, unsigned n) {
         }
 
         // t: ... AB.. .... .... = value: .... ..AB
-        t               = (t & 0x73FF) | ((value & 0x03) << 10);
-        v_inc           = (value & 0x04) ? 32 : 1;
-        sprite_pat_addr = (value & 0x08) << 9; // value & 0x08 ? 0x1000 : 0x0000
-        bg_pat_addr     = (value & 0x10) << 8; // value & 0x10 ? 0x1000 : 0x0000
-        sprite_size     = value & 0x20 ? EIGHT_BY_SIXTEEN : EIGHT_BY_EIGHT;
+        t               = (t & 0x73FF) | ((val & 0x03) << 10);
+        v_inc           = (val & 0x04) ? 32 : 1;
+        sprite_pat_addr = (val & 0x08) << 9; // val & 0x08 ? 0x1000 : 0x0000
+        bg_pat_addr     = (val & 0x10) << 8; // val & 0x10 ? 0x1000 : 0x0000
+        sprite_size     = val & 0x20 ? EIGHT_BY_SIXTEEN : EIGHT_BY_EIGHT;
 
-        bool const new_nmi_on_vblank = value & 0x80;
+        bool const new_nmi_on_vblank = val & 0x80;
         if (new_nmi_on_vblank) {
             // An unset-to-set transition in nmi_on_vblank while in_vblank is
             // set causes another NMI to be generated, since the NMI line
@@ -975,12 +975,12 @@ void write_ppu_reg(uint8_t value, unsigned n) {
             return;
         }
 
-        grayscale_color_mask = value & 0x01 ? 0x30 : 0x3F;
-        show_bg_left_8       = value & 0x02;
-        show_sprites_left_8  = value & 0x04;
-        show_bg              = value & 0x08;
-        show_sprites         = value & 0x10;
-        tint_bits            = (value >> 5) & 7;
+        grayscale_color_mask = val & 0x01 ? 0x30 : 0x3F;
+        show_bg_left_8       = val & 0x02;
+        show_sprites_left_8  = val & 0x04;
+        show_bg              = val & 0x08;
+        show_sprites         = val & 0x10;
+        tint_bits            = (val >> 5) & 7;
 
         set_derived_ppumask_vars();
 
@@ -990,10 +990,10 @@ void write_ppu_reg(uint8_t value, unsigned n) {
     case 2: break;
 
     // OAMADDR
-    case 3: oam_addr = value; break;
+    case 3: oam_addr = val; break;
 
     // OAMDATA
-    case 4: write_oam_data_reg(value); break;
+    case 4: write_oam_data_reg(val); break;
 
     // PPUSCROLL
     case 5:
@@ -1004,15 +1004,15 @@ void write_ppu_reg(uint8_t value, unsigned n) {
 
         if (!write_flip_flop) {
             // First write
-            // fine_x = value: .... .ABC
-            // t: ... .... ...D EFGH = value: DEFG H...
-            fine_x = value & 7;
-            t      = (t & 0x7FE0) | ((value & 0xF8) >> 3);
+            // fine_x = val: .... .ABC
+            // t: ... .... ...D EFGH = val: DEFG H...
+            fine_x = val & 7;
+            t      = (t & 0x7FE0) | ((val & 0xF8) >> 3);
         }
         else
             // Second write
-            // t: ABC ..DE FGH. .... = value: DEFG HABC
-            t = (t & 0x0C1F) | ((value & 0xF8) << 2) | ((value & 7) << 12);
+            // t: ABC ..DE FGH. .... = val: DEFG HABC
+            t = (t & 0x0C1F) | ((val & 0xF8) << 2) | ((val & 7) << 12);
 
         write_flip_flop = !write_flip_flop;
         break;
@@ -1026,13 +1026,13 @@ void write_ppu_reg(uint8_t value, unsigned n) {
 
         if (!write_flip_flop)
             // First write
-            // t: 0AB CDEF .... .... = value: ..AB CDEF
+            // t: 0AB CDEF .... .... = val: ..AB CDEF
             // Clearing of high bit confirmed in Visual 2C02
-            t = (t & 0x00FF) | ((value & 0x3F) << 8);
+            t = (t & 0x00FF) | ((val & 0x3F) << 8);
         else {
             // Second write
-            // t: ... .... ABCD EFGH = value: ABCD EFGH
-            t = (t & 0x7F00) | value;
+            // t: ... .... ABCD EFGH = val: ABCD EFGH
+            t = (t & 0x7F00) | val;
             // There is a delay of ~3 ticks before t is copied to v
             pending_v_update = 3;
         }
@@ -1042,7 +1042,7 @@ void write_ppu_reg(uint8_t value, unsigned n) {
 
     // PPUDATA
     case 7:
-        write_vram(value);
+        write_vram(val);
         do_2007_post_access_bump();
         break;
 

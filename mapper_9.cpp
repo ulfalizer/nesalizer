@@ -40,32 +40,32 @@ void mapper_9_init() {
     previous_magic_bits = 0;
 }
 
-void mapper_9_write(uint8_t value, uint16_t addr) {
+void mapper_9_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
 
     switch ((addr >> 12) & 7) {
     case 2: // 0xA000
-        set_prg_8k_bank(0, value & 0x0F);
+        set_prg_8k_bank(0, val & 0x0F);
         break;
 
     case 3: // 0xB000
-        chr_bank_0FDx = value & 0x1F;
+        chr_bank_0FDx = val & 0x1F;
         break;
 
     case 4: // 0xC000
-        chr_bank_0FEx = value & 0x1F;
+        chr_bank_0FEx = val & 0x1F;
         break;
 
     case 5: // 0xD000
-        chr_bank_1FDx = value & 0x1F;
+        chr_bank_1FDx = val & 0x1F;
         break;
 
     case 6: // 0xE000
-        chr_bank_1FEx = value & 0x1F;
+        chr_bank_1FEx = val & 0x1F;
         break;
 
     case 7: // 0xF000
-        horizontal_mirroring = value & 1;
+        horizontal_mirroring = val & 1;
         break;
     }
 

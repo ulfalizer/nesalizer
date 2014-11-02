@@ -11,9 +11,9 @@ static uint8_t bad_nt_read(uint16_t addr) {
     fail("internal error: reading nametable address %04X with no read function defined",
          addr);
 }
-static void    bad_nt_write(uint8_t value, uint16_t addr) {
+static void    bad_nt_write(uint8_t val, uint16_t addr) {
     fail("internal error: writing %02X to nametable address %04X with no write function defined",
-         value, addr);
+         val, addr);
 }
 // For stateless mappers
 static size_t nop_state_fn(uint8_t*&) { return 0; }

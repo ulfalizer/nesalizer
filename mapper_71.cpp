@@ -21,10 +21,10 @@ void mapper_71_init() {
     apply_state();
 }
 
-void mapper_71_write(uint8_t value, uint16_t addr) {
+void mapper_71_write(uint8_t val, uint16_t addr) {
     if (!(~addr & 0xC000)) {
         // $C000-$FFFF
-        prg_bank = value;
+        prg_bank = val;
         apply_state();
     }
 }

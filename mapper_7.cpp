@@ -17,9 +17,9 @@ void mapper_7_init() {
     apply_state();
 }
 
-void mapper_7_write(uint8_t value, uint16_t addr) {
+void mapper_7_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
-    reg = value;
+    reg = val;
     apply_state();
 }
 

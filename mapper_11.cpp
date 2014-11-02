@@ -16,10 +16,10 @@ void mapper_11_init() {
     apply_state();
 }
 
-void mapper_11_write(uint8_t value, uint16_t addr) {
+void mapper_11_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
-    prg_bank = value & 3;
-    chr_bank = value >> 4;
+    prg_bank = val & 3;
+    chr_bank = val >> 4;
     apply_state();
 }
 

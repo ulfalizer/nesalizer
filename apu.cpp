@@ -151,21 +151,21 @@ static void update_pulse_output_level(unsigned n) {
 }
 
 // $4000/$4004
-void write_pulse_reg_0(unsigned n, uint8_t value) {
-    pulse[n].duty              = value >> 6;
-    pulse[n].halt_len_loop_env = value & 0x20;
-    pulse[n].const_vol         = value & 0x10;
-    pulse[n].vol               = value & 0xF;
+void write_pulse_reg_0(unsigned n, uint8_t val) {
+    pulse[n].duty              = val >> 6;
+    pulse[n].halt_len_loop_env = val & 0x20;
+    pulse[n].const_vol         = val & 0x10;
+    pulse[n].vol               = val & 0xF;
 
     update_pulse_output_level(n);
 }
 
 // $4001/$4005
-void write_pulse_reg_1(unsigned n, uint8_t value) {
-    pulse[n].sweep_enabled = value & 0x80;
-    pulse[n].sweep_period  = (value >> 4) & 7;
-    pulse[n].sweep_negate  = value & 8;
-    pulse[n].sweep_shift   = value & 7;
+void write_pulse_reg_1(unsigned n, uint8_t val) {
+    pulse[n].sweep_enabled = val & 0x80;
+    pulse[n].sweep_period  = (val >> 4) & 7;
+    pulse[n].sweep_negate  = val & 8;
+    pulse[n].sweep_shift   = val & 7;
 
     pulse[n].sweep_reload_flag = true;
 
@@ -174,18 +174,18 @@ void write_pulse_reg_1(unsigned n, uint8_t value) {
 }
 
 // $4002/$4006
-void write_pulse_reg_2(unsigned n, uint8_t value) {
-    pulse[n].period = (pulse[n].period & ~0x0FF) | value;
+void write_pulse_reg_2(unsigned n, uint8_t val) {
+    pulse[n].period = (pulse[n].period & ~0x0FF) | val;
 
     update_sweep_target_period(n);
     update_pulse_output_level(n);
 }
 
 // $4003/$4007
-void write_pulse_reg_3(unsigned n, uint8_t value) {
+void write_pulse_reg_3(unsigned n, uint8_t val) {
     if (pulse[n].enabled)
-        pulse[n].len_cnt = len_table[value >> 3];
-    pulse[n].period = (pulse[n].period & ~0x700) | ((value & 7) << 8);
+        pulse[n].len_cnt = len_table[val >> 3];
+    pulse[n].period = (pulse[n].period & ~0x700) | ((val & 7) << 8);
 
     // Side effects
     pulse[n].waveform_pos   = 0;
@@ -227,22 +227,22 @@ static unsigned tri_lin_cnt;
 static bool     tri_lin_cnt_reload_flag;
 
 // $4008
-void write_triangle_reg_0(uint8_t value) {
-    tri_halt_flag    = value & 0x80;
-    tri_lin_cnt_load = value & 0x7F;
+void write_triangle_reg_0(uint8_t val) {
+    tri_halt_flag    = val & 0x80;
+    tri_lin_cnt_load = val & 0x7F;
 }
 
 // $400A
-void write_triangle_reg_1(uint8_t value) {
-    tri_period = (tri_period & ~0x0FF) | value;
+void write_triangle_reg_1(uint8_t val) {
+    tri_period = (tri_period & ~0x0FF) | val;
 }
 
 // $400B
-void write_triangle_reg_2(uint8_t value) {
+void write_triangle_reg_2(uint8_t val) {
     tri_lin_cnt_reload_flag = true;
     if (tri_enabled)
-        tri_len_cnt = len_table[value >> 3];
-    tri_period = (tri_period & ~0x700) | ((value & 7) << 8);
+        tri_len_cnt = len_table[val >> 3];
+    tri_period = (tri_period & ~0x700) | ((val & 7) << 8);
 }
 
 // Premultiply by three to save multiplication during mixing
@@ -304,10 +304,10 @@ static void update_noise_output_level() {
 }
 
 // $400C
-void write_noise_reg_0(uint8_t value) {
-    noise_halt_len_loop_env = value & 0x20;
-    noise_const_vol         = value & 0x10;
-    noise_vol               = value & 0x0F;
+void write_noise_reg_0(uint8_t val) {
+    noise_halt_len_loop_env = val & 0x20;
+    noise_const_vol         = val & 0x10;
+    noise_vol               = val & 0x0F;
 
     update_noise_output_level();
 }
@@ -319,15 +319,15 @@ uint16_t const pal_noise_periods[]  =
 static uint16_t const *noise_periods;
 
 // $400E
-void write_noise_reg_1(uint8_t value) {
-    noise_feedback_bit = (value & 0x80) ? 6 : 1;
-    noise_period       = noise_periods[value & 0x0F];
+void write_noise_reg_1(uint8_t val) {
+    noise_feedback_bit = (val & 0x80) ? 6 : 1;
+    noise_period       = noise_periods[val & 0x0F];
 }
 
 // $400F
-void write_noise_reg_2(uint8_t value) {
+void write_noise_reg_2(uint8_t val) {
     if (noise_enabled) {
-        noise_len_cnt = len_table[value >> 3];
+        noise_len_cnt = len_table[val >> 3];
         update_noise_output_level();
     }
     noise_env_start_flag = true;
@@ -385,31 +385,31 @@ uint16_t const pal_dmc_periods[] =
 static uint16_t const *dmc_periods;
 
 // $4010
-void write_dmc_reg_0(uint8_t value) {
-    if (!(dmc_irq_enabled = value & 0x80))
+void write_dmc_reg_0(uint8_t val) {
+    if (!(dmc_irq_enabled = val & 0x80))
         set_dmc_irq(false);
-    dmc_loop_sample = value & 0x40;
-    dmc_period      = dmc_periods[value & 0x0F];
+    dmc_loop_sample = val & 0x40;
+    dmc_period      = dmc_periods[val & 0x0F];
 }
 
 // $4011
-void write_dmc_reg_1(uint8_t value) {
+void write_dmc_reg_1(uint8_t val) {
     unsigned const old_dmc_counter = dmc_counter;
 
-    dmc_counter = value & 0x7F;
+    dmc_counter = val & 0x7F;
 
     if (dmc_counter != old_dmc_counter)
         channel_updated = true;
 }
 
 // $4012
-void write_dmc_reg_2(uint8_t value) {
-    dmc_sample_start_addr = 0x4000 | (value << 6);
+void write_dmc_reg_2(uint8_t val) {
+    dmc_sample_start_addr = 0x4000 | (val << 6);
 }
 
 // $4013
-void write_dmc_reg_3(uint8_t value) {
-    dmc_sample_len = (value << 4) + 1;
+void write_dmc_reg_3(uint8_t val) {
+    dmc_sample_len = (val << 4) + 1;
 }
 
 static void load_dmc_sample_byte() {
@@ -597,9 +597,9 @@ static void clock_len_and_sweep() {
 }
 
 // $4017
-void write_frame_counter(uint8_t value) {
-    frame_counter_mode = (Frame_counter_mode)(value >> 7);
-    if ((inhibit_frame_irq = value & 0x40))
+void write_frame_counter(uint8_t val) {
+    frame_counter_mode = (Frame_counter_mode)(val >> 7);
+    if ((inhibit_frame_irq = val & 0x40))
         set_frame_irq(false);
 
     // There is a delay before the frame counter is reset, the length of which
@@ -711,18 +711,18 @@ uint8_t read_apu_status() {
 }
 
 // $4015
-void write_apu_status(uint8_t value) {
+void write_apu_status(uint8_t val) {
     for (unsigned n = 0; n < 2; ++n) {
-        if (!(pulse[n].enabled = value & (1 << n))) {
+        if (!(pulse[n].enabled = val & (1 << n))) {
             pulse[n].len_cnt = 0;
             update_pulse_output_level(n);
         }
     }
 
-    if (!(tri_enabled = value & 4))
+    if (!(tri_enabled = val & 4))
         tri_len_cnt = 0;
 
-    if (!(noise_enabled = value & 8)) {
+    if (!(noise_enabled = val & 8)) {
         noise_len_cnt = 0;
         update_noise_output_level();
     }
@@ -734,7 +734,7 @@ void write_apu_status(uint8_t value) {
 
     // DMC enable bit. We model DMC enabled/disabled through the number of
     // sample bytes that remain (greater than zero => enabled).
-    if (!(value & 0x10))
+    if (!(val & 0x10))
         dmc_bytes_remaining = 0;
     else {
         if (dmc_bytes_remaining == 0) {

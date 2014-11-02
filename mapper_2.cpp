@@ -18,10 +18,10 @@ void mapper_2_init() {
     apply_state();
 }
 
-void mapper_2_write(uint8_t value, uint16_t addr) {
+void mapper_2_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
 
-    prg_bank = value;
+    prg_bank = val;
     apply_state();
 }
 

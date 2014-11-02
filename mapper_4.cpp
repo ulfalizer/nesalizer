@@ -58,25 +58,25 @@ void mapper_4_init() {
     apply_state();
 }
 
-void mapper_4_write(uint8_t value, uint16_t addr) {
+void mapper_4_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
-    LOG_MAPPER("MMC3: Writing %02X to $%04X, at (%u,%u)\n", value, addr, scanline, dot);
+    LOG_MAPPER("MMC3: Writing %02X to $%04X, at (%u,%u)\n", val, addr, scanline, dot);
 
     switch (((addr >> 12) & 6) | (addr & 1)) {
 
     case 0: // 0x8000
         LOG_MAPPER("8000\n");
-        reg_8000 = value;
+        reg_8000 = val;
         break;
 
     case 1: // 0x8001
         LOG_MAPPER("8001\n");
-        regs[reg_8000 & 7] = value;
+        regs[reg_8000 & 7] = val;
         break;
 
     case 2: // 0xA000
         LOG_MAPPER("A000\n");
-        horizontal_mirroring = value & 1;
+        horizontal_mirroring = val & 1;
         break;
 
     case 3: // 0xA001
@@ -86,8 +86,8 @@ void mapper_4_write(uint8_t value, uint16_t addr) {
         break;
 
     case 4: // 0xC000
-        LOG_MAPPER("MMC3: Setting IRQ period to %d, at scanline = %u, dot = %u\n", value, scanline, dot);
-        irq_period = value;
+        LOG_MAPPER("MMC3: Setting IRQ period to %d, at scanline = %u, dot = %u\n", val, scanline, dot);
+        irq_period = val;
         break;
 
     case 5: // 0xC001

@@ -51,10 +51,10 @@ void mapper_1_init() {
     apply_state();
 }
 
-void mapper_1_write(uint8_t value, uint16_t addr) {
+void mapper_1_write(uint8_t val, uint16_t addr) {
     // static uint64_t last_write_cycle;
     if (!(addr & 0x8000)) return;
-    LOG_MAPPER("MMC1: Writing $%02X to $%04X\n", value, addr);
+    LOG_MAPPER("MMC1: Writing $%02X to $%04X\n", val, addr);
 
     // Writes after the first write are ignored for writes on consecutive CPU
     // cycles. Bill & Ted's Excellent Adventure needs this.
@@ -63,14 +63,14 @@ void mapper_1_write(uint8_t value, uint16_t addr) {
     //if (ppu_cycle == last_write_cycle + 3) return;
     //last_write_cycle = ppu_cycle;
 
-    if (value & 0x80) {
+    if (val & 0x80) {
         nth_write = 0;
         temp_reg = 0;
         regs[0] |= 0x0C; // 16K PRG swapping (0x08), swapping 8000-BFFF (0x04)
         apply_state();
     }
     else {
-        temp_reg = ((value & 1) << 4) | (temp_reg >> 1);
+        temp_reg = ((val & 1) << 4) | (temp_reg >> 1);
         if (++nth_write == 5) {
             switch ((addr >> 13) & 3) {
             case 0: LOG_MAPPER("MMC1: setting flags");      break;

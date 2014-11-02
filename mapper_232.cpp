@@ -26,15 +26,15 @@ void mapper_232_init() {
     apply_state();
 }
 
-void mapper_232_write(uint8_t value, uint16_t addr) {
+void mapper_232_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
 
     if (!((addr >> 13) & 3))
         // 0x8000-0x9FFF
-        block = (value & 0x18) >> 1;
+        block = (val & 0x18) >> 1;
     else
         // 0xA000-0xFFFF
-        page = value & 3;
+        page = val & 3;
 
     apply_state();
 }

@@ -20,12 +20,12 @@ void mapper_3_init() {
     apply_state();
 }
 
-void mapper_3_write(uint8_t value, uint16_t addr) {
+void mapper_3_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
 
     // Cybernoid depends on bus conflicts
-    if (has_bus_conflicts) value &= read_prg(addr);
-    chr_bank = value;
+    if (has_bus_conflicts) val &= read_prg(addr);
+    chr_bank = val;
     apply_state();
 }
 

@@ -240,63 +240,63 @@ uint8_t mapper_5_read(uint16_t addr) {
     return cpu_data_bus; // Open bus
 }
 
-void mapper_5_write(uint8_t value, uint16_t addr) {
+void mapper_5_write(uint8_t val, uint16_t addr) {
     if (addr < 0x5100) return;
 
     switch (addr) {
-    case 0x5100: prg_mode = value & 3;   break;
-    case 0x5101: chr_mode = value & 3;   break;
+    case 0x5100: prg_mode = val & 3;     break;
+    case 0x5101: chr_mode = val & 3;     break;
     case 0x5102: /* PRG RAM protect 1 */ break;
     case 0x5103: /* PRG RAM protect 2 */ break;
-    case 0x5104: exram_mode = value & 3; break;
-    case 0x5105: mmc5_mirroring = value; break;
-    case 0x5106: fill_tile = value;      break;
+    case 0x5104: exram_mode = val & 3;   break;
+    case 0x5105: mmc5_mirroring = val;   break;
+    case 0x5106: fill_tile = val;        break;
     case 0x5107:
     {
-        unsigned const attrib_bits = value & 3;
+        unsigned const attrib_bits = val & 3;
         fill_attrib = (attrib_bits << 6) | (attrib_bits << 4) | (attrib_bits << 2) | attrib_bits;
         break;
     }
 
-    case 0x5113: prg_6000_bank = value & 7; break;
+    case 0x5113: prg_6000_bank = val & 7; break;
 
     case 0x5114 ... 0x5117:
-        prg_banks[addr - 0x5114] = value;
+        prg_banks[addr - 0x5114] = val;
         break;
 
     case 0x5120 ... 0x5127:
-        sprite_chr_banks[addr - 0x5120] = high_chr_bits | value;
+        sprite_chr_banks[addr - 0x5120] = high_chr_bits | val;
         break;
 
     case 0x5128 ... 0x512B:
-        bg_chr_banks[addr - 0x5128] = high_chr_bits | value;
+        bg_chr_banks[addr - 0x5128] = high_chr_bits | val;
         break;
 
-    case 0x5130: high_chr_bits = (value & 3) << 6; break;
+    case 0x5130: high_chr_bits = (val & 3) << 6; break;
 
     case 0x5200:
-        split_enabled  = value & 0x80;
-        split_on_right = value & 0x40;
-        split_tile_nr  = value & 0x1F;
+        split_enabled  = val & 0x80;
+        split_on_right = val & 0x40;
+        split_tile_nr  = val & 0x1F;
         break;
-    case 0x5201: split_y_scroll = value; break;
-    case 0x5202: split_chr_page = value; break;
+    case 0x5201: split_y_scroll = val; break;
+    case 0x5202: split_chr_page = val; break;
 
-    case 0x5203: irq_scanline = value; break;
+    case 0x5203: irq_scanline = val; break;
     case 0x5204:
-        irq_enabled = value & 0x80;
+        irq_enabled = val & 0x80;
         set_cart_irq(irq_enabled && irq_pending);
         break;
 
-    case 0x5205: multiplicand = value; break;
-    case 0x5206: multiplier   = value; break;
+    case 0x5205: multiplicand = val; break;
+    case 0x5206: multiplier   = val; break;
 
     case 0x5C00 ... 0x5FFF:
         // In ExRAM modes 0 and 1, ExRAM is only writeable during rendering.
         // Outside of rendering, 0 gets written instead.
         switch (exram_mode) {
-        case 0: case 1: exram[addr - 0x5C00] = in_frame ? value : 0; break;
-        case 2:         exram[addr - 0x5C00] = value;                break;
+        case 0: case 1: exram[addr - 0x5C00] = in_frame ? val : 0; break;
+        case 2:         exram[addr - 0x5C00] = val;                break;
         }
         break;
     }
@@ -414,17 +414,17 @@ uint8_t mapper_5_read_nt(uint16_t addr) {
     }
 }
 
-void mapper_5_write_nt(uint8_t value, uint16_t addr) {
+void mapper_5_write_nt(uint8_t val, uint16_t addr) {
     unsigned bits;
     // Maps $2000 to bits 1-0, $2400 to bits 3-2, etc.
     unsigned const bit_offset = (addr >> 9) & 6;
     switch ((mmc5_mirroring >> bit_offset) & 3) {
     // Internal nametable A
-    case 0: ciram[addr & 0x03FF] = value; break;
+    case 0: ciram[addr & 0x03FF] = val; break;
     // Internal nametable B
-    case 1: ciram[0x0400 | (addr & 0x03FF)] = value; break;
+    case 1: ciram[0x0400 | (addr & 0x03FF)] = val; break;
     // Use ExRAM as nametable
-    case 2: if (exram_mode <= 1) exram[addr & 0x03FF] = value; break;
+    case 2: if (exram_mode <= 1) exram[addr & 0x03FF] = val; break;
     // Assume the fill tile and attribute can't be written through the PPU in
     // mode 3
     }
