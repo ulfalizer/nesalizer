@@ -2,7 +2,7 @@ void fail(char const *format, ...)
   __attribute__((format(printf, 1, 2), noreturn));
 
 void errno_fail(int errno_val, char const *format, ...)
-  __attribute__((format(printf, 2, 3)));
+  __attribute__((format(printf, 2, 3), noreturn));
 
 #define fail_if(condition, ...) \
     if (condition)              \
