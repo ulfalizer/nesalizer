@@ -2,8 +2,7 @@
 
 A work-in-progress NES emulator. Still lacks a GUI and persistent (on-disk)
 save states, so not worth using yet from a user's perspective. Includes a
-rewind feature that also reverses sound (see 
-![this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI)), and will
+rewind feature that also reverses sound ([see this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI)), and will
 include some other cool unique features later on. :)
 
 See the end of the README for some screenshot.
