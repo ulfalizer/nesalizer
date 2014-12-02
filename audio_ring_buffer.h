@@ -137,7 +137,6 @@ bool Audio_ring_buffer<LENGTH>::read_samples(int16_t *out, size_t len) {
 
 template<size_t LENGTH>
 double Audio_ring_buffer<LENGTH>::fill_level() const {
-    double const data_len =
-      (end_index + LENGTH - start_index) % LENGTH;
+    double const data_len = (end_index - start_index) % LENGTH;
     return data_len/LENGTH;
 }
