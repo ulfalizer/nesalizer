@@ -51,12 +51,12 @@ bool Audio_ring_buffer<LENGTH>::write_samples(int16_t const *samples, size_t len
 
     if (contig_avail >= len) {
         // ...as many as we need. Copy it all in one go.
-        memcpy(buf + end_index, samples, sizeof(int16_t)*len);
+        memcpy(buf + end_index, samples, sizeof(*buf)*len);
         end_index = (end_index + len) % LENGTH;
     }
     else {
         // ...less than we need. Fill the contiguous segment first.
-        memcpy(buf + end_index, samples, sizeof(int16_t)*contig_avail);
+        memcpy(buf + end_index, samples, sizeof(*buf)*contig_avail);
         len -= contig_avail;
         assert(len > 0);
         // Move past the contiguous segment - possibly to index 0
@@ -66,14 +66,14 @@ bool Audio_ring_buffer<LENGTH>::write_samples(int16_t const *samples, size_t len
         size_t const avail = start_index - end_index;
         if (avail >= len) {
             // ...as many as we need. Copy the rest.
-            memcpy(buf + end_index, samples + contig_avail, sizeof(int16_t)*len);
+            memcpy(buf + end_index, samples + contig_avail, sizeof(*buf)*len);
             end_index += len;
             assert(end_index <= start_index);
         }
         else {
             // ...less than we need. Copy as much as we can and drop the
             // rest.
-            memcpy(buf + end_index, samples + contig_avail, sizeof(int16_t)*avail);
+            memcpy(buf + end_index, samples + contig_avail, sizeof(*buf)*avail);
             assert(end_index + avail == start_index);
             end_index = start_index;
             // Overflow!
@@ -102,12 +102,12 @@ bool Audio_ring_buffer<LENGTH>::read_samples(int16_t *out, size_t len) {
 
     if (contig_avail >= len) {
         // ...as many as we need. Copy it all in one go.
-        memcpy(out, buf + start_index, sizeof(int16_t)*len);
+        memcpy(out, buf + start_index, sizeof(*buf)*len);
         start_index = (start_index + len) % LENGTH;
     }
     else {
         // ... less than we need. Copy the contiguous segment first.
-        memcpy(out, buf + start_index, sizeof(int16_t)*contig_avail);
+        memcpy(out, buf + start_index, sizeof(*buf)*contig_avail);
         len -= contig_avail;
         assert(len > 0);
         // Move past the contiguous segment - possibly to index 0
@@ -117,15 +117,15 @@ bool Audio_ring_buffer<LENGTH>::read_samples(int16_t *out, size_t len) {
         size_t const avail = end_index - start_index;
         if (avail >= len) {
             // ...as many as we need. Copy the rest.
-            memcpy(out + contig_avail, buf + start_index, sizeof(int16_t)*len);
+            memcpy(out + contig_avail, buf + start_index, sizeof(*buf)*len);
             start_index += len;
             assert(start_index <= end_index);
         }
         else {
             // ...less than we need. Copy as much as we can and zero-fill
             // the rest of the output buffer, as required by SDL2.
-            memcpy(out + contig_avail, buf + start_index, sizeof(int16_t)*avail);
-            memset(out + contig_avail + avail, 0, sizeof(int16_t)*(len - avail));
+            memcpy(out + contig_avail, buf + start_index, sizeof(*buf)*avail);
+            memset(out + contig_avail + avail, 0, sizeof(*buf)*(len - avail));
             assert(start_index + avail == end_index);
             start_index = end_index;
             // Underflow!
