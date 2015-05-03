@@ -322,7 +322,7 @@ static unsigned get_sprite_pixel(unsigned &spr_pal, bool &spr_behind_bg, bool &s
 // an output pixel according to the pixel values and background/sprite
 // priority. Also handles sprite zero hit detection.
 // Performance hotspot!
-static void do_pixel_output_and_sprite_0() {
+static void do_pixel_output_and_sprite_zero() {
     unsigned const pixel = dot - 2;
     unsigned pal_index;
 
@@ -653,7 +653,7 @@ static void do_render_line_ops() {
 // Called for dots on the visible lines (0-239)
 static void do_visible_line_ops() {
     if (dot >= 2 && dot <= 257)
-        do_pixel_output_and_sprite_0();
+        do_pixel_output_and_sprite_zero();
 
     if (rendering_enabled) {
         do_render_line_ops();
