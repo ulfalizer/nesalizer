@@ -75,8 +75,12 @@ void draw_frame() {
 // Audio
 //
 
-Uint16 const             sdl_audio_buffer_size = 2048;
+// Debugging helper. Outputs a trace of the current audio buffer fill level if
+// enabled.
+//
+// #define PRINT_FILL_LEVEL
 
+Uint16 const sdl_audio_buffer_size = 2048;
 static SDL_AudioDeviceID audio_device_id;
 
 // Audio ring buffer
@@ -88,12 +92,13 @@ double audio_buf_fill_level() {
     return audio_buf.fill_level();
 }
 
-// Un-static to prevent warning
-void print_fill_level() {
+#ifdef PRINT_FILL_LEVEL
+static void print_fill_level() {
     static unsigned count = 0;
     if (++count % 8 == 0)
         printf("Audio buffer fill level: %f%%\n", 100.0*audio_buf.fill_level());
 }
+#endif
 
 void add_audio_samples(int16_t *samples, size_t n_samples) {
 #ifdef RECORD_MOVIE
@@ -120,7 +125,9 @@ void stop_audio_playback() {
 static void sdl_audio_callback(void*, Uint8 *stream, int len) {
     assert(len >= 0);
 
-    //print_fill_level();
+#ifdef PRINT_FILL_LEVEL
+    print_fill_level();
+#endif
 
     if (!audio_buf.read_samples((int16_t*)stream, len/sizeof(int16_t)))
 #ifndef RUN_TESTS
