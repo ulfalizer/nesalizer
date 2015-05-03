@@ -166,11 +166,12 @@ void blip_clear( blip_t* m )
 	memset( SAMPLES( m ), 0, (m->size + buf_extra) * sizeof (buf_t) );
 }
 
+/*
 int blip_clocks_needed( const blip_t* m, int samples )
 {
 	fixed_t needed;
 
-	/* Fails if buffer can't hold that many more samples */
+	// Fails if buffer can't hold that many more samples
 	assert( samples >= 0 && m->avail + samples <= m->size );
 
 	needed = (fixed_t) samples * time_unit;
@@ -179,6 +180,7 @@ int blip_clocks_needed( const blip_t* m, int samples )
 
 	return (needed - m->offset + m->factor - 1) / m->factor;
 }
+*/
 
 void blip_end_frame( blip_t* m, unsigned t )
 {
@@ -328,6 +330,7 @@ void blip_add_delta( blip_t* m, unsigned time, int delta )
 	out [15] += in[0]*delta + in[0-half_width]*delta2;
 }
 
+/*
 void blip_add_delta_fast( blip_t* m, unsigned time, int delta )
 {
 	unsigned fixed = (unsigned) ((time * m->factor + m->offset) >> pre_shift);
@@ -336,9 +339,10 @@ void blip_add_delta_fast( blip_t* m, unsigned time, int delta )
 	int interp = fixed >> (frac_bits - delta_bits) & (delta_unit - 1);
 	int delta2 = delta * interp;
 
-	/* Fails if buffer size was exceeded */
+	// Fails if buffer size was exceeded
 	assert( out <= &SAMPLES( m ) [m->size + end_frame_extra] );
 
 	out [7] += delta * delta_unit - delta2;
 	out [8] += delta2;
 }
+*/
