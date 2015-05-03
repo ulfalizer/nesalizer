@@ -143,6 +143,16 @@ bool     prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
 // 8 KB page mapped at $6000-$7FFF. MMC5 can remap this.
 uint8_t *prg_ram_6000_page;
 
+uint8_t read_prg(uint16_t addr) {
+    return prg_pages[(addr >> 13) & 3][addr & 0x1FFF];
+}
+
+// MMC5 can put PRG RAM into the $8000+ range
+void write_prg(uint16_t addr, uint8_t value) {
+    if (prg_page_is_ram[(addr >> 13) & 3])
+        prg_pages[(addr >> 13) & 3][addr & 0x1FFF] = value;
+}
+
 // Each 1 KB big
 uint8_t *chr_pages[8];
 
