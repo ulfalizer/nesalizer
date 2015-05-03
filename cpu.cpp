@@ -425,7 +425,6 @@ static void xaa(uint8_t arg) {
 
 // Conditional branches
 
-// Forward declaration
 static void poll_for_interrupt();
 
 static void branch_if(bool cond) {

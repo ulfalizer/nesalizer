@@ -47,7 +47,6 @@ char const *const mirroring_to_str[N_MIRRORING_MODES] =
     "four-screen",
     "special (internal error - should never get this here)" };
 
-// Forward declaration
 static void do_rom_specific_overrides();
 
 void load_rom(char const *filename, bool print_info) {
