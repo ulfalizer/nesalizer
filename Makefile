@@ -35,14 +35,12 @@ is_clang := $(if $(findstring clang,$(shell "$(CXX)" -v 2>&1)),1,0)
 # Source files and libraries
 #
 
-cpp_sources :=                                  \
-  audio apu blip_buf controller cpu debug error \
-  input main md5 mapper mapper_0 mapper_1       \
-  mapper_2 mapper_3 mapper_4 mapper_5 mapper_7  \
-  mapper_9 mapper_11 mapper_71 mapper_232 ppu   \
-  rom save_states sdl_backend timing util
+cpp_sources := audio apu blip_buf controller cpu debug error input main md5 \
+  mapper mapper_0 mapper_1 mapper_2 mapper_3 mapper_4 mapper_5 mapper_7     \
+  mapper_9 mapper_11 mapper_71 mapper_232 ppu rom save_states sdl_backend   \
+  timing util
 # Use C99 for the handy designated initializers feature
-c_sources   := tables
+c_sources := tables
 
 ifeq ($(RECORD_MOVIE),1)
     cpp_sources += movie
@@ -57,38 +55,32 @@ objects     := $(c_objects) $(cpp_objects)
 deps        := $(addprefix $(OBJDIR)/,$(c_sources:=.d) $(cpp_sources:=.d))
 
 LDLIBS := $(shell sdl2-config --libs) -lrt
+
 ifeq ($(INCLUDE_DEBUGGER),1)
     LDLIBS += -lreadline
 endif
+
 ifeq ($(RECORD_MOVIE),1)
     LDLIBS += -lavcodec -lavformat -lavutil -lswscale
 endif
 
 #
-# Debugging and optimization
+# Optimizations and warnings
 #
 
-# Dubious optimizations:
-#   -fno-stack-protector
-#   -U_FORTIFY_SOURCE
-#   -funroll-loops
-
 ifeq ($(is_clang),1)
+	# Older clang versions barf on some of the optimizations below
     optimizations := -O3 -ffast-math
 else
     # Assume GCC
     optimizations := -Ofast -mfpmath=sse -funsafe-loop-optimizations
 endif
 
-optimizations += -msse3 -flto -fno-exceptions -fno-stack-protector -DNDEBUG
-# Flags passed in addition to the above during linking
-link_optimizations := -fuse-linker-plugin
+optimizations += -msse3 -flto -fno-exceptions -DNDEBUG
 
-warnings :=                                        \
-  -Wall -Wextra -Wdisabled-optimization            \
-  -Wmissing-format-attribute -Wmaybe-uninitialized \
-  -Wno-switch -Wuninitialized                      \
-  -Wunsafe-loop-optimizations
+warnings := -Wall -Wextra -Wdisabled-optimization -Wmaybe-uninitialized \
+  -Wmissing-format-attribute -Wno-switch -Wredundant-decls              \
+  -Wuninitialized -Wunsafe-loop-optimizations
 
 #
 # Configuration
@@ -104,31 +96,23 @@ else ifneq ($(MAKECMDGOALS),clean)
     endif
 endif
 
-ifneq ($(filter debug release-debug,$(CONF)),)
-    add_debug_info := 1
-endif
-ifneq ($(filter release release-debug,$(CONF)),)
-    optimize := 1
-endif
-
-# The GCC docs aren't too clear on which flags are needed during linking. Add
-# them all to be safe.
-ifeq ($(add_debug_info),1)
+ifneq ($(findstring debug,$(CONF)),)
     compile_flags += -ggdb
-    link_flags    += -ggdb
 endif
-
-ifeq ($(optimize),1)
+ifneq ($(findstring release,$(CONF)),)
+    # Including -Ofast when linking (by including $(optimizations)) gives a
+    # different binary size. Might be worth investigating why.
     compile_flags += $(optimizations) -DOPTIMIZING
-    link_flags    += $(optimizations) $(link_optimizations)
+    link_flags    += $(optimizations) -fuse-linker-plugin
 endif
 
 ifeq ($(BACKTRACE_SUPPORT),1)
-    # No -rdynamic support in Clang
-    ifeq ($(is_clang),0)
-        compile_flags += -rdynamic
-        link_flags    += -rdynamic
-    endif
+    # No -rdynamic support in older Clang versions. This is equivalent.
+    link_flags += -Wl,-export-dynamic
+endif
+
+ifeq ($(INCLUDE_DEBUGGER),1)
+    compile_flags += -DINCLUDE_DEBUGGER
 endif
 
 ifeq ($(RECORD_MOVIE),1)
@@ -139,18 +123,9 @@ ifeq ($(TEST),1)
     compile_flags += -DRUN_TESTS
 endif
 
-ifeq ($(INCLUDE_DEBUGGER),1)
-    compile_flags += -DINCLUDE_DEBUGGER
-endif
-
-# Gives nicer errors for large files (even though we don't support them on
-# 32-bit systems)
-compile_flags += -D_FILE_OFFSET_BITS=64
-# SDL2 stuff
-compile_flags += $(shell sdl2-config --cflags)
-
-# Save states may involve unsafe type punning
-compile_flags += -fno-strict-aliasing
+# _FILE_OFFSET_BITS=64 gives nicer errors for large files (even though we don't
+# support them on 32-bit systems)
+compile_flags += -D_FILE_OFFSET_BITS=64 $(shell sdl2-config --cflags)
 
 #
 # Targets
@@ -166,7 +141,7 @@ $(cpp_objects): $(OBJDIR)/%.o: %.cpp
 
 $(c_objects): $(OBJDIR)/%.o: %.c
 	@echo Compiling $<
-	$(q)$(CC) -c -std=c99 $(compile_flags) $(EXTRA) $< -o $@
+	$(q)$(CC) -c -std=c11 $(compile_flags) $(EXTRA) $< -o $@
 
 # Automatic generation of prerequisites:
 # http://www.gnu.org/software/make/manual/make.html#Automatic-Prerequisites
