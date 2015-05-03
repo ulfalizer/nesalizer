@@ -14,22 +14,13 @@
 
 #include <SDL.h>
 
-       char const *program_name;
-static char const *rom_filename;
+char const *program_name;
 
 static int emulation_thread(void*) {
-    // One-time initialization of various components
-    init_apu();
-    init_debug();
-    init_input();
-    init_mappers();
-
 #ifdef RUN_TESTS
     run_tests();
 #else
-    load_rom(rom_filename, true);
     run();
-    unload_rom();
 #endif
 
     return 0;
@@ -42,17 +33,32 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "usage: %s <rom file>\n", program_name);
         exit(EXIT_FAILURE);
     }
-    rom_filename = argv[1];
 #endif
 
-    init_sdl();
+    // One-time initialization of various components.
+    init_apu();
+    init_debug();
+    init_input();
+    init_mappers();
 
+#ifndef RUN_TESTS
+    load_rom(argv[1], true);
+#endif
+
+    // Create a separate emulation thread and use this thread as the rendering
+    // thread.
+
+    init_sdl();
     SDL_Thread *emu_thread;
     fail_if(!(emu_thread = SDL_CreateThread(emulation_thread, "emulation", 0)),
-      "failed to create emulation thread: %s", SDL_GetError());
+            "failed to create emulation thread: %s", SDL_GetError());
     sdl_thread_loop();
     SDL_WaitThread(emu_thread, 0);
-
     deinit_sdl();
+
+#ifndef RUN_TESTS
+    unload_rom();
+#endif
+
     puts("Shut down cleanly");
 }
