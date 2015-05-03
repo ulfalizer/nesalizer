@@ -1,3 +1,11 @@
+// 6502/2A03/2A07 core.
+//
+// This implementation makes use of the fact that the 6502 does a memory access
+// (either a read or a write) for every cycle, by running the other components
+// (the PPU and the APU) from the read() and write() functions. This approach
+// simplifies the code provided all accesses (including dummy accesses) are
+// emulated.
+
 #include "common.h"
 
 #include "apu.h"
