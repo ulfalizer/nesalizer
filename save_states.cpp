@@ -11,20 +11,20 @@
 
 // Number of seconds of rewind to support. The rewind buffer is a ring buffer
 // where a new state will overwrite the oldest state when the buffer is full.
-unsigned const   n_rewind_seconds = 30;
+unsigned const  n_rewind_seconds = 30;
 
-static bool      has_save;
-static size_t    state_size;
+static bool     has_save;
+static size_t   state_size;
 static uint8_t  *state;
 
-unsigned const   n_rewind_frames = 60*n_rewind_seconds;
+unsigned const  n_rewind_frames = 60*n_rewind_seconds;
 static uint8_t  *rewind_buf;
-static unsigned  rewind_buf_i;
+static unsigned rewind_buf_i;
 // frame_len[n] is the length of frame n in CPU ticks. Used to cleanly reverse
 // audio.
 static unsigned *frame_len;
-static unsigned  n_recorded_frames;
-bool             is_backwards_frame;
+static unsigned n_recorded_frames;
+bool            is_backwards_frame;
 
 template<bool calculating_size, bool is_save>
 static size_t transfer_system_state(uint8_t *buf) {

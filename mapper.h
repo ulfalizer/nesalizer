@@ -18,7 +18,7 @@ struct Mapper_fns {
 };
 
 extern uint8_t *prg_pages[4];
-extern bool     prg_page_is_ram[4];
+extern bool    prg_page_is_ram[4];
 extern uint8_t *prg_ram_6000_page;
 
 inline uint8_t read_prg(uint16_t addr) {

@@ -23,7 +23,7 @@ static unsigned audio_frame_offset;
 
 unsigned        audio_frame_len;
 
-static blip_t  *blip;
+static blip_t   *blip;
 
 // Leave some extra room in the buffer to allow audio to be slowed down. Assume
 // PAL, which gives a slightly larger buffer than NTSC. (The expression is
@@ -34,7 +34,7 @@ static int16_t  blip_samples[1300*sample_rate/pal_milliframes_per_second];
 
 void set_audio_signal_level(int16_t level) {
     // TODO: Do something to reduce the initial pop here?
-    static int16_t previous_signal_level;
+    static int16_t previous_signal_level = 0;
 
     unsigned time  = audio_frame_offset;
     int      delta = level - previous_signal_level;
@@ -116,7 +116,6 @@ void end_audio_frame() {
 }
 
 void tick_audio() { ++audio_frame_offset; }
-
 
 void init_audio_for_rom() {
     // Maximum number of unread samples the buffer can hold

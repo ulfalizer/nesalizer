@@ -18,60 +18,60 @@ extern "C" {
 }
 #include <SDL_endian.h>
 
-unsigned const                 vid_scale_factor = 3;
+unsigned const         vid_scale_factor = 3;
 
-char const *const              filename = "movie.mp4";
+char const *const      filename = "movie.mp4";
 
-static AVFormatContext        *output_ctx;
-static AVOutputFormat         *output_fmt;
+static AVFormatContext *output_ctx;
+static AVOutputFormat  *output_fmt;
 
 // Audio
 
-static AVCodec                *audio_encoder;
-static AVCodecContext         *audio_encoder_ctx;
-static AVStream               *audio_stream;
+static AVCodec         *audio_encoder;
+static AVCodecContext  *audio_encoder_ctx;
+static AVStream        *audio_stream;
 
-static AVFrame                *audio_frame;
+static AVFrame         *audio_frame;
 
 // Audio frame size used when the codec can handle variably-sized frames
-int const                      audio_frame_var_n_samples = 1024*10;
+int const              audio_frame_var_n_samples = 1024*10;
 // Number of samples per channel in an audio frame
-static int                     audio_frame_n_samples;
+static int             audio_frame_n_samples;
 // Number of bytes in one sample times times the number of channels
-static int                     sample_bsize;
+static int             sample_bsize;
 // Size of audio frame in bytes
-static int                     audio_frame_bsize;
+static int             audio_frame_bsize;
 
 // Temporary storage for converted samples
-static uint8_t                *audio_tmp_buf;
+static uint8_t         *audio_tmp_buf;
 
 // Converts to the video's audio format and sample rate
-static ReSampleContext        *resample_ctx;
+static ReSampleContext *resample_ctx;
 
-static AVFifoBuffer           *audio_fifo;
+static AVFifoBuffer    *audio_fifo;
 
 // Video
 
-static AVCodec                *video_encoder;
-static AVCodecContext         *video_encoder_ctx;
-static AVStream               *video_stream;
+static AVCodec         *video_encoder;
+static AVCodecContext  *video_encoder_ctx;
+static AVStream        *video_stream;
 
-static AVFrame                *video_frame;
+static AVFrame         *video_frame;
 // Stores the encoded image for formats that expect us to do the encoding
 // rather than accepting a raw AVPicture
-static uint8_t                *encoded_frame_buf;
+static uint8_t         *encoded_frame_buf;
 // The old API used here doesn't provide a way to estimate the maximum size of
 // the encoded frame, so we'll have to make a guess
-size_t const                   encoded_frame_buf_size = 1024*400;
+size_t const           encoded_frame_buf_size = 1024*400;
 
 // Scales and converts frames to the video's frame format
-static SwsContext             *video_conv_ctx;
+static SwsContext      *video_conv_ctx;
 
 // Holds x264 options
-static AVDictionary           *video_opts;
+static AVDictionary    *video_opts;
 
 // The index of the next video frame to be encoded
-static int64_t                 frame_n;
+static int64_t         frame_n;
 
 
 static void check_av_error(int err, char const *msg) {

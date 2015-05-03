@@ -18,7 +18,7 @@
 // Video
 //
 
-unsigned const       scale_factor = 3;
+unsigned const scale_factor = 3;
 
 static SDL_Window   *screen;
 static SDL_Renderer *renderer;
@@ -36,14 +36,14 @@ static SDL_Texture  *screen_tex;
 //
 // TODO: This could probably be optimized to eliminate some copying and format
 // conversions.
-static Uint32        render_buffers[2][240*256];
-static Uint32       *front_buffer;
-static Uint32       *back_buffer;
+static Uint32 render_buffers[2][240*256];
+static Uint32 *front_buffer;
+static Uint32 *back_buffer;
 
-static SDL_mutex    *frame_lock;
-static SDL_cond     *frame_available_cond;
-static bool          ready_to_draw_new_frame;
-static bool          frame_available;
+static SDL_mutex *frame_lock;
+static SDL_cond  *frame_available_cond;
+static bool ready_to_draw_new_frame;
+static bool frame_available;
 
 void put_pixel(unsigned x, unsigned y, uint32_t color) {
     assert(x < 256);

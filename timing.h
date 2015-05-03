@@ -6,4 +6,4 @@ extern unsigned long cpu_clock_rate;
 extern unsigned long ppu_clock_rate;
 
 // Hack to get a C++03 compile-time constant
-unsigned const      pal_milliframes_per_second = 50007;
+unsigned const pal_milliframes_per_second = 50007;
