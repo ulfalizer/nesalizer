@@ -82,7 +82,7 @@ void load_rom(char const *filename, bool print_info) {
 
     size_t const min_size = 16 + 512*has_trainer + 0x4000*prg_16k_banks + 0x2000*chr_8k_banks;
     if (rom_buf_size < min_size) {
-        char chr_msg[18]; // sizeof(" + xxx*8192 (CHR)")
+        char chr_msg[sizeof(" + xxx*8192 (CHR)")];
         if (chr_8k_banks)
             sprintf(chr_msg, " + %u*8192 (CHR)", chr_8k_banks);
         else
