@@ -2,9 +2,9 @@
 //
 // This implementation makes use of the fact that the 6502 does a memory access
 // (either a read or a write) for every cycle, by running the other components
-// (the PPU and the APU) from the read() and write() functions. This approach
-// simplifies the code provided all accesses (including dummy accesses) are
-// emulated.
+// (the PPU and the APU) from the read_mem() and write_mem() functions. This
+// approach simplifies the code provided all accesses (including dummy
+// accesses) are emulated.
 
 #include "common.h"
 
@@ -167,7 +167,7 @@ static void write_tick() {
 }
 
 
-uint8_t read(uint16_t addr) {
+uint8_t read_mem(uint16_t addr) {
     read_tick();
 
     uint8_t res;
@@ -195,7 +195,7 @@ uint8_t read(uint16_t addr) {
     return res;
 }
 
-static void write(uint8_t val, uint16_t addr) {
+static void write_mem(uint8_t val, uint16_t addr) {
     // TODO: The write probably takes effect earlier within the CPU cycle than
     // after the three PPU ticks and the one APU tick
 
@@ -438,7 +438,7 @@ static void poll_for_interrupt();
 static void branch_if(bool cond) {
     ++pc;
     if (cond) {
-        read(pc); // Dummy read
+        read_mem(pc); // Dummy read
         // TODO: Unsafe unsigned->signed conversion - likely to work in
         // practice
         uint16_t const new_pc = pc + (int8_t)op_1;
@@ -446,7 +446,7 @@ static void branch_if(bool cond) {
             // Branch instructions perform additional interrupt polling during
             // the fixup tick
             poll_for_interrupt();
-            read((pc & 0xFF00) | (new_pc & 0x00FF)); // Dummy read
+            read_mem((pc & 0xFF00) | (new_pc & 0x00FF)); // Dummy read
         }
         pc = new_pc;
     }
@@ -498,13 +498,13 @@ static void pull_flags() {
 // Helpers for read-modify-write instructions, which perform a dummy write-back
 // of the unmodified value
 
-#define RMW(fn, addr)                                        \
-    do {                                                     \
-        uint16_t const addr_ = addr;                         \
-        uint8_t const val = read(addr_);                     \
-        write(val, addr_); /* Write back unmodified value */ \
-        poll_for_interrupt();                                \
-        write(fn(val), addr_);                               \
+#define RMW(fn, addr)                                            \
+    do {                                                         \
+        uint16_t const addr_ = addr;                             \
+        uint8_t const val = read_mem(addr_);                     \
+        write_mem(val, addr_); /* Write back unmodified value */ \
+        poll_for_interrupt();                                    \
+        write_mem(fn(val), addr_);                               \
     } while(0)
 
 // Optimized versions for zero page access, which never has side effects
@@ -577,19 +577,19 @@ static void zero_xy_write(uint8_t val, uint8_t index) {
 
 static uint16_t get_abs_addr() {
     ++pc;
-    return (read(pc++) << 8) | op_1;
+    return (read_mem(pc++) << 8) | op_1;
 }
 
 static uint8_t get_abs_op() {
     uint16_t const addr = get_abs_addr();
     poll_for_interrupt();
-    return read(addr);
+    return read_mem(addr);
 }
 
 static void abs_write(uint8_t val) {
     uint16_t const addr = get_abs_addr();
     poll_for_interrupt();
-    write(val, addr);
+    write_mem(val, addr);
 }
 
 
@@ -598,7 +598,7 @@ static void abs_write(uint8_t val) {
 // Absolute,X/Y address fetching for write and read-modify-write instructions
 static uint16_t get_abs_xy_addr_write(uint8_t index) {
     uint16_t const addr = get_abs_addr();
-    read((addr & 0xFF00) | ((addr + index) & 0x00FF)); // Dummy read
+    read_mem((addr & 0xFF00) | ((addr + index) & 0x00FF)); // Dummy read
     return addr + index;
 }
 
@@ -607,9 +607,9 @@ static uint8_t get_abs_xy_op_read(uint8_t index) {
     uint16_t const addr     = get_abs_addr();
     uint16_t const new_addr = addr + index;
     if ((addr ^ new_addr) & 0x100) // Page crossing?
-        read(new_addr - 0x100); // Dummy read
+        read_mem(new_addr - 0x100); // Dummy read
     poll_for_interrupt();
-    return read(new_addr);
+    return read_mem(new_addr);
 }
 
 // Instructions that use this always write the accumulator, so we can omit the
@@ -617,7 +617,7 @@ static uint8_t get_abs_xy_op_read(uint8_t index) {
 static void abs_xy_write_a(uint8_t index) {
     uint16_t const addr = get_abs_xy_addr_write(index);
     poll_for_interrupt();
-    write(a, addr);
+    write_mem(a, addr);
 }
 
 
@@ -635,13 +635,13 @@ static uint16_t get_ind_x_addr() {
 static uint8_t get_ind_x_op() {
     uint16_t const addr = get_ind_x_addr();
     poll_for_interrupt();
-    return read(addr);
+    return read_mem(addr);
 }
 
 static void ind_x_write(uint8_t val) {
     uint16_t const addr = get_ind_x_addr();
     poll_for_interrupt();
-    write(val, addr);
+    write_mem(val, addr);
 }
 
 
@@ -658,7 +658,7 @@ static uint16_t get_addr_from_zero_page() {
 // (Indirect),Y address fetching for write and read-modify-write instructions
 static uint16_t get_ind_y_addr_write() {
     uint16_t const addr = get_addr_from_zero_page();
-    read((addr & 0xFF00) | ((addr + y) & 0x00FF)); // Dummy read
+    read_mem((addr & 0xFF00) | ((addr + y) & 0x00FF)); // Dummy read
     return addr + y;
 }
 
@@ -667,16 +667,16 @@ static uint8_t get_ind_y_op_read() {
     uint16_t const addr = get_addr_from_zero_page();
     uint16_t const new_addr = addr + y;
     if ((addr ^ new_addr) & 0x100) // Page crossing?
-        read(new_addr - 0x100); // Dummy read
+        read_mem(new_addr - 0x100); // Dummy read
     poll_for_interrupt();
-    return read(new_addr);
+    return read_mem(new_addr);
 }
 
 // Single caller, always writes accumulator
 static void ind_y_write_a() {
     uint16_t const addr = get_ind_y_addr_write();
     poll_for_interrupt();
-    write(a, addr);
+    write_mem(a, addr);
 }
 
 // Helper function for implementing the weird unofficial write instructions
@@ -685,12 +685,12 @@ static void ind_y_write_a() {
 // of the target address is corrupted similarly to the value.
 static void unoff_addr_write(uint16_t addr, uint8_t val, uint8_t index) {
     uint16_t const new_addr = addr + index;
-    read((addr & 0xFF00) | (new_addr & 0x00FF)); // Dummy read
+    read_mem((addr & 0xFF00) | (new_addr & 0x00FF)); // Dummy read
     poll_for_interrupt();
-    write(val & ((addr >> 8) + 1),
-          ((addr ^ new_addr) & 0x100) ?
-            (new_addr & (val << 8)) | (new_addr & 0x00FF) : // Page crossing
-            new_addr);                                        // No page crossing
+    write_mem(val & ((addr >> 8) + 1),
+              ((addr ^ new_addr) & 0x100) ?
+                (new_addr & (val << 8)) | (new_addr & 0x00FF) : // Page crossing
+                new_addr);                                      // No page crossing
 }
 
 //
@@ -742,8 +742,8 @@ static void do_interrupt(Interrupt_type type) {
     // Two dummy reads
     if (type != Int_BRK) {
         // For BRK, these have already been done
-        read(pc);
-        read(pc);
+        read_mem(pc);
+        read_mem(pc);
     }
 
     if (type == Int_reset) {
@@ -771,8 +771,8 @@ static void do_interrupt(Interrupt_type type) {
     irq_disable = true;
     // No interrupt polling happens here; the first instruction of the
     // interrupt handler always executes before another interrupt is serviced
-    pc  = read(vec_addr);
-    pc |= read(vec_addr + 1) << 8;
+    pc  = read_mem(vec_addr);
+    pc |= read_mem(vec_addr + 1) << 8;
 }
 
 // The interrupt lines are polled at the end of the second-to-last tick for
@@ -868,10 +868,10 @@ void run() {
         log_instruction();
 #endif
 
-        uint8_t const opcode = read(pc++);
+        uint8_t const opcode = read_mem(pc++);
         if (polls_irq_after_first_cycle[opcode])
             poll_for_interrupt();
-        op_1 = read(pc);
+        op_1 = read_mem(pc);
 
         // http://eli.thegreenplace.net/2012/07/12/computed-goto-for-efficient-dispatch-tables/
         // could possibly speed this up a bit (also,
@@ -995,7 +995,7 @@ void run() {
 
         case JMP_ABS:
             poll_for_interrupt();
-            pc = (read(pc + 1) << 8) | op_1;
+            pc = (read_mem(pc + 1) << 8) | op_1;
             break;
 
         case JSR_ABS:
@@ -1007,7 +1007,7 @@ void run() {
             push(pc & 0xFF);
 
             poll_for_interrupt();
-            pc = (read(pc) << 8) | op_1;
+            pc = (read_mem(pc) << 8) | op_1;
             break;
 
         // Read instructions
@@ -1282,10 +1282,10 @@ void run() {
 
         case JMP_IND:
             {
-            uint16_t const addr = (read(pc + 1) << 8) | op_1;
-            pc = read(addr);
+            uint16_t const addr = (read_mem(pc + 1) << 8) | op_1;
+            pc = read_mem(addr);
             poll_for_interrupt();
-            pc |= read((addr & 0xFF00) | ((addr + 1) & 0xFF)) << 8;
+            pc |= read_mem((addr & 0xFF00) | ((addr + 1) & 0xFF)) << 8;
             break;
             }
 

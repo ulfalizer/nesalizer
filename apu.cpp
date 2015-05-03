@@ -41,21 +41,21 @@ void do_oam_dma(uint8_t addr) {
     tick();
 
     unsigned const start_addr = 0x100*addr;
-    for (size_t i = 0; i < 254; ++i) {
+    for (unsigned i = 0; i < 254; ++i) {
         // Do it like this to get open bus right. Could be that it's not
         // visible in any way though.
-        cpu_data_bus = read(start_addr + i);
+        cpu_data_bus = read_mem(start_addr + i);
         tick();
         write_oam_data_reg(cpu_data_bus);
     }
 
-    cpu_data_bus = read(start_addr + 254);
+    cpu_data_bus = read_mem(start_addr + 254);
     oam_dma_state = OAM_DMA_IN_PROGRESS_3RD_TO_LAST_TICK;
     tick();
     write_oam_data_reg(cpu_data_bus);
     oam_dma_state = OAM_DMA_IN_PROGRESS;
 
-    cpu_data_bus = read(start_addr + 255);
+    cpu_data_bus = read_mem(start_addr + 255);
     oam_dma_state = OAM_DMA_IN_PROGRESS_LAST_TICK;
     tick();
     write_oam_data_reg(cpu_data_bus);

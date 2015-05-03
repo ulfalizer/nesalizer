@@ -1,7 +1,7 @@
 void           run();
 void           tick();
 
-uint8_t        read(uint16_t addr);
+uint8_t        read_mem(uint16_t addr);
 
 void           set_nmi(bool s);
 
