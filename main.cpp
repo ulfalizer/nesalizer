@@ -33,6 +33,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "usage: %s <rom file>\n", program_name);
         exit(EXIT_FAILURE);
     }
+#else
+    (void)argc; // Suppress warning
 #endif
 
     // One-time initialization of various components.

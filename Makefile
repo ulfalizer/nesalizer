@@ -125,7 +125,7 @@ endif
 
 # _FILE_OFFSET_BITS=64 gives nicer errors for large files (even though we don't
 # support them on 32-bit systems)
-compile_flags += -D_FILE_OFFSET_BITS=64 $(shell sdl2-config --cflags)
+compile_flags += $(warnings) -D_FILE_OFFSET_BITS=64 $(shell sdl2-config --cflags)
 
 #
 # Targets

@@ -106,11 +106,11 @@ void add_audio_samples(int16_t *samples, size_t n_samples) {
 #endif
 
     SDL_LockAudioDevice(audio_device_id);
-    if (!audio_buf.write_samples(samples, n_samples))
+    if (!audio_buf.write_samples(samples, n_samples)) {
 #ifndef RUN_TESTS
-        puts("overflow!")
+        puts("overflow!");
 #endif
-        ;
+    }
     SDL_UnlockAudioDevice(audio_device_id);
 }
 
@@ -129,11 +129,11 @@ static void sdl_audio_callback(void*, Uint8 *stream, int len) {
     print_fill_level();
 #endif
 
-    if (!audio_buf.read_samples((int16_t*)stream, len/sizeof(int16_t)))
+    if (!audio_buf.read_samples((int16_t*)stream, len/sizeof(int16_t))) {
 #ifndef RUN_TESTS
-        puts("underflow!")
+        puts("underflow!");
 #endif
-        ;
+    }
 }
 
 //
@@ -291,7 +291,8 @@ void init_sdl() {
 
     // Audio
 
-    SDL_AudioSpec want = {};
+    SDL_AudioSpec want;
+    SDL_zero(want);
     want.freq     = sample_rate;
     want.format   = AUDIO_S16SYS;
     want.channels = 1;

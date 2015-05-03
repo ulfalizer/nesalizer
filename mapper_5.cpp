@@ -390,7 +390,6 @@ uint8_t mapper_5_read_nt(uint16_t addr) {
             use_bg_chr();
     }
 
-    unsigned bits;
     // Maps $2000 to bits 1-0, $2400 to bits 3-2, etc.
     unsigned const bit_offset = (addr >> 9) & 6;
     switch ((mmc5_mirroring >> bit_offset) & 3) {
@@ -415,7 +414,6 @@ uint8_t mapper_5_read_nt(uint16_t addr) {
 }
 
 void mapper_5_write_nt(uint8_t val, uint16_t addr) {
-    unsigned bits;
     // Maps $2000 to bits 1-0, $2400 to bits 3-2, etc.
     unsigned const bit_offset = (addr >> 9) & 6;
     switch ((mmc5_mirroring >> bit_offset) & 3) {
