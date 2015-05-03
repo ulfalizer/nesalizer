@@ -73,7 +73,7 @@ void load_rom(char const *filename, bool print_info) {
     chr_8k_banks  = rom_buf[5];
     PRINT_INFO("PRG ROM size: %u KB\nCHR ROM size: %u KB\n", 16*prg_16k_banks, 8*chr_8k_banks);
 
-    fail_if(prg_16k_banks == 0, // TODO: This makes sense for iNES 2.0
+    fail_if(prg_16k_banks == 0, // TODO: This makes sense for NES 2.0.
       "the iNES header specifies zero banks of PRG ROM (program storage), which makes no sense");
     fail_if(!is_pow_2_or_0(prg_16k_banks) || !is_pow_2_or_0(chr_8k_banks),
       "non-power-of-two PRG and CHR sizes are not supported yet");
