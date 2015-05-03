@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     SDL_Thread *emu_thread;
     fail_if(!(emu_thread = SDL_CreateThread(emulation_thread, "emulation", 0)),
             "failed to create emulation thread: %s", SDL_GetError());
-    sdl_thread_loop();
+    sdl_thread();
     SDL_WaitThread(emu_thread, 0);
     deinit_sdl();
 

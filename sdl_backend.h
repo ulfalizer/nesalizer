@@ -7,8 +7,8 @@ void deinit_sdl();
 
 // Main loop and signalling of SDL thread
 
-void sdl_thread_loop();
-// Used only when running test ROMs
+void sdl_thread();
+// Called from the emulation thread to cause the SDL thread to exit.
 void exit_sdl_thread();
 
 // Video

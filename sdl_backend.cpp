@@ -156,7 +156,7 @@ void handle_ui_keys() {
     SDL_UnlockMutex(event_lock);
 }
 
-static bool exit_sdl_thread_loop;
+static bool pending_sdl_thread_exit;
 
 // Protects the 'keys' array from being read while being updated
 SDL_mutex  *event_lock;
@@ -164,28 +164,27 @@ SDL_mutex  *event_lock;
 static void process_events() {
     SDL_Event event;
     SDL_LockMutex(event_lock);
-    while (SDL_PollEvent(&event)) {
+    while (SDL_PollEvent(&event))
         if (event.type == SDL_QUIT) {
             end_emulation();
-            exit_sdl_thread_loop = true;
+            pending_sdl_thread_exit = true;
 #ifdef RUN_TESTS
             end_testing = true;
 #endif
         }
-    }
     SDL_UnlockMutex(event_lock);
 }
 
-void sdl_thread_loop() {
+void sdl_thread() {
     for (;;) {
 
         // Wait for the emulation thread to signal that a frame has completed
 
         SDL_LockMutex(frame_lock);
         ready_to_draw_new_frame = true;
-        while (!frame_available && !exit_sdl_thread_loop)
+        while (!frame_available && !pending_sdl_thread_exit)
             SDL_CondWait(frame_available_cond, frame_lock);
-        if (exit_sdl_thread_loop) {
+        if (pending_sdl_thread_exit) {
             SDL_UnlockMutex(frame_lock);
             return;
         }
@@ -207,10 +206,9 @@ void sdl_thread_loop() {
     }
 }
 
-// Causes the SDL thread to exit. Called from the emulation thread.
 void exit_sdl_thread() {
     SDL_LockMutex(frame_lock);
-    exit_sdl_thread_loop = true;
+    pending_sdl_thread_exit = true;
     SDL_CondSignal(frame_available_cond);
     SDL_UnlockMutex(frame_lock);
 }
