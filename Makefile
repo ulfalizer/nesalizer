@@ -2,11 +2,11 @@
 # Configuration variables
 #
 
+EXECUTABLE        := nesalizer
+# Separate build directory
+BUILD_DIR         := build
 CXX               := g++
 CC                := gcc
-NAME              := nesalizer
-# Separate build directory
-OBJDIR            := build
 # Extra flags passed during compilation and linking
 EXTRA             :=
 EXTRA_LINK        :=
@@ -49,10 +49,10 @@ ifeq ($(TEST),1)
     cpp_sources += test
 endif
 
-cpp_objects := $(addprefix $(OBJDIR)/,$(cpp_sources:=.o))
-c_objects   := $(addprefix $(OBJDIR)/,$(c_sources:=.o))
+cpp_objects := $(addprefix $(BUILD_DIR)/,$(cpp_sources:=.o))
+c_objects   := $(addprefix $(BUILD_DIR)/,$(c_sources:=.o))
 objects     := $(c_objects) $(cpp_objects)
-deps        := $(addprefix $(OBJDIR)/,$(c_sources:=.d) $(cpp_sources:=.d))
+deps        := $(addprefix $(BUILD_DIR)/,$(c_sources:=.d) $(cpp_sources:=.d))
 
 LDLIBS := $(shell sdl2-config --libs) -lrt
 
@@ -131,26 +131,26 @@ compile_flags += $(warnings) -D_FILE_OFFSET_BITS=64 $(shell sdl2-config --cflags
 # Targets
 #
 
-$(OBJDIR)/$(NAME): $(objects)
+$(BUILD_DIR)/$(EXECUTABLE): $(objects)
 	@echo Linking $@
 	$(q)$(CXX) $(link_flags) $(EXTRA_LINK) $^ $(LDLIBS) -o $@
 
-$(cpp_objects): $(OBJDIR)/%.o: %.cpp
+$(cpp_objects): $(BUILD_DIR)/%.o: src/%.cpp
 	@echo Compiling $<
-	$(q)$(CXX) -c $(compile_flags) $(EXTRA) $< -o $@
+	$(q)$(CXX) -c -Iinclude $(compile_flags) $(EXTRA) $< -o $@
 
-$(c_objects): $(OBJDIR)/%.o: %.c
+$(c_objects): $(BUILD_DIR)/%.o: src/%.c
 	@echo Compiling $<
-	$(q)$(CC) -c -std=c11 $(compile_flags) $(EXTRA) $< -o $@
+	$(q)$(CC) -c -Iinclude -std=c11 $(compile_flags) $(EXTRA) $< -o $@
 
 # Automatic generation of prerequisites:
 # http://www.gnu.org/software/make/manual/make.html#Automatic-Prerequisites
 # Modified to use a separate build directory and a list of sources (via a
 # static pattern rule) rather than a catch-all wildcard.
-$(deps): $(OBJDIR)/%.d: %.cpp
-	@set -e; rm -f $@;                                              \
-	  $(CXX) -MM $(shell sdl2-config --cflags) $< > $@.$$$$;        \
-	  sed 's,\($*\)\.o[ :]*,$(OBJDIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
+$(deps): $(BUILD_DIR)/%.d: src/%.cpp
+	@set -e; rm -f $@;                                                 \
+	  $(CXX) -MM -Iinclude $(shell sdl2-config --cflags) $< > $@.$$$$; \
+	  sed 's,\($*\)\.o[ :]*,$(BUILD_DIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
 	  rm -f $@.$$$$
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -159,11 +159,11 @@ ifneq ($(MAKECMDGOALS),clean)
     -include $(deps)
 endif
 
-$(OBJDIR): ; $(q)mkdir $(OBJDIR)
+$(BUILD_DIR): ; $(q)mkdir $(BUILD_DIR)
 # The objects and automatic prerequisite files need the build directory to
 # exist, but shouldn't be affected by modifications to its contents. Hence an
 # order-only dependency.
-$(objects) $(deps): | $(OBJDIR)
+$(objects) $(deps): | $(BUILD_DIR)
 
 .PHONY: clean
-clean: ; $(q)-rm -rf $(OBJDIR)
+clean: ; $(q)-rm -rf $(BUILD_DIR)
