@@ -273,9 +273,6 @@ void init_sdl() {
         putchar('\n');
     }
 
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear"))
-        puts("warning: failed to set linear scaling");
-
     fail_if(!(screen_tex =
       SDL_CreateTexture(
         renderer,
