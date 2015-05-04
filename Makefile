@@ -69,7 +69,7 @@ endif
 #
 
 ifeq ($(is_clang),1)
-	# Older clang versions barf on some of the optimizations below
+	# Older Clang versions barf on some of the optimizations below
     optimizations := -O3 -ffast-math
 else
     # Assume GCC
@@ -78,9 +78,13 @@ endif
 
 optimizations += -msse3 -flto -fno-exceptions -DNDEBUG
 
-warnings := -Wall -Wextra -Wdisabled-optimization -Wmaybe-uninitialized \
-  -Wmissing-format-attribute -Wno-switch -Wredundant-decls              \
-  -Wuninitialized -Wunsafe-loop-optimizations
+warnings := -Wall -Wextra -Wdisabled-optimization -Wmissing-format-attribute \
+  -Wno-switch -Wredundant-decls -Wuninitialized
+
+ifeq ($(is_clang),0)
+    # Not supported on Clang
+    warnings += -Wmaybe-uninitialized -Wunsafe-loop-optimizations
+endif
 
 #
 # Configuration
