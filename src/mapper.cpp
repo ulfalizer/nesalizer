@@ -7,8 +7,6 @@
 static uint8_t nop_read(uint16_t) { return cpu_data_bus; } // Return open bus by default
 static void    nop_write(uint8_t, uint16_t) {}
 static void    nop_ppu_tick_callback() {}
-// For stateless mappers
-static size_t  nop_state_fn(uint8_t*&) { return 0; }
 
 // Implicitly NULL-initialized
 Mapper_fns mapper_fns_table[256];
@@ -17,65 +15,58 @@ Mapper_fns mapper_fns_table[256];
 #define DECLARE_STATE_FNS(n)              \
   template<bool, bool> size_t             \
   transfer_mapper_##n##_state(uint8_t*&);
-DECLARE_STATE_FNS(  1) DECLARE_STATE_FNS(   2) DECLARE_STATE_FNS(  3) DECLARE_STATE_FNS(  4)
-DECLARE_STATE_FNS(  5) DECLARE_STATE_FNS(   7) DECLARE_STATE_FNS(  9) DECLARE_STATE_FNS( 11)
-DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS( 232)
+DECLARE_STATE_FNS(  0) DECLARE_STATE_FNS(  1) DECLARE_STATE_FNS(  2)
+DECLARE_STATE_FNS(  3) DECLARE_STATE_FNS(  4) DECLARE_STATE_FNS(  5)
+DECLARE_STATE_FNS(  7) DECLARE_STATE_FNS(  9) DECLARE_STATE_FNS( 11)
+DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS(232)
 
 void init_mappers() {
-    // Helper for initializing state saving/loading functions
-    #define MAPPER_STATE_FNS(n)                                                   \
+    // All mappers have these
+    #define MAPPER_COMMON(n)                                                      \
+      void mapper_##n##_init();                                                   \
+      mapper_fns_table[n].init       = mapper_##n##_init;                         \
       mapper_fns_table[n].state_size = transfer_mapper_##n##_state<true, false>;  \
       mapper_fns_table[n].save_state = transfer_mapper_##n##_state<false, true>;  \
       mapper_fns_table[n].load_state = transfer_mapper_##n##_state<false, false>;
 
     // No mapper (hardwired/NROM)
     #define MAPPER_NONE(n)                                           \
-      void mapper_##n##_init();                                      \
-      mapper_fns_table[n].init              = mapper_##n##_init;     \
+      MAPPER_COMMON(n)                                               \
       mapper_fns_table[n].read              = nop_read;              \
       mapper_fns_table[n].write             = nop_write;             \
-      mapper_fns_table[n].ppu_tick_callback = nop_ppu_tick_callback; \
-      mapper_fns_table[n].state_size        = nop_state_fn;          \
-      mapper_fns_table[n].save_state        = nop_state_fn;          \
-      mapper_fns_table[n].load_state        = nop_state_fn;
+      mapper_fns_table[n].ppu_tick_callback = nop_ppu_tick_callback;
 
     // Mapper that only reacts to writes
     #define MAPPER_W(n)                                              \
-      void mapper_##n##_init();                                      \
+      MAPPER_COMMON(n)                                               \
       void mapper_##n##_write(uint8_t, uint16_t);                    \
-      mapper_fns_table[n].init              = mapper_##n##_init;     \
       mapper_fns_table[n].read              = nop_read;              \
       mapper_fns_table[n].write             = mapper_##n##_write;    \
-      mapper_fns_table[n].ppu_tick_callback = nop_ppu_tick_callback; \
-      MAPPER_STATE_FNS(n)
+      mapper_fns_table[n].ppu_tick_callback = nop_ppu_tick_callback;
 
-    // Mapper that reacts to writes and (P)PU events
+    // Mapper that reacts to writes and PPU events
     #define MAPPER_WP(n)                                                      \
-      void mapper_##n##_init();                                               \
+      MAPPER_COMMON(n)                                                        \
       void mapper_##n##_write(uint8_t, uint16_t);                             \
       void mapper_##n##_ppu_tick_callback();                                  \
-      mapper_fns_table[n].init              = mapper_##n##_init;              \
       mapper_fns_table[n].read              = nop_read;                       \
       mapper_fns_table[n].write             = mapper_##n##_write;             \
-      mapper_fns_table[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
-      MAPPER_STATE_FNS(n)
+      mapper_fns_table[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback;
 
     // Mapper that reacts to reads, writes, PPU events, and has special
     // (n)ametable mirroring (e.g. MMC5)
     #define MAPPER_RWPN(n)                                                    \
-      void mapper_##n##_init();                                               \
+      MAPPER_COMMON(n)                                                        \
       uint8_t mapper_##n##_read(uint16_t);                                    \
       void mapper_##n##_write(uint8_t, uint16_t);                             \
       void mapper_##n##_ppu_tick_callback();                                  \
       uint8_t mapper_##n##_read_nt(uint16_t);                                 \
       void mapper_##n##_write_nt(uint8_t, uint16_t);                          \
-      mapper_fns_table[n].init              = mapper_##n##_init;              \
       mapper_fns_table[n].read              = mapper_##n##_read;              \
       mapper_fns_table[n].write             = mapper_##n##_write;             \
       mapper_fns_table[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
       mapper_fns_table[n].read_nt           = mapper_##n##_read_nt;           \
       mapper_fns_table[n].write_nt          = mapper_##n##_write_nt;          \
-      MAPPER_STATE_FNS(n)
 
     // NROM
     MAPPER_NONE(     0)
@@ -102,7 +93,7 @@ void init_mappers() {
     // Camerica/Capcom mapper used by the Quattro * games
     MAPPER_W(      232)
 
-    #undef MAPPER_STATE_FNS
+    #undef MAPPER_COMMON
     #undef MAPPER_NONE
     #undef MAPPER_W
     #undef MAPPER_WP
