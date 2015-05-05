@@ -140,11 +140,12 @@ void set_prg_32k_bank(unsigned bank) {
     }
     else {
         uint8_t *const bank_ptr = prg_base + 0x8000*(bank & (prg_16k_banks/2 - 1));
-        for (unsigned i = 0; i < 4; ++i) {
-            prg_pages[i]       = bank_ptr + 0x2000*i;
-            prg_page_is_ram[i] = false;
-        }
+        for (unsigned i = 0; i < 4; ++i)
+            prg_pages[i] = bank_ptr + 0x2000*i;
     }
+
+    for (unsigned i = 0; i < 4; ++i)
+        prg_page_is_ram[i] = false;
 }
 
 void set_prg_16k_bank(unsigned n, int bank, bool is_rom /* = true */) {
