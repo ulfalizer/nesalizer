@@ -12,13 +12,14 @@ static void    nop_ppu_tick_callback() {}
 Mapper_fns mapper_fns_table[256];
 
 // Workaround for not being able to declare templates inside functions
-#define DECLARE_STATE_FNS(n)              \
-  template<bool, bool> size_t             \
-  transfer_mapper_##n##_state(uint8_t*&);
+#define DECLARE_STATE_FNS(n)                     \
+  template<bool, bool>                           \
+  size_t transfer_mapper_##n##_state(uint8_t*&);
 DECLARE_STATE_FNS(  0) DECLARE_STATE_FNS(  1) DECLARE_STATE_FNS(  2)
 DECLARE_STATE_FNS(  3) DECLARE_STATE_FNS(  4) DECLARE_STATE_FNS(  5)
 DECLARE_STATE_FNS(  7) DECLARE_STATE_FNS(  9) DECLARE_STATE_FNS( 11)
 DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS(232)
+#undef DECLARE_STATE_FNS
 
 void init_mappers() {
     // All mappers have these
@@ -129,7 +130,7 @@ uint8_t *chr_pages[8];
 //
 // Negative bank numbers to set_prg_16/8k_bank() assign banks from the end, so
 // that e.g. set_prg_16k_bank(0, -2) assigns the second-to-last 16 KB bank to
-// the first 16 KB slot.
+// the first 16 KB slot (0x8000-0xBFFF).
 
 void set_prg_32k_bank(unsigned bank) {
     if (prg_16k_banks == 1) {
