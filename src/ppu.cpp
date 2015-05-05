@@ -194,13 +194,13 @@ static uint16_t get_mirrored_address(uint16_t addr) {
 
 static uint8_t read_nt(uint16_t addr) {
     return (mirroring == SPECIAL) ?
-      mapper_read_nt(addr) :
+      mapper_fns.read_nt(addr) :
       ciram[get_mirrored_address(addr)];
 }
 
 static void write_nt(uint16_t addr, uint8_t val) {
     if (mirroring == SPECIAL)
-        mapper_write_nt(val, addr);
+        mapper_fns.write_nt(val, addr);
     else
         ciram[get_mirrored_address(addr)] = val;
 }
@@ -755,7 +755,7 @@ static void tick_ppu() {
     }
 
     // Mapper-specific operations - usually to snoop on ppu_addr_bus
-    ppu_tick_callback();
+    mapper_fns.ppu_tick_callback();
 }
 
 void tick_ntsc_ppu() {

@@ -8,19 +8,10 @@ static uint8_t nop_read(uint16_t) { return cpu_data_bus; } // Return open bus by
 static void    nop_write(uint8_t, uint16_t) {}
 static void    nop_ppu_tick_callback() {}
 // For stateless mappers
-static size_t nop_state_fn(uint8_t*&) { return 0; }
+static size_t  nop_state_fn(uint8_t*&) { return 0; }
 
-// Implicitly zero-initialized
-Mapper_fns mapper_functions[256];
-
-read_fn              *read_mapper;
-write_fn             *write_mapper;
-ppu_tick_callback_fn *ppu_tick_callback;
-read_nt_fn           *mapper_read_nt;
-write_nt_fn          *mapper_write_nt;
-state_fn             *mapper_state_size;
-state_fn             *mapper_save_state;
-state_fn             *mapper_load_state;
+// Implicitly NULL-initialized
+Mapper_fns mapper_fns_table[256];
 
 // Workaround for not being able to declare templates inside functions
 #define DECLARE_STATE_FNS(n)              \
@@ -33,29 +24,29 @@ DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS( 232)
 void init_mappers() {
     // Helper for initializing state saving/loading functions
     #define MAPPER_STATE_FNS(n)                                                   \
-      mapper_functions[n].state_size = transfer_mapper_##n##_state<true, false>;  \
-      mapper_functions[n].save_state = transfer_mapper_##n##_state<false, true>;  \
-      mapper_functions[n].load_state = transfer_mapper_##n##_state<false, false>;
+      mapper_fns_table[n].state_size = transfer_mapper_##n##_state<true, false>;  \
+      mapper_fns_table[n].save_state = transfer_mapper_##n##_state<false, true>;  \
+      mapper_fns_table[n].load_state = transfer_mapper_##n##_state<false, false>;
 
     // No mapper (hardwired/NROM)
     #define MAPPER_NONE(n)                                           \
       void mapper_##n##_init();                                      \
-      mapper_functions[n].init              = mapper_##n##_init;     \
-      mapper_functions[n].read              = nop_read;              \
-      mapper_functions[n].write             = nop_write;             \
-      mapper_functions[n].ppu_tick_callback = nop_ppu_tick_callback; \
-      mapper_functions[n].state_size        = nop_state_fn;          \
-      mapper_functions[n].save_state        = nop_state_fn;          \
-      mapper_functions[n].load_state        = nop_state_fn;
+      mapper_fns_table[n].init              = mapper_##n##_init;     \
+      mapper_fns_table[n].read              = nop_read;              \
+      mapper_fns_table[n].write             = nop_write;             \
+      mapper_fns_table[n].ppu_tick_callback = nop_ppu_tick_callback; \
+      mapper_fns_table[n].state_size        = nop_state_fn;          \
+      mapper_fns_table[n].save_state        = nop_state_fn;          \
+      mapper_fns_table[n].load_state        = nop_state_fn;
 
     // Mapper that only reacts to writes
     #define MAPPER_W(n)                                              \
       void mapper_##n##_init();                                      \
       void mapper_##n##_write(uint8_t, uint16_t);                    \
-      mapper_functions[n].init              = mapper_##n##_init;     \
-      mapper_functions[n].read              = nop_read;              \
-      mapper_functions[n].write             = mapper_##n##_write;    \
-      mapper_functions[n].ppu_tick_callback = nop_ppu_tick_callback; \
+      mapper_fns_table[n].init              = mapper_##n##_init;     \
+      mapper_fns_table[n].read              = nop_read;              \
+      mapper_fns_table[n].write             = mapper_##n##_write;    \
+      mapper_fns_table[n].ppu_tick_callback = nop_ppu_tick_callback; \
       MAPPER_STATE_FNS(n)
 
     // Mapper that reacts to writes and (P)PU events
@@ -63,10 +54,10 @@ void init_mappers() {
       void mapper_##n##_init();                                               \
       void mapper_##n##_write(uint8_t, uint16_t);                             \
       void mapper_##n##_ppu_tick_callback();                                  \
-      mapper_functions[n].init              = mapper_##n##_init;              \
-      mapper_functions[n].read              = nop_read;                       \
-      mapper_functions[n].write             = mapper_##n##_write;             \
-      mapper_functions[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
+      mapper_fns_table[n].init              = mapper_##n##_init;              \
+      mapper_fns_table[n].read              = nop_read;                       \
+      mapper_fns_table[n].write             = mapper_##n##_write;             \
+      mapper_fns_table[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
       MAPPER_STATE_FNS(n)
 
     // Mapper that reacts to reads, writes, PPU events, and has special
@@ -78,12 +69,12 @@ void init_mappers() {
       void mapper_##n##_ppu_tick_callback();                                  \
       uint8_t mapper_##n##_read_nt(uint16_t);                                 \
       void mapper_##n##_write_nt(uint8_t, uint16_t);                          \
-      mapper_functions[n].init              = mapper_##n##_init;              \
-      mapper_functions[n].read              = mapper_##n##_read;              \
-      mapper_functions[n].write             = mapper_##n##_write;             \
-      mapper_functions[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
-      mapper_functions[n].read_nt           = mapper_##n##_read_nt;           \
-      mapper_functions[n].write_nt          = mapper_##n##_write_nt;          \
+      mapper_fns_table[n].init              = mapper_##n##_init;              \
+      mapper_fns_table[n].read              = mapper_##n##_read;              \
+      mapper_fns_table[n].write             = mapper_##n##_write;             \
+      mapper_fns_table[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
+      mapper_fns_table[n].read_nt           = mapper_##n##_read_nt;           \
+      mapper_fns_table[n].write_nt          = mapper_##n##_write_nt;          \
       MAPPER_STATE_FNS(n)
 
     // NROM

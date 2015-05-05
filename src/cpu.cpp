@@ -186,7 +186,7 @@ uint8_t read_mem(uint16_t addr) {
     case 0x4015           : res = read_apu_status();      break;
     case 0x4016           : res = read_controller(0);     break;
     case 0x4017           : res = read_controller(1);     break;
-    case 0x4018 ... 0x5FFF: res = read_mapper(addr);      break; // General enough?
+    case 0x4018 ... 0x5FFF: res = mapper_fns.read(addr);  break; // General enough?
     case 0x6000 ... 0x7FFF:
         // SRAM/WRAM/PRG RAM. Returns open bus if none present.
         res = prg_ram_6000_page ? prg_ram_6000_page[addr & 0x1FFF] : cpu_data_bus;
@@ -262,7 +262,7 @@ static void write_mem(uint8_t val, uint16_t addr) {
     case 0x8000 ... 0xFFFF: write_prg(addr, val); break;
     }
 
-    write_mapper(val, addr);
+    mapper_fns.write(val, addr);
 }
 
 //

@@ -37,7 +37,7 @@ bool           is_playchoice_10;
 // and the value in ROM. Significant for some games.
 bool           has_bus_conflicts;
 
-unsigned       mapper;
+Mapper_fns     mapper_fns;
 
 char const *const mirroring_to_str[N_MIRRORING_MODES] =
   { "horizontal",
@@ -93,6 +93,8 @@ void load_rom(char const *filename, bool print_info) {
           prg_16k_banks,
           chr_msg);
     }
+
+    unsigned mapper;
 
     // Possibly updated with the high nibble below
     mapper = rom_buf[6] >> 4;
@@ -177,17 +179,10 @@ void load_rom(char const *filename, bool print_info) {
         // Byte 9 specifies the TV system
     }
 
-    fail_if(!mapper_functions[mapper].init, "mapper %u not supported\n", mapper);
+    fail_if(!mapper_fns_table[mapper].init, "mapper %u not supported\n", mapper);
 
-    mapper_functions[mapper].init();
-    read_mapper       = mapper_functions[mapper].read;
-    write_mapper      = mapper_functions[mapper].write;
-    ppu_tick_callback = mapper_functions[mapper].ppu_tick_callback;
-    mapper_read_nt    = mapper_functions[mapper].read_nt;
-    mapper_write_nt   = mapper_functions[mapper].write_nt;
-    mapper_state_size = mapper_functions[mapper].state_size;
-    mapper_save_state = mapper_functions[mapper].save_state;
-    mapper_load_state = mapper_functions[mapper].load_state;
+    mapper_fns = mapper_fns_table[mapper];
+    mapper_fns.init();
 
     // Needs to come first, as it sets NTSC/PAL timing parameters used by some
     // of the other initialization functions

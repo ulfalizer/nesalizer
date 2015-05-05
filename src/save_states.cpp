@@ -7,6 +7,7 @@
 #include "input.h"
 #include "ppu.h"
 #include "mapper.h"
+#include "rom.h"
 #include "save_states.h"
 
 // Number of seconds of rewind to support. The rewind buffer is a ring buffer
@@ -37,12 +38,12 @@ static size_t transfer_system_state(uint8_t *buf) {
     transfer_input_state<calculating_size, is_save>(buf);
 
     if (calculating_size)
-        mapper_state_size(buf);
+        mapper_fns.state_size(buf);
     else {
         if (is_save)
-            mapper_save_state(buf);
+            mapper_fns.save_state(buf);
         else
-            mapper_load_state(buf);
+            mapper_fns.load_state(buf);
     }
 
     // Return size of state in bytes

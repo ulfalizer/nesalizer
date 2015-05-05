@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include "cpu.h"
+#include "mapper.h"
 #include "rom.h"
 #include "sdl_backend.h"
 

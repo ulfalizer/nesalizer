@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "mapper.h"
 #include "rom.h"
 #include "timing.h"
 

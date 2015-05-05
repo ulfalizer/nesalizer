@@ -1,21 +1,17 @@
 void init_mappers();
 
-typedef void    write_fn(uint8_t value, uint16_t addr);
-typedef uint8_t read_fn(uint16_t addr);
-typedef uint8_t read_nt_fn(uint16_t addr);
-typedef void    write_nt_fn(uint8_t value, uint16_t addr);
-typedef size_t  state_fn(uint8_t*&);
-typedef void    ppu_tick_callback_fn();
+extern struct Mapper_fns {
+    void    (*init)();
+    uint8_t (*read)(uint16_t addr);
+    void    (*write)(uint8_t val, uint16_t addr);
+    uint8_t (*read_nt)(uint16_t addr);
+    void    (*write_nt)(uint8_t val, uint16_t addr);
+    void    (*ppu_tick_callback)();
 
-struct Mapper_fns {
-    void                 (*init)();
-    read_fn              *read;
-    write_fn             *write;
-    read_nt_fn           *read_nt;
-    write_nt_fn          *write_nt;
-    ppu_tick_callback_fn *ppu_tick_callback;
-    state_fn             *state_size, *save_state, *load_state;
-};
+    size_t  (*state_size)(uint8_t*&);
+    size_t  (*save_state)(uint8_t*&);
+    size_t  (*load_state)(uint8_t*&);
+} mapper_fns_table[256];
 
 extern uint8_t *prg_pages[4];
 extern bool    prg_page_is_ram[4];
@@ -55,17 +51,6 @@ enum Mirroring {
 extern Mirroring mirroring;
 
 void set_mirroring(Mirroring m);
-
-extern Mapper_fns mapper_functions[256];
-
-extern read_fn              *read_mapper;
-extern write_fn             *write_mapper;
-extern ppu_tick_callback_fn *ppu_tick_callback;
-extern read_nt_fn           *mapper_read_nt;
-extern write_nt_fn          *mapper_write_nt;
-extern state_fn             *mapper_state_size;
-extern state_fn             *mapper_save_state;
-extern state_fn             *mapper_load_state;
 
 // Helper macros for declaring mapper state that needs to be included in and
 // loaded from save states
