@@ -71,10 +71,17 @@ void load_state() {
 // Rewinding
 //
 
-// Saves the length of the most recently finished frame in CPU ticks. Used when
-// reversing audio for rewind.
-void save_audio_frame_length(unsigned len) {
+// Saves the length of the most recently finished frame in CPU ticks. Used
+// later to properly reverse audio if the frame is rewound.
+void save_audio_frame_len(unsigned len) {
     frame_len[rewind_buf_i] = len;
+}
+
+// Returns the length of the current frame in CPU ticks. Assumes we are
+// currently rewinding.
+unsigned get_audio_frame_len() {
+    assert(is_backwards_frame);
+    return frame_len[rewind_buf_i];
 }
 
 // Saves the current state to the rewind buffer. New states overwrite old if
@@ -97,7 +104,6 @@ static void pop_state() {
 // Loads the most recently pushed state from the rewind buffer
 static void load_top_state() {
     transfer_system_state<false, false>(rewind_buf + state_size*rewind_buf_i);
-    audio_frame_len = frame_len[rewind_buf_i];
 }
 
 static void handle_forwards_frame() {

@@ -21,8 +21,6 @@ static bool     playback_started;
 // Offset in CPU cycles within the current frame
 static unsigned audio_frame_offset;
 
-unsigned        audio_frame_len;
-
 static blip_t   *blip;
 
 // Leave some extra room in the buffer to allow audio to be slowed down. Assume
@@ -61,7 +59,7 @@ void set_audio_signal_level(int16_t level) {
         // arbitrarily in time.
         //
         // Thanks to Blargg for help on this.
-        time  = audio_frame_len - time;
+        time  = get_audio_frame_len() - time;
         delta = -delta;
     }
     blip_add_delta(blip, time, delta);
@@ -75,7 +73,7 @@ void end_audio_frame() {
         // offset of 0
         return;
 
-    assert(!(is_backwards_frame && audio_frame_offset != audio_frame_len));
+    assert(!(is_backwards_frame && audio_frame_offset != get_audio_frame_len()));
 
     // Bring the signal level at the end of the frame to zero as outlined in
     // set_audio_signal_level()
@@ -84,7 +82,7 @@ void end_audio_frame() {
     blip_end_frame(blip, audio_frame_offset);
     // Save the length of the frame in CPU ticks. Used when reversing sound for
     // rewind.
-    save_audio_frame_length(audio_frame_offset);
+    save_audio_frame_len(audio_frame_offset);
     audio_frame_offset = 0;
 
     if (playback_started) {
