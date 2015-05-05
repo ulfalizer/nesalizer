@@ -1,3 +1,7 @@
+// APU (audio circuitry) implementation
+//
+// http://wiki.nesdev.com/w/index.php/APU
+
 #include "common.h"
 
 #include "apu.h"
@@ -13,7 +17,7 @@
 bool apu_clk1_is_high;
 
 //
-// OAM DMA
+// OAM (sprite data) DMA
 //
 // Put here since it uses the APU clock and has interactions with DMC DMA
 
