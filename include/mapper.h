@@ -9,12 +9,12 @@ typedef void    ppu_tick_callback_fn();
 
 struct Mapper_fns {
     void                 (*init)();
-    read_fn               *read;
-    write_fn              *write;
-    read_nt_fn            *read_nt;
-    write_nt_fn           *write_nt;
-    ppu_tick_callback_fn  *ppu_tick_callback;
-    state_fn              *state_size, *save_state, *load_state;
+    read_fn              *read;
+    write_fn             *write;
+    read_nt_fn           *read_nt;
+    write_nt_fn          *write_nt;
+    ppu_tick_callback_fn *ppu_tick_callback;
+    state_fn             *state_size, *save_state, *load_state;
 };
 
 extern uint8_t *prg_pages[4];

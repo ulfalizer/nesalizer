@@ -7,14 +7,6 @@
 static uint8_t nop_read(uint16_t) { return cpu_data_bus; } // Return open bus by default
 static void    nop_write(uint8_t, uint16_t) {}
 static void    nop_ppu_tick_callback() {}
-static uint8_t bad_nt_read(uint16_t addr) {
-    fail("internal error: reading nametable address %04X with no read function defined",
-         addr);
-}
-static void    bad_nt_write(uint8_t val, uint16_t addr) {
-    fail("internal error: writing %02X to nametable address %04X with no write function defined",
-         val, addr);
-}
 // For stateless mappers
 static size_t nop_state_fn(uint8_t*&) { return 0; }
 
@@ -52,8 +44,6 @@ void init_mappers() {
       mapper_functions[n].read              = nop_read;              \
       mapper_functions[n].write             = nop_write;             \
       mapper_functions[n].ppu_tick_callback = nop_ppu_tick_callback; \
-      mapper_functions[n].read_nt           = bad_nt_read;           \
-      mapper_functions[n].write_nt          = bad_nt_write;          \
       mapper_functions[n].state_size        = nop_state_fn;          \
       mapper_functions[n].save_state        = nop_state_fn;          \
       mapper_functions[n].load_state        = nop_state_fn;
@@ -66,8 +56,6 @@ void init_mappers() {
       mapper_functions[n].read              = nop_read;              \
       mapper_functions[n].write             = mapper_##n##_write;    \
       mapper_functions[n].ppu_tick_callback = nop_ppu_tick_callback; \
-      mapper_functions[n].read_nt           = bad_nt_read;           \
-      mapper_functions[n].write_nt          = bad_nt_write;          \
       MAPPER_STATE_FNS(n)
 
     // Mapper that reacts to writes and (P)PU events
@@ -79,8 +67,6 @@ void init_mappers() {
       mapper_functions[n].read              = nop_read;                       \
       mapper_functions[n].write             = mapper_##n##_write;             \
       mapper_functions[n].ppu_tick_callback = mapper_##n##_ppu_tick_callback; \
-      mapper_functions[n].read_nt           = bad_nt_read;                    \
-      mapper_functions[n].write_nt          = bad_nt_write;                   \
       MAPPER_STATE_FNS(n)
 
     // Mapper that reacts to reads, writes, PPU events, and has special
@@ -138,8 +124,8 @@ void init_mappers() {
 
 // Each PRG page is 8 KB to account for the finest granularity switched by any
 // mapper
-uint8_t *prg_pages      [4];
-bool     prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
+uint8_t *prg_pages[4];
+bool    prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
 // 8 KB page mapped at $6000-$7FFF. MMC5 can remap this.
 uint8_t *prg_ram_6000_page;
 
