@@ -55,7 +55,7 @@ static void sigsegv_handler(int) {
             abort();
         }
 
-    if (pclose(f) < 0) {
+    if (pclose(f) == -1) {
         SAFE_STDERR_PRINT(addr2line_close_fail_msg);
         abort();
     }
@@ -71,7 +71,8 @@ static void install_sigsegv_handler() {
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
     sa.sa_handler = sigsegv_handler;
-    fail_if(sigaction(SIGSEGV, &sa, 0) < 0, "failed to install SIGSEGV handler");
+    fail_if(sigaction(SIGSEGV, &sa, 0) == -1,
+            "failed to install SIGSEGV handler");
 }
 
 void init_debug() {
