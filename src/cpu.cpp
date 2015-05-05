@@ -118,6 +118,9 @@ uint8_t         cpu_data_bus;
 // PPU and APU interface
 //
 
+// Offset in CPU cycles within the current frame. Used for audio generation.
+unsigned        frame_offset;
+
 // Down-counter for adding an extra PPU tick for PAL
 static unsigned pal_extra_tick;
 
@@ -148,6 +151,8 @@ void tick() {
     if (ticks_till_reset > 0 && --ticks_till_reset == 0)
         pending_reset = true;
 #endif
+
+    ++frame_offset;
 }
 
 //
@@ -832,6 +837,8 @@ static void process_pending_events() {
         begin_audio_frame();
         calc_controller_state();
         handle_ui_keys();
+
+        frame_offset = 0;
     }
 
     if (pending_reset) {

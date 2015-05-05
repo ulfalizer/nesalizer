@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include "audio.h"
+#include "cpu.h"
 #include "blip_buf.h"
 #include "save_states.h"
 #include "sdl_backend.h"
@@ -18,9 +19,6 @@ double const    max_adjust = 0.015;
 // level.
 static bool     playback_started;
 
-// Offset in CPU cycles within the current frame
-static unsigned audio_frame_offset;
-
 static blip_t   *blip;
 
 // Leave some extra room in the buffer to allow audio to be slowed down. Assume
@@ -34,7 +32,7 @@ void set_audio_signal_level(int16_t level) {
     // TODO: Do something to reduce the initial pop here?
     static int16_t previous_signal_level = 0;
 
-    unsigned time  = audio_frame_offset;
+    unsigned time  = frame_offset;
     int      delta = level - previous_signal_level;
 
     if (is_backwards_frame) {
@@ -68,22 +66,21 @@ void set_audio_signal_level(int16_t level) {
 }
 
 void end_audio_frame() {
-    if (audio_frame_offset == 0)
+    if (frame_offset == 0)
         // No audio added; blip_end_frame() dislikes being called with an
         // offset of 0
         return;
 
-    assert(!(is_backwards_frame && audio_frame_offset != get_audio_frame_len()));
+    assert(!(is_backwards_frame && frame_offset != get_audio_frame_len()));
 
     // Bring the signal level at the end of the frame to zero as outlined in
     // set_audio_signal_level()
     set_audio_signal_level(0);
 
-    blip_end_frame(blip, audio_frame_offset);
+    blip_end_frame(blip, frame_offset);
     // Save the length of the frame in CPU ticks. Used when reversing sound for
     // rewind.
-    save_audio_frame_len(audio_frame_offset);
-    audio_frame_offset = 0;
+    save_audio_frame_len(frame_offset);
 
     if (playback_started) {
         // Fudge playback rate by an amount proportional to the difference
@@ -112,8 +109,6 @@ void end_audio_frame() {
     }
     add_audio_samples(blip_samples, n_samples);
 }
-
-void tick_audio() { ++audio_frame_offset; }
 
 void init_audio_for_rom() {
     // Maximum number of unread samples the buffer can hold

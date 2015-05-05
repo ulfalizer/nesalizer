@@ -850,7 +850,6 @@ void tick_apu() {
 
         channel_updated = false;
     }
-    tick_audio();
 }
 
 //
