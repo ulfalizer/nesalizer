@@ -18,6 +18,7 @@ static bool     has_save;
 static size_t   state_size;
 static uint8_t  *state;
 
+// TODO: This is approximate for NTSC and incorrect for PAL
 unsigned const  n_rewind_frames = 60*n_rewind_seconds;
 static uint8_t  *rewind_buf;
 static unsigned rewind_buf_i;
