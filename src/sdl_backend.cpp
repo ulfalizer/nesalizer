@@ -31,12 +31,12 @@ static SDL_Texture  *screen_tex;
 // messes up audio. To get around it, we upload frames in the SDL thread and
 // keep a back buffer for drawing into from the emulation thread while the
 // frame is being uploaded (a kind of manual triple buffering). If the frame
-// doesn't upload in time for the next frame, we drop it. This gives us
-// automatic frame skipping in general.
+// doesn't upload in time for the next frame, we drop the new frame. This gives
+// us automatic frame skipping in general.
 //
 // TODO: This could probably be optimized to eliminate some copying and format
 // conversions.
-static Uint32 render_buffers[2][240*256];
+
 static Uint32 *front_buffer;
 static Uint32 *back_buffer;
 
@@ -283,6 +283,7 @@ void init_sdl() {
         256, 240)),
       "failed to create texture for screen: %s", SDL_GetError());
 
+    static Uint32 render_buffers[2][240*256];
     back_buffer  = render_buffers[0];
     front_buffer = render_buffers[1];
 
