@@ -78,9 +78,6 @@ void end_audio_frame() {
     set_audio_signal_level(0);
 
     blip_end_frame(blip, frame_offset);
-    // Save the length of the frame in CPU ticks. Used when reversing sound for
-    // rewind.
-    save_audio_frame_len(frame_offset);
 
     if (playback_started) {
         // Fudge playback rate by an amount proportional to the difference
