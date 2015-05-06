@@ -84,7 +84,7 @@ If you spot stuff that can be improved (or sucks), tell me (or contribute :). I 
 
  * Quietust for the Visual 2A03 and Visual 2C02 simulators.
 
- * beannaich, Disch, kevtris, Movax21, lidnariq, loopy, Tepples, and lots of other people on the [NesDev](http://nesdev.com) forums and wiki and in #nesdev for help, docs, and discussion.
+ * beannaich, cpow, Disch, kevtris, Movax21, lidnariq, loopy, Tepples, and lots of other people on the [NesDev](http://nesdev.com) forums and wiki and in #nesdev for help, docs, tests, and discussion.
 
 ## Contact ##
 
