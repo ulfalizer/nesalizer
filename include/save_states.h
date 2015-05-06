@@ -6,7 +6,7 @@ void load_state();
 
 void handle_rewind(bool do_rewind);
 
-unsigned get_audio_frame_len();
+unsigned get_frame_len();
 
 // True if the current frame should appear to run in reverse (e.g. w.r.t.
 // audio)

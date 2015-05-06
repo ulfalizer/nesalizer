@@ -57,7 +57,7 @@ void set_audio_signal_level(int16_t level) {
         // arbitrarily in time.
         //
         // Thanks to Blargg for help on this.
-        time  = get_audio_frame_len() - time;
+        time  = get_frame_len() - time;
         delta = -delta;
     }
     blip_add_delta(blip, time, delta);
@@ -71,7 +71,7 @@ void end_audio_frame() {
         // offset of 0
         return;
 
-    assert(!(is_backwards_frame && frame_offset != get_audio_frame_len()));
+    assert(!(is_backwards_frame && frame_offset != get_frame_len()));
 
     // Bring the signal level at the end of the frame to zero as outlined in
     // set_audio_signal_level()

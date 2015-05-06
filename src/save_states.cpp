@@ -74,8 +74,9 @@ void load_state() {
 //
 
 // Returns the length of the current frame in CPU ticks. Assumes we are
-// currently rewinding.
-unsigned get_audio_frame_len() {
+// currently rewinding. (There'd be no way to know the length if we hadn't
+// already run the frame.)
+unsigned get_frame_len() {
     assert(is_backwards_frame);
     return frame_len[rewind_buf_i];
 }
