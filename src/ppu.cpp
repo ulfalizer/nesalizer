@@ -173,7 +173,6 @@ static uint8_t get_all_open_bus_bits() {
       get_open_bus_bits_4_to_0();
 }
 
-
 static uint8_t &chr_ref(unsigned chr_addr) {
     return chr_pages[(chr_addr >> 10) & 7][chr_addr & 0x03FF];
 }
