@@ -1,6 +1,6 @@
 #include "common.h"
 
-#include "audio_ring_buffer.h"
+#include "audio.h"
 #include "cpu.h"
 #include "input.h"
 #ifdef RECORD_MOVIE
@@ -75,66 +75,20 @@ void draw_frame() {
 // Audio
 //
 
-// Debugging helper. Outputs a trace of the current audio buffer fill level if
-// enabled.
-//
-// #define PRINT_FILL_LEVEL
-
 Uint16 const sdl_audio_buffer_size = 2048;
 static SDL_AudioDeviceID audio_device_id;
 
-// Audio ring buffer
-// Make room for 1/6'th seconds of delay and round up to the nearest power of
-// two for efficient wrapping
-static Audio_ring_buffer<GE_POW_2(sample_rate/6)> audio_buf;
-
-double audio_buf_fill_level() {
-    return audio_buf.fill_level();
-}
-
-#ifdef PRINT_FILL_LEVEL
-static void print_fill_level() {
-    static unsigned count = 0;
-    if (++count % 8 == 0)
-        printf("Audio buffer fill level: %f%%\n", 100.0*audio_buf.fill_level());
-}
-#endif
-
-void add_audio_samples(int16_t *samples, size_t n_samples) {
-#ifdef RECORD_MOVIE
-    add_movie_audio_frame(samples, n_samples);
-#endif
-
-    SDL_LockAudioDevice(audio_device_id);
-    if (!audio_buf.write_samples(samples, n_samples)) {
-#ifndef RUN_TESTS
-        puts("overflow!");
-#endif
-    }
-    SDL_UnlockAudioDevice(audio_device_id);
-}
-
-void start_audio_playback() {
-    SDL_PauseAudioDevice(audio_device_id, 0);
-}
-
-void stop_audio_playback() {
-    SDL_PauseAudioDevice(audio_device_id, 1);
-}
-
-static void sdl_audio_callback(void*, Uint8 *stream, int len) {
+static void audio_callback(void*, Uint8 *stream, int len) {
     assert(len >= 0);
 
-#ifdef PRINT_FILL_LEVEL
-    print_fill_level();
-#endif
-
-    if (!audio_buf.read_samples((int16_t*)stream, len/sizeof(int16_t))) {
-#ifndef RUN_TESTS
-        puts("underflow!");
-#endif
-    }
+    read_samples((int16_t*)stream, len/sizeof(int16_t));
 }
+
+void lock_audio() { SDL_LockAudioDevice(audio_device_id); }
+void unlock_audio() { SDL_UnlockAudioDevice(audio_device_id); }
+
+void start_audio_playback() { SDL_PauseAudioDevice(audio_device_id, 0); }
+void stop_audio_playback() { SDL_PauseAudioDevice(audio_device_id, 1); }
 
 //
 // Input
@@ -295,7 +249,7 @@ void init_sdl() {
     want.format   = AUDIO_S16SYS;
     want.channels = 1;
     want.samples  = sdl_audio_buffer_size;
-    want.callback = sdl_audio_callback;
+    want.callback = audio_callback;
 
     fail_if(!(audio_device_id = SDL_OpenAudioDevice(0, 0, &want, 0, 0)),
       "failed to initialize audio: %s\n", SDL_GetError());

@@ -1,11 +1,20 @@
 #include "common.h"
 
 #include "audio.h"
+#include "audio_ring_buffer.h"
 #include "cpu.h"
 #include "blip_buf.h"
 #include "save_states.h"
 #include "sdl_backend.h"
 #include "timing.h"
+
+// Audio ring buffer
+//
+// Make room for 1/6'th seconds of delay and round up to the nearest power of
+// two for efficient wrapping
+static Audio_ring_buffer<GE_POW_2(sample_rate/6)> audio_buf;
+
+static blip_t   *blip;
 
 // We try to keep the internal audio buffer 50% full for maximum protection
 // against under- and overflow. To maintain that level, we adjust the playback
@@ -18,8 +27,6 @@ double const    max_adjust = 0.015;
 // before we start playing. This is set true when we're happy with the fill
 // level.
 static bool     playback_started;
-
-static blip_t   *blip;
 
 // Leave some extra room in the buffer to allow audio to be slowed down. Assume
 // PAL, which gives a slightly larger buffer than NTSC. (The expression is
@@ -84,11 +91,11 @@ void end_audio_frame() {
         // between the desired and current buffer fill levels to try to steer
         // towards it
 
-        double const fudge_factor = 1.0 + 2*max_adjust*(0.5 - audio_buf_fill_level());
+        double const fudge_factor = 1.0 + 2*max_adjust*(0.5 - audio_buf.fill_level());
         blip_set_rates(blip, cpu_clock_rate, sample_rate*fudge_factor);
     }
     else {
-        if (audio_buf_fill_level() >= 0.5) {
+        if (audio_buf.fill_level() >= 0.5) {
             start_audio_playback();
             playback_started = true;
         }
@@ -104,7 +111,28 @@ void end_audio_frame() {
           avail);
         blip_clear(blip);
     }
-    add_audio_samples(blip_samples, n_samples);
+
+#ifdef RECORD_MOVIE
+    add_movie_audio_frame(blip_samples, n_samples);
+#endif
+
+    // Save the samples into the audio ring buffer
+
+    lock_audio();
+    if (!audio_buf.write_samples(blip_samples, n_samples)) {
+#ifndef RUN_TESTS
+        puts("overflow!");
+#endif
+    }
+    unlock_audio();
+}
+
+void read_samples(int16_t *dst, size_t n_samples) {
+    if (!audio_buf.read_samples(dst, n_samples)) {
+#ifndef RUN_TESTS
+        puts("underflow!");
+#endif
+    }
 }
 
 void init_audio_for_rom() {

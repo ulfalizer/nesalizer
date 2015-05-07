@@ -18,12 +18,13 @@ void draw_frame();
 
 // Audio
 
-double audio_buf_fill_level();
-void   add_audio_samples(int16_t *samples, size_t n_samples);
-void   start_audio_playback();
-void   stop_audio_playback();
+int const sample_rate = 44100;
 
-int    const sample_rate = 44100;
+void lock_audio();
+void unlock_audio();
+
+void start_audio_playback();
+void stop_audio_playback();
 
 // Input and events
 
