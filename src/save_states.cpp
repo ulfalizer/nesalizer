@@ -1,3 +1,5 @@
+// Save state and rewinding implementation
+
 #include "common.h"
 
 #include "apu.h"

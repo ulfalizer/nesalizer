@@ -1,3 +1,5 @@
+// Loading and unloading of ROM files
+
 #include "common.h"
 
 #include "apu.h"

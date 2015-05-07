@@ -1,3 +1,5 @@
+// Common mapper-related code
+
 #include "common.h"
 
 #include "cpu.h"

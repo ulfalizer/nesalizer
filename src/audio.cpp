@@ -1,3 +1,5 @@
+// Audio buffering, resampling, etc. Makes use of Blargg's blip_buf library.
+
 #include "common.h"
 
 #include "audio.h"

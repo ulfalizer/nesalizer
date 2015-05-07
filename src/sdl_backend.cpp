@@ -1,3 +1,5 @@
+// Video, audio, and input backend. Uses SDL2.
+
 #include "common.h"
 
 #include "audio.h"
@@ -18,6 +20,7 @@
 // Video
 //
 
+// Each pixel is scaled to scale_factor*scale_factor pixels
 unsigned const scale_factor = 3;
 
 static SDL_Window   *screen;
