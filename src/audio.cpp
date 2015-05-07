@@ -1,18 +1,138 @@
 #include "common.h"
 
 #include "audio.h"
-#include "audio_ring_buffer.h"
 #include "cpu.h"
 #include "blip_buf.h"
 #include "save_states.h"
 #include "sdl_backend.h"
 #include "timing.h"
 
+//
 // Audio ring buffer
 //
-// Make room for 1/6'th seconds of delay and round up to the nearest power of
-// two for efficient wrapping
-static Audio_ring_buffer<GE_POW_2(sample_rate/6)> audio_buf;
+
+// Make room for 1/6th seconds of delay
+static int16_t buf[GE_POW_2(sample_rate/6)];
+// Indices from start_index up to but not including end_index (modulo wrapping)
+// contain samples
+static size_t start_index = 0, end_index = 0;
+// True if the last operation was a read. Indicates whether
+// start_index == end_index means the buffer is full or empty.
+static bool prev_op_was_read = true;
+
+// Moves up to 'len' samples from the ring buffer to 'dst'. In case of
+// underflow, moves all remaining samples and zeroes the remainder of 'dst' (as
+// required by SDL2).
+void read_samples(int16_t *dst, size_t len) {
+    assert(start_index < ARRAY_LEN(buf));
+
+    // Move samples from the ring buffer to 'dst' by memcpy()ing contiguous
+    // segments
+
+    // How many contiguous bytes are available...?
+
+    size_t contig_avail;
+    if ((start_index == end_index && !prev_op_was_read) || start_index > end_index)
+        contig_avail = ARRAY_LEN(buf) - start_index;
+    else
+        contig_avail = end_index - start_index;
+
+    prev_op_was_read = true;
+
+    if (contig_avail >= len) {
+        // ...as many as we need. Copy it all in one go.
+        memcpy(dst, buf + start_index, sizeof(*buf)*len);
+        start_index = (start_index + len) % ARRAY_LEN(buf);
+    }
+    else {
+        // ... less than we need. Copy the contiguous segment first.
+        memcpy(dst, buf + start_index, sizeof(*buf)*contig_avail);
+        len -= contig_avail;
+        assert(len > 0);
+        // Move past the contiguous segment - possibly to index 0
+        start_index = (start_index + contig_avail) % ARRAY_LEN(buf);
+        assert(start_index <= end_index);
+        // How many contiguous bytes are available now...?
+        size_t const avail = end_index - start_index;
+        if (avail >= len) {
+            // ...as many as we need. Copy the rest.
+            memcpy(dst + contig_avail, buf + start_index, sizeof(*buf)*len);
+            start_index += len;
+            assert(start_index <= end_index);
+        }
+        else {
+            // ...less than we need. Copy as much as we can and zero-fill
+            // the rest of the output buffer, as required by SDL2.
+            memcpy(dst + contig_avail, buf + start_index, sizeof(*buf)*avail);
+            memset(dst + contig_avail + avail, 0, sizeof(*buf)*(len - avail));
+            assert(start_index + avail == end_index);
+            start_index = end_index;
+#ifndef RUN_TESTS
+            puts("audio buffer underflow!");
+#endif
+        }
+    }
+}
+
+// Writes up to 'len' samples from 'src' to the ring buffer. In case of
+// overflow, writes as many samples as possible and returns 'false'.
+static void write_samples(int16_t const *src, size_t len) {
+    // Copy samples from 'src' to the ring buffer by memcpy()ing contiguous
+    // segments
+
+    // How many contiguous bytes are available...?
+
+    size_t contig_avail;
+    if (start_index < end_index || (start_index == end_index && prev_op_was_read))
+        contig_avail = ARRAY_LEN(buf) - end_index;
+    else
+        contig_avail = start_index - end_index;
+
+    prev_op_was_read = false;
+
+    if (contig_avail >= len) {
+        // ...as many as we need. Copy it all in one go.
+        memcpy(buf + end_index, src, sizeof(*buf)*len);
+        end_index = (end_index + len) % ARRAY_LEN(buf);
+    }
+    else {
+        // ...less than we need. Fill the contiguous segment first.
+        memcpy(buf + end_index, src, sizeof(*buf)*contig_avail);
+        len -= contig_avail;
+        assert(len > 0);
+        // Move past the contiguous segment - possibly to index 0
+        end_index = (end_index + contig_avail) % ARRAY_LEN(buf);
+        assert(end_index <= start_index);
+        // How many contiguous bytes are available now...?
+        size_t const avail = start_index - end_index;
+        if (avail >= len) {
+            // ...as many as we need. Copy the rest.
+            memcpy(buf + end_index, src + contig_avail, sizeof(*buf)*len);
+            end_index += len;
+            assert(end_index <= start_index);
+        }
+        else {
+            // ...less than we need. Copy as much as we can and drop the
+            // rest.
+            memcpy(buf + end_index, src + contig_avail, sizeof(*buf)*avail);
+            assert(end_index + avail == start_index);
+            end_index = start_index;
+#ifndef RUN_TESTS
+            puts("audio buffer overflow!");
+#endif
+        }
+    }
+}
+
+// Returns the fill level of the ring buffer as a double in the range 0.0-1.0.
+static double fill_level() {
+    double const data_len = (end_index - start_index) % ARRAY_LEN(buf);
+    return data_len/ARRAY_LEN(buf);
+}
+
+//
+// Initialization, resampling, and buffer management
+//
 
 static blip_t   *blip;
 
@@ -91,11 +211,11 @@ void end_audio_frame() {
         // between the desired and current buffer fill levels to try to steer
         // towards it
 
-        double const fudge_factor = 1.0 + 2*max_adjust*(0.5 - audio_buf.fill_level());
+        double const fudge_factor = 1.0 + 2*max_adjust*(0.5 - fill_level());
         blip_set_rates(blip, cpu_clock_rate, sample_rate*fudge_factor);
     }
     else {
-        if (audio_buf.fill_level() >= 0.5) {
+        if (fill_level() >= 0.5) {
             start_audio_playback();
             playback_started = true;
         }
@@ -116,23 +236,11 @@ void end_audio_frame() {
     add_movie_audio_frame(blip_samples, n_samples);
 #endif
 
-    // Save the samples into the audio ring buffer
+    // Save the samples to the audio ring buffer
 
     lock_audio();
-    if (!audio_buf.write_samples(blip_samples, n_samples)) {
-#ifndef RUN_TESTS
-        puts("overflow!");
-#endif
-    }
+    write_samples(blip_samples, n_samples);
     unlock_audio();
-}
-
-void read_samples(int16_t *dst, size_t n_samples) {
-    if (!audio_buf.read_samples(dst, n_samples)) {
-#ifndef RUN_TESTS
-        puts("underflow!");
-#endif
-    }
 }
 
 void init_audio_for_rom() {

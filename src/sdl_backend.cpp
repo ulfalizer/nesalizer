@@ -120,7 +120,7 @@ void handle_ui_keys() {
 static bool pending_sdl_thread_exit;
 
 // Protects the 'keys' array from being read while being updated
-SDL_mutex  *event_lock;
+SDL_mutex   *event_lock;
 
 static void process_events() {
     SDL_Event event;
