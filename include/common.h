@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 // Bring in C99 type macros
 #define __STDC_CONSTANT_MACROS
 #define __STDC_FORMAT_MACROS
