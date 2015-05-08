@@ -1,5 +1,7 @@
 // 6502/2A03/2A07 core.
 //
+// http://wiki.nesdev.com/w/index.php/CPU
+//
 // This implementation makes use of the fact that the 6502 does a memory access
 // (either a read or a write) for every cycle, by running the other components
 // (the PPU and the APU) from the read_mem() and write_mem() functions. This
