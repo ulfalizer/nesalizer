@@ -14,7 +14,7 @@ Most prediction and catch-up (two popular emulator optimization techniques) is o
 
 SDL2 is used for the final output and is the only dependency. You currently need a \*nix system.
 
-(The only \*nix/POSIX dependencies are the timing functions in [*src/timing.cpp*](src/timing.cpp), which should be trivial to port. A quick-and-dirty experimental port to Windows was already been done by miker00lz, but contributions are welcome.)
+The only \*nix/POSIX dependencies are the timing functions in [*src/timing.cpp*](src/timing.cpp), which should be trivial to port. A quick-and-dirty experimental port to Windows was already been done by miker00lz, but contributions are welcome. One GCC extension (case ranges) is used currently.
 
 Commands for building on Ubuntu:
 
