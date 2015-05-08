@@ -264,6 +264,9 @@ static void write_mem(uint8_t val, uint16_t addr) {
     case 0x8000 ... 0xFFFF: write_prg(addr, val); break;
     }
 
+    // An alternative to letting the mapper see all writes would be to have
+    // separate functions for common address ranges that trigger mapper
+    // operations.
     mapper_fns.write(val, addr);
 }
 
