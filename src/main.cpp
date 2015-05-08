@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     (void)argc; // Suppress warning
 #endif
 
-    install_sigsegv_handler();
+    install_fatal_signal_handlers();
 
     // One-time initialization of various components.
     init_apu();
