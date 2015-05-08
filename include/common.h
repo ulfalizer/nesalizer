@@ -131,7 +131,7 @@ void transfer(T &value, uint8_t *&bufp) {
 
 // Ditto for saving a memory area referenced by a pointer
 template<bool calculating_size, bool is_save, typename T>
-void transfer_mem(T *ptr, size_t len, uint8_t *&bufp) {
+void transfer_p(T *ptr, size_t len, uint8_t *&bufp) {
     if (!calculating_size) {
         if (is_save)
             memcpy(bufp, ptr, len);
@@ -140,6 +140,9 @@ void transfer_mem(T *ptr, size_t len, uint8_t *&bufp) {
     }
     bufp += len;
 }
+
+#define TRANSFER(x) transfer<calculating_size, is_save>(x, buf);
+#define TRANSFER_P(x, len) transfer_p<calculating_size, is_save>(x, len, buf);
 
 //
 // Logging

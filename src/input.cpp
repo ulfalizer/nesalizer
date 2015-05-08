@@ -119,25 +119,21 @@ uint8_t get_button_states(unsigned n) {
 
 template<bool calculating_size, bool is_save>
 void transfer_input_state(uint8_t *&buf) {
-    #define T(x) transfer<calculating_size, is_save>(x, buf);
-
     for (unsigned i = 0; i < 2; ++i) {
         Controller_data &cd = controller_data[i];
 
-        T(cd.a_pushed)
-        T(cd.b_pushed)
-        T(cd.start_pushed)
-        T(cd.select_pushed)
+        TRANSFER(cd.a_pushed)
+        TRANSFER(cd.b_pushed)
+        TRANSFER(cd.start_pushed)
+        TRANSFER(cd.select_pushed)
 
-        T(cd.right_pushed)
-        T(cd.left_pushed)
-        T(cd.down_pushed)
-        T(cd.up_pushed)
+        TRANSFER(cd.right_pushed)
+        TRANSFER(cd.left_pushed)
+        TRANSFER(cd.down_pushed)
+        TRANSFER(cd.up_pushed)
     }
 
-    T(reset_pushed)
-
-    #undef T
+    TRANSFER(reset_pushed)
 }
 
 // Explicit instantiations

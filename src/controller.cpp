@@ -42,12 +42,8 @@ void write_controller_strobe(bool strobe) {
 
 template<bool calculating_size, bool is_save>
 void transfer_controller_state(uint8_t *&buf) {
-    #define T(x) transfer<calculating_size, is_save>(x, buf);
-
-    T(controller_bits)
-    T(strobe_latch)
-
-    #undef T
+    TRANSFER(controller_bits)
+    TRANSFER(strobe_latch)
 }
 
 // Explicit instantiations

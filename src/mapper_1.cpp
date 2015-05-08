@@ -88,7 +88,7 @@ void mapper_1_write(uint8_t val, uint16_t addr) {
 }
 
 MAPPER_STATE_START(1)
-  MAPPER_STATE(temp_reg)
-  MAPPER_STATE(nth_write)
-  MAPPER_STATE(regs)
+  TRANSFER(temp_reg)
+  TRANSFER(nth_write)
+  TRANSFER(regs)
 MAPPER_STATE_END(1)

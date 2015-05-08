@@ -30,5 +30,5 @@ void mapper_71_write(uint8_t val, uint16_t addr) {
 }
 
 MAPPER_STATE_START(71)
-  MAPPER_STATE(prg_bank)
+  TRANSFER(prg_bank)
 MAPPER_STATE_END(71)

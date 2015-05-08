@@ -154,11 +154,11 @@ void mapper_4_ppu_tick_callback() {
 }
 
 MAPPER_STATE_START(4)
-  MAPPER_STATE(reg_8000)
-  MAPPER_STATE(regs)
-  MAPPER_STATE(horizontal_mirroring)
-  MAPPER_STATE(irq_period)
-  MAPPER_STATE(irq_period_cnt)
-  MAPPER_STATE(irq_enabled)
-  MAPPER_STATE(last_a12_high_cycle);
+  TRANSFER(reg_8000)
+  TRANSFER(regs)
+  TRANSFER(horizontal_mirroring)
+  TRANSFER(irq_period)
+  TRANSFER(irq_period_cnt)
+  TRANSFER(irq_enabled)
+  TRANSFER(last_a12_high_cycle);
 MAPPER_STATE_END(4)

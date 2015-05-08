@@ -30,5 +30,5 @@ void mapper_3_write(uint8_t val, uint16_t addr) {
 }
 
 MAPPER_STATE_START(3)
-  MAPPER_STATE(chr_bank)
+  TRANSFER(chr_bank)
 MAPPER_STATE_END(3)

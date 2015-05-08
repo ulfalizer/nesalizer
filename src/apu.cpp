@@ -998,98 +998,90 @@ void set_apu_cold_boot_state() {
 
 template<bool calculating_size, bool is_save>
 void transfer_apu_state(uint8_t *&buf) {
-    #define T(x) transfer<calculating_size, is_save>(x, buf);
-
-    T(apu_clk1_is_high)
-    T(oam_dma_state)
+    TRANSFER(apu_clk1_is_high)
+    TRANSFER(oam_dma_state)
 
     // Pulse channel
 
     for (unsigned i = 0; i < 2; ++i) {
-        #define TP(x) T(pulse[i].x)
+        TRANSFER(pulse[i].output_level)
+        TRANSFER(pulse[i].enabled)
+        TRANSFER(pulse[i].const_vol)
+        TRANSFER(pulse[i].duty)
+        TRANSFER(pulse[i].waveform_pos);
+        TRANSFER(pulse[i].len_cnt)
+        TRANSFER(pulse[i].period)
+        TRANSFER(pulse[i].period_cnt)
+        TRANSFER(pulse[i].sweep_target_period)
+        TRANSFER(pulse[i].sweep_enabled)
+        TRANSFER(pulse[i].sweep_negate)
+        TRANSFER(pulse[i].sweep_period)
+        TRANSFER(pulse[i].sweep_period_cnt)
+        TRANSFER(pulse[i].sweep_shift)
+        TRANSFER(pulse[i].sweep_reload_flag)
+        TRANSFER(pulse[i].vol)
 
-        TP(output_level)
-        TP(enabled)
-        TP(const_vol)
-        TP(duty)
-        TP(waveform_pos);
-        TP(len_cnt)
-        TP(period)
-        TP(period_cnt)
-        TP(sweep_target_period)
-        TP(sweep_enabled)
-        TP(sweep_negate)
-        TP(sweep_period)
-        TP(sweep_period_cnt)
-        TP(sweep_shift)
-        TP(sweep_reload_flag)
-        TP(vol)
-
-        TP(env_div_cnt)
-        TP(env_vol)
-        TP(halt_len_loop_env)
-        TP(env_start_flag)
-
-        #undef TP
+        TRANSFER(pulse[i].env_div_cnt)
+        TRANSFER(pulse[i].env_vol)
+        TRANSFER(pulse[i].halt_len_loop_env)
+        TRANSFER(pulse[i].env_start_flag)
     }
 
     // Triangle channel
 
-    T(tri_output_level)
-    T(tri_enabled)
-    T(tri_period)
-    T(tri_period_cnt)
-    T(tri_waveform_pos)
-    T(tri_len_cnt)
-    T(tri_halt_flag)
-    T(tri_lin_cnt_load)
-    T(tri_lin_cnt)
-    T(tri_lin_cnt_reload_flag)
+    TRANSFER(tri_output_level)
+    TRANSFER(tri_enabled)
+    TRANSFER(tri_period)
+    TRANSFER(tri_period_cnt)
+    TRANSFER(tri_waveform_pos)
+    TRANSFER(tri_len_cnt)
+    TRANSFER(tri_halt_flag)
+    TRANSFER(tri_lin_cnt_load)
+    TRANSFER(tri_lin_cnt)
+    TRANSFER(tri_lin_cnt_reload_flag)
 
     // Noise channel
 
-    T(noise_output_level)
-    T(noise_enabled)
-    T(noise_halt_len_loop_env)
-    T(noise_const_vol)
-    T(noise_vol)
-    T(noise_feedback_bit)
-    T(noise_period)
-    T(noise_period_cnt)
-    T(noise_len_cnt)
-    T(noise_shift_reg)
-    T(noise_env_start_flag)
-    T(noise_env_vol)
-    T(noise_env_div_cnt)
+    TRANSFER(noise_output_level)
+    TRANSFER(noise_enabled)
+    TRANSFER(noise_halt_len_loop_env)
+    TRANSFER(noise_const_vol)
+    TRANSFER(noise_vol)
+    TRANSFER(noise_feedback_bit)
+    TRANSFER(noise_period)
+    TRANSFER(noise_period_cnt)
+    TRANSFER(noise_len_cnt)
+    TRANSFER(noise_shift_reg)
+    TRANSFER(noise_env_start_flag)
+    TRANSFER(noise_env_vol)
+    TRANSFER(noise_env_div_cnt)
 
     update_noise_output_level();
 
     // DMC channel
 
-    T(dmc_counter)
-    T(dmc_irq_enabled)
-    T(dmc_loop_sample)
-    T(dmc_period)
-    T(dmc_period_cnt)
-    T(dmc_sample_start_addr)
-    T(dmc_sample_len)
-    T(dmc_sample_buffer)
-    T(dmc_sample_buffer_has_data)
-    T(dmc_shift_reg)
-    T(dpcm_active)
-    T(dmc_loading_sample_byte)
-    T(dmc_sample_cur_addr)
-    T(dmc_bytes_remaining)
-    T(dmc_bits_remaining)
+    TRANSFER(dmc_counter)
+    TRANSFER(dmc_irq_enabled)
+    TRANSFER(dmc_loop_sample)
+    TRANSFER(dmc_period)
+    TRANSFER(dmc_period_cnt)
+    TRANSFER(dmc_sample_start_addr)
+    TRANSFER(dmc_sample_len)
+    TRANSFER(dmc_sample_buffer)
+    TRANSFER(dmc_sample_buffer_has_data)
+    TRANSFER(dmc_shift_reg)
+    TRANSFER(dpcm_active)
+    TRANSFER(dmc_loading_sample_byte)
+    TRANSFER(dmc_sample_cur_addr)
+    TRANSFER(dmc_bytes_remaining)
+    TRANSFER(dmc_bits_remaining)
 
     // Frame counter
 
-    T(frame_counter_mode)
-    T(inhibit_frame_irq)
-    T(frame_counter_clock)
-    T(delayed_frame_timer_reset)
-
-    #undef T
+    TRANSFER(frame_counter_mode)
+    TRANSFER(inhibit_frame_irq)
+    TRANSFER(frame_counter_clock)
+    TRANSFER(delayed_frame_timer_reset)
 }
 
 // Explicit instantiations

@@ -1715,25 +1715,19 @@ static void reset_cpu() {
 
 template<bool calculating_size, bool is_save>
 void transfer_cpu_state(uint8_t *&buf) {
-    #define T(x) transfer<calculating_size, is_save>(x, buf);
-    #define T_MEM(x, len) transfer_mem<calculating_size, is_save>(x, len, buf);
-
-    T(ram)
-    if (prg_ram_base) T_MEM(prg_ram_base, 0x2000*prg_ram_8k_banks)
-    T(pc)
-    T(a) T(s) T(x) T(y)
-    T(zn) T(carry) T(irq_disable) T(decimal) T(overflow)
-    T(op_1)
-    T(cpu_is_reading)
-    T(cpu_data_bus)
-    T(cart_irq) T(dmc_irq) T(frame_irq) T(irq_line) T(nmi_asserted)
-    T(pending_irq) T(pending_nmi)
-
-    if (is_pal)
-        T(pal_extra_tick)
-
-    #undef T
-    #undef T_MEM
+    TRANSFER(ram)
+    if (prg_ram_base) TRANSFER_P(prg_ram_base, 0x2000*prg_ram_8k_banks)
+    TRANSFER(pc)
+    TRANSFER(a) TRANSFER(s) TRANSFER(x) TRANSFER(y)
+    TRANSFER(zn) TRANSFER(carry) TRANSFER(irq_disable) TRANSFER(decimal)
+    TRANSFER(overflow)
+    TRANSFER(op_1)
+    TRANSFER(cpu_is_reading)
+    TRANSFER(cpu_data_bus)
+    TRANSFER(cart_irq) TRANSFER(dmc_irq) TRANSFER(frame_irq) TRANSFER(irq_line)
+    TRANSFER(nmi_asserted)
+    TRANSFER(pending_irq) TRANSFER(pending_nmi)
+    if (is_pal) TRANSFER(pal_extra_tick)
 }
 
 // Explicit instantiations

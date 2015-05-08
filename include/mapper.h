@@ -58,8 +58,8 @@ void set_mirroring(Mirroring m);
 // A declaration like
 //
 //   MAPPER_STATE_START(123)
-//     MAPPER_STATE(foo)
-//     MAPPER_STATE(bar)
+//     TRANSFER(foo)
+//     TRANSFER(bar)
 //   MAPPER_STATE_END(123)
 //
 // Expands to
@@ -101,5 +101,3 @@ void set_mirroring(Mirroring m);
       return buf - tmp;       \
   }                           \
   MAPPER_FN_INSTANTIATIONS(n)
-
-#define MAPPER_STATE(x) transfer<calculating_size, is_save>(x, buf);

@@ -1155,72 +1155,67 @@ void reset_ppu() {
 
 template<bool calculating_size, bool is_save>
 void transfer_ppu_state(uint8_t *&buf) {
-    #define T(x) transfer<calculating_size, is_save>(x, buf);
-    #define T_MEM(x, len) transfer_mem<calculating_size, is_save>(x, len, buf);
+    if (uses_chr_ram) TRANSFER_P(chr_base, 0x2000);
+    TRANSFER_P(ciram, mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
+    TRANSFER(palettes)
+    TRANSFER(oam) TRANSFER(sec_oam)
+    TRANSFER(t) TRANSFER(v) TRANSFER(fine_x)
+    TRANSFER(pending_v_update)
 
-    if (uses_chr_ram) T_MEM(chr_base, 0x2000);
-    T_MEM(ciram, mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
-    T(palettes)
-    T(oam) T(sec_oam)
-    T(t) T(v) T(fine_x)
-    T(pending_v_update)
+    TRANSFER(v_inc)
+    TRANSFER(sprite_pat_addr)
+    TRANSFER(bg_pat_addr)
+    TRANSFER(sprite_size)
+    TRANSFER(nmi_on_vblank)
 
-    T(v_inc)
-    T(sprite_pat_addr)
-    T(bg_pat_addr)
-    T(sprite_size)
-    T(nmi_on_vblank)
-
-    T(grayscale_color_mask)
-    T(show_bg_left_8)
-    T(show_sprites_left_8)
-    T(show_bg)
-    T(show_sprites)
-    T(tint_bits)
+    TRANSFER(grayscale_color_mask)
+    TRANSFER(show_bg_left_8)
+    TRANSFER(show_sprites_left_8)
+    TRANSFER(show_bg)
+    TRANSFER(show_sprites)
+    TRANSFER(tint_bits)
     if (!is_save)
         set_derived_ppumask_vars();
 
-    T(sprite_overflow) T(sprite_zero_hit) T(in_vblank)
+    TRANSFER(sprite_overflow) TRANSFER(sprite_zero_hit) TRANSFER(in_vblank)
 
-    T(oam_addr) T(sec_oam_addr) T(oam_data)
+    TRANSFER(oam_addr) TRANSFER(sec_oam_addr) TRANSFER(oam_data)
 
-    T(copy_sprite_signal)
-    T(oam_addr_overflow) T(sec_oam_addr_overflow)
-    T(overflow_detection)
+    TRANSFER(copy_sprite_signal)
+    TRANSFER(oam_addr_overflow) TRANSFER(sec_oam_addr_overflow)
+    TRANSFER(overflow_detection)
 
-    T(write_flip_flop)
-    T(ppu_data_reg)
-    T(odd_frame)
-    T(ppu_cycle)
+    TRANSFER(write_flip_flop)
+    TRANSFER(ppu_data_reg)
+    TRANSFER(odd_frame)
+    TRANSFER(ppu_cycle)
 
-    T(dot) T(scanline)
+    TRANSFER(dot) TRANSFER(scanline)
 
-    T(nt_byte) T(at_byte)
-    T(bg_byte_l) T(bg_byte_h)
-    T(bg_shift_l) T(bg_shift_h)
-    T(at_shift_l) T(at_shift_h)
-    T(at_latch_l) T(at_latch_h)
+    TRANSFER(nt_byte) TRANSFER(at_byte)
+    TRANSFER(bg_byte_l) TRANSFER(bg_byte_h)
+    TRANSFER(bg_shift_l) TRANSFER(bg_shift_h)
+    TRANSFER(at_shift_l) TRANSFER(at_shift_h)
+    TRANSFER(at_latch_l) TRANSFER(at_latch_h)
 
-    T(sprite_attribs)
-    T(sprite_x)
-    T(sprite_pat_l)
-    T(sprite_pat_h)
+    TRANSFER(sprite_attribs)
+    TRANSFER(sprite_x)
+    TRANSFER(sprite_pat_l)
+    TRANSFER(sprite_pat_h)
 
-    T(s0_on_next_scanline)
-    T(s0_on_cur_scanline)
+    TRANSFER(s0_on_next_scanline)
+    TRANSFER(s0_on_cur_scanline)
 
-    T(sprite_y) T(sprite_index)
-    T(sprite_in_range)
+    TRANSFER(sprite_y) TRANSFER(sprite_index)
+    TRANSFER(sprite_in_range)
 
-    T(initial_frame)
+    TRANSFER(initial_frame)
 
-    T(ppu_addr_bus)
+    TRANSFER(ppu_addr_bus)
 
-    T(ppu_open_bus)
-    T(ppu_bit_7_to_6_write_cycle) T(ppu_bit_5_write_cycle) T(ppu_bit_4_to_0_write_cycle)
-
-    #undef T
-    #undef T_MEM
+    TRANSFER(ppu_open_bus)
+    TRANSFER(ppu_bit_7_to_6_write_cycle) TRANSFER(ppu_bit_5_write_cycle)
+    TRANSFER(ppu_bit_4_to_0_write_cycle)
 }
 
 // Explicit instantiations

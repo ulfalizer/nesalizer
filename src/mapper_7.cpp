@@ -24,5 +24,5 @@ void mapper_7_write(uint8_t val, uint16_t addr) {
 }
 
 MAPPER_STATE_START(7)
-  MAPPER_STATE(reg)
+  TRANSFER(reg)
 MAPPER_STATE_END(7)

@@ -91,9 +91,9 @@ void mapper_9_ppu_tick_callback() {
 }
 
 MAPPER_STATE_START(9)
-  MAPPER_STATE(chr_bank_0FDx) MAPPER_STATE(chr_bank_0FEx)
-  MAPPER_STATE(chr_bank_1FDx) MAPPER_STATE(chr_bank_1FEx)
-  MAPPER_STATE(low_bank_uses_0FDx) MAPPER_STATE(high_bank_uses_1FDx)
-  MAPPER_STATE(previous_magic_bits)
-  MAPPER_STATE(horizontal_mirroring)
+  TRANSFER(chr_bank_0FDx) TRANSFER(chr_bank_0FEx)
+  TRANSFER(chr_bank_1FDx) TRANSFER(chr_bank_1FEx)
+  TRANSFER(low_bank_uses_0FDx) TRANSFER(high_bank_uses_1FDx)
+  TRANSFER(previous_magic_bits)
+  TRANSFER(horizontal_mirroring)
 MAPPER_STATE_END(9)

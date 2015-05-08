@@ -40,6 +40,6 @@ void mapper_232_write(uint8_t val, uint16_t addr) {
 }
 
 MAPPER_STATE_START(232)
-  MAPPER_STATE(block)
-  MAPPER_STATE(page)
+  TRANSFER(block)
+  TRANSFER(page)
 MAPPER_STATE_END(232)
