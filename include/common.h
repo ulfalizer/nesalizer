@@ -117,14 +117,14 @@ void free_array_set_null(T *p) {
 // is incremented without saving or loading the value, which is used for buffer
 // size calculations.
 template<bool calculating_size, bool is_save, typename T>
-void transfer(T &value, uint8_t *&bufp) {
+void transfer(T &val, uint8_t *&bufp) {
     if (!calculating_size) {
         // Use memcpy to support arrays. Optimized well by GCC in other cases
         // too.
         if (is_save)
-            memcpy(bufp, &value, sizeof(T));
+            memcpy(bufp, &val, sizeof(T));
         else
-            memcpy(&value, bufp, sizeof(T));
+            memcpy(&val, bufp, sizeof(T));
     }
     bufp += sizeof(T);
 }

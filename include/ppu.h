@@ -6,8 +6,8 @@ void    tick_pal_ppu();
 void    set_ppu_cold_boot_state();
 void    reset_ppu();
 uint8_t read_ppu_reg(unsigned n);
-void    write_ppu_reg(uint8_t value, unsigned n);
-void    write_oam_data_reg(uint8_t value);
+void    write_ppu_reg(uint8_t val, unsigned n);
+void    write_oam_data_reg(uint8_t val);
 
 enum Sprite_size { EIGHT_BY_EIGHT = 0, EIGHT_BY_SIXTEEN };
 

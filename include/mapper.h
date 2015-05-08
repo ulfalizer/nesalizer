@@ -18,7 +18,7 @@ extern bool    prg_page_is_ram[4];
 extern uint8_t *prg_ram_6000_page;
 
 uint8_t read_prg(uint16_t addr);
-void write_prg(uint16_t addr, uint8_t value);
+void write_prg(uint16_t addr, uint8_t val);
 
 void set_prg_32k_bank(unsigned bank);
 // MMC5 can map writeable PRG RAM into the $8000+ range - hence the 'is_rom'
