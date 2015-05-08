@@ -37,9 +37,10 @@ int main(int argc, char *argv[]) {
     (void)argc; // Suppress warning
 #endif
 
+    install_sigsegv_handler();
+
     // One-time initialization of various components.
     init_apu();
-    init_debug();
     init_input();
     init_mappers();
 

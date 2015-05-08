@@ -4,7 +4,8 @@
 
 #include <stdint.h>
 
-// See cpu.cpp
+// See cpu.cpp.
+//
 // For CLI and SEI, the flag changes after the interrupt is polled, so both
 // can safely go in this list (the polling is influenced by the current
 // flag status like for the rest)

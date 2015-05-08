@@ -2,7 +2,6 @@
 
 #include "common.h"
 
-#include "log.h"
 #include "mapper.h"
 
 static unsigned temp_reg;
