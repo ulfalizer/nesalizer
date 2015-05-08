@@ -1,5 +1,3 @@
-extern bool apu_clk1_is_high;
-
 void init_apu();
 void init_apu_for_rom();
 void set_apu_cold_boot_state();

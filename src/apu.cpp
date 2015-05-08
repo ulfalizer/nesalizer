@@ -14,7 +14,7 @@
 // Clock used by the APU and DMA circuitry, parts of which tick at half the CPU
 // frequency. Whether the initial tick is high or low seems to be random. The
 // name apu_clk1 is from Visual 2A03.
-bool apu_clk1_is_high;
+static bool apu_clk1_is_high;
 
 //
 // OAM (sprite data) DMA

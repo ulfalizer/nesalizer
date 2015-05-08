@@ -1536,14 +1536,6 @@ needs_second_operand:
     }
 }
 
-static void print_state() {
-    printf("A: %02X  X: %02X  Y: %02X  S: %02X  "
-           "Carry: %d  Zero: %d  I disable: %d  Decimal: %d  Overflow: %d  Negative: %d  (%u,%u) PPU cycle: %"PRIu64" apu_clk1: %s",
-           a, x, y, s,
-           carry, !(zn & 0xFF), irq_disable, decimal, overflow, !!(zn & 0x180),
-           scanline, dot, ppu_cycle, apu_clk1_is_high ? "high" : "low");
-}
-
 static void log_instruction() {
     if (debug_mode == RUN) {
         if ((n_breakpoints_set > 0 && breakpoint_at[pc]) || keys[SDL_SCANCODE_F8])
@@ -1554,7 +1546,11 @@ static void log_instruction() {
 
     if (debug_mode == SINGLE_STEP || debug_mode == TRACE) {
         print_instruction(pc);
-        print_state();
+        printf("A: %02X  X: %02X  Y: %02X  S: %02X  "
+               "Carry: %d  Zero: %d  I disable: %d  Decimal: %d  Overflow: %d  Negative: %d  (%u,%u) PPU cycle: %"PRIu64,
+               a, x, y, s,
+               carry, !(zn & 0xFF), irq_disable, decimal, overflow, !!(zn & 0x180),
+               scanline, dot, ppu_cycle);
 
         if (pending_nmi && pending_irq)
             puts(" (pending NMI and IRQ)");
