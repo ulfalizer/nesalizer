@@ -1,5 +1,3 @@
-// Common mapper-related code
-
 #include "common.h"
 
 #include "cpu.h"
@@ -107,11 +105,13 @@ void init_mappers() {
 // Memory mapping
 //
 
-// Each PRG page is 8 KB to account for the finest granularity switched by any
-// mapper
-uint8_t *prg_pages[4];
-bool    prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
-// 8 KB page mapped at $6000-$7FFF. MMC5 can remap this.
+// PRG is split up into four 8 KB pages to handle memory mapping. This is the
+// finest granularity switched by any mapper. These pointers point to the
+// beginning of each page.
+static uint8_t *prg_pages[4];
+// MMC5 can map RAM into the $8000+ range
+static bool prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
+
 uint8_t *prg_ram_6000_page;
 
 uint8_t read_prg(uint16_t addr) {
@@ -124,15 +124,8 @@ void write_prg(uint16_t addr, uint8_t val) {
         prg_pages[(addr >> 13) & 3][addr & 0x1FFF] = val;
 }
 
-// Each 1 KB big
+// CHR is split up into eight 1 KB pages
 uint8_t *chr_pages[8];
-
-// Memory remapping functions. 'n' specifies the slot, 'bank' the bank to map
-// there. Both are in units corresponding to the function.
-//
-// Negative bank numbers to set_prg_16/8k_bank() assign banks from the end, so
-// that e.g. set_prg_16k_bank(0, -2) assigns the second-to-last 16 KB bank to
-// the first 16 KB slot (0x8000-0xBFFF).
 
 void set_prg_32k_bank(unsigned bank) {
     if (prg_16k_banks == 1) {

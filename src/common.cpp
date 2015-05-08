@@ -1,5 +1,3 @@
-// General utility stuff.
-
 #include "common.h"
 
 #include <execinfo.h>

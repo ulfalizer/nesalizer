@@ -1,5 +1,3 @@
-// Loading and unloading of ROM files
-
 #include "common.h"
 
 #include "apu.h"
@@ -14,32 +12,29 @@
 #include "save_states.h"
 #include "timing.h"
 
+uint8_t *prg_base;
+unsigned prg_16k_banks;
+
+uint8_t *prg_ram_base;
+unsigned prg_ram_8k_banks;
+
+uint8_t *chr_base;
+bool uses_chr_ram;
+unsigned chr_8k_banks;
+
+bool is_pal;
+
+bool has_battery;
+bool has_trainer;
+
+bool is_vs_unisystem;
+bool is_playchoice_10;
+
+bool has_bus_conflicts;
+
+Mapper_fns mapper_fns;
+
 static uint8_t *rom_buf;
-
-uint8_t        *prg_base;
-unsigned       prg_16k_banks;
-
-uint8_t        *prg_ram_base;
-unsigned       prg_ram_8k_banks;
-
-uint8_t        *chr_base;
-bool           uses_chr_ram;
-unsigned       chr_8k_banks;
-
-bool           is_pal;
-
-bool           has_battery;
-bool           has_trainer;
-
-bool           is_vs_unisystem;
-bool           is_playchoice_10;
-
-// If true, the mapper has bus conflicts and does not shut off ROM output for
-// writes to the $8000+ range. This results in an AND between the written value
-// and the value in ROM. Significant for some games.
-bool           has_bus_conflicts;
-
-Mapper_fns     mapper_fns;
 
 char const *const mirroring_to_str[N_MIRRORING_MODES] =
   { "horizontal",
@@ -115,7 +110,6 @@ void load_rom(char const *filename, bool print_info) {
     }
 
     PRINT_INFO("mapper: %u\n", mapper);
-
 
     // If bit 3 of flag byte 6 is set, the cart contains 2 KB of additional
     // CIRAM (nametable memory) and uses four-screen (linear) addressing

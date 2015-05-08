@@ -45,7 +45,7 @@ The save state is in-memory and not saved to disk yet. The length of the rewind 
 
 ## Compatibility ##
 
-iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 5 (including ExGrafix, split screen, and PRG RAM swapping), 7, 9, 11, 71, 232.
+iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 5 (including ExGrafix, split screen, and PRG RAM swapping), 7, 9, 11, 71, 232. This covers the majority of ROMs.
 
 Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, Uchuu Keibitai SDF, Just Breed, and Battletoads.
 
@@ -61,6 +61,8 @@ A set of test ROMs listed in *test.cpp* can be run automatically with
 This requires https://github.com/christopherpow/nes-test-roms to first be cloned into a directory called *tests*. All tests listed in *test.cpp* are expected to pass.
 
 ## Coding style ##
+
+For functions and variables with external linkage, the documentation appears at the declaration in the header. For stuff with internal linkage, the documentation is in the source file. The headers start with a short blurb.
 
 The source is mostly C-like C++, but still strives for modularization, implementation hiding, and clean interfaces. Internal linkage is used for "private" data. Classes might be used for general-purpose objects with multiple instances, but there aren't any of those yet. I try to reduce clutter and boilerplate code.
 

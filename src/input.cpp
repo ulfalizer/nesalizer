@@ -23,8 +23,6 @@ static struct Controller_data {
     unsigned key_a, key_b, key_select, key_start, key_up, key_down, key_left, key_right;
 } controller_data[2];
 
-// For rewind to work properly across resets, the reset button needs to be
-// treated as just another key whose state is saved along with the rest
 bool reset_pushed;
 
 void init_input() {

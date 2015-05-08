@@ -1,3 +1,5 @@
+// General utility stuff and error handling
+
 #include <cassert>
 #include <cerrno>
 #include <climits>
@@ -160,9 +162,11 @@ void transfer_p(T *ptr, size_t len, uint8_t *&bufp) {
 // Error reporting
 //
 
+// Prints a message to stderr and exits with EXIT_FAILURE
 void fail(char const *format, ...)
   __attribute__((format(printf, 1, 2), noreturn));
 
+// Prints a message along with errno to stderr and exits with EXIT_FAILURE
 void errno_fail(int errno_val, char const *format, ...)
   __attribute__((format(printf, 2, 3), noreturn));
 

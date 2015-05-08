@@ -1,5 +1,3 @@
-// Audio buffering, resampling, etc. Makes use of Blargg's blip_buf library.
-
 #include "common.h"
 
 #include "audio.h"
@@ -22,9 +20,6 @@ static size_t start_index = 0, end_index = 0;
 // start_index == end_index means the buffer is full or empty.
 static bool prev_op_was_read = true;
 
-// Moves up to 'len' samples from the ring buffer to 'dst'. In case of
-// underflow, moves all remaining samples and zeroes the remainder of 'dst' (as
-// required by SDL2).
 void read_samples(int16_t *dst, size_t len) {
     assert(start_index < ARRAY_LEN(buf));
 
@@ -136,26 +131,26 @@ static double fill_level() {
 // Initialization, resampling, and buffer management
 //
 
-static blip_t   *blip;
+static blip_t *blip;
 
 // We try to keep the internal audio buffer 50% full for maximum protection
 // against under- and overflow. To maintain that level, we adjust the playback
 // rate slightly depending on the current buffer fill level. This sets the
 // maximum adjustment allowed (1.5%), though typical adjustments will be much
 // smaller.
-double const    max_adjust = 0.015;
+double const max_adjust = 0.015;
 
 // To avoid an immediate underflow, we wait for the audio buffer to fill up
 // before we start playing. This is set true when we're happy with the fill
 // level.
-static bool     playback_started;
+static bool playback_started;
 
 // Leave some extra room in the buffer to allow audio to be slowed down. Assume
 // PAL, which gives a slightly larger buffer than NTSC. (The expression is
 // equivalent to 1.3*sample_rate/frames_per_second, but a compile-time constant
 // in C++03.)
 // TODO: Make dependent on max_adjust.
-static int16_t  blip_samples[1300*sample_rate/pal_milliframes_per_second];
+static int16_t blip_samples[1300*sample_rate/pal_milliframes_per_second];
 
 void set_audio_signal_level(int16_t level) {
     // TODO: Do something to reduce the initial pop here?

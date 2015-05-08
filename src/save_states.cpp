@@ -16,9 +16,10 @@
 // where a new state will overwrite the oldest state when the buffer is full.
 unsigned const  n_rewind_seconds = 30;
 
-static bool     has_save;
-static size_t   state_size;
-static uint8_t  *state;
+static bool has_save;
+static size_t state_size;
+// Buffer for a single plain old save state. Not related to rewinding.
+static uint8_t *state;
 
 // TODO: This is approximate for NTSC and incorrect for PAL
 unsigned const  n_rewind_frames = 60*n_rewind_seconds;
@@ -75,9 +76,6 @@ void load_state() {
 // Rewinding
 //
 
-// Returns the length of the current frame in CPU ticks. Assumes we are
-// currently rewinding. (There'd be no way to know the length if we hadn't
-// already run the frame.)
 unsigned get_frame_len() {
     assert(is_backwards_frame);
     return frame_len[rewind_buf_i];

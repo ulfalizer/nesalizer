@@ -1,7 +1,3 @@
-// 6502/2A03/2A07 core.
-//
-// http://wiki.nesdev.com/w/index.php/CPU
-//
 // This implementation makes use of the fact that the 6502 does a memory access
 // (either a read or a write) for every cycle, by running the other components
 // (the PPU and the APU) from the read_mem() and write_mem() functions. This
@@ -41,32 +37,18 @@
 // shutdown.
 static bool pending_event;
 
-// Set true to break out of the CPU emulation loop at the next instruction
-// boundary
 static bool pending_end_emulation;
-// Set true at the end of the visible part of the frame to trigger end-of-frame
-// operations at the next instruction boundary. This simplifies state transfers
-// as the current location within the CPU emulation loop is part of the state.
 static bool pending_frame_completion;
-// Set true to perform a soft reset at the next instruction boundary
 static bool pending_reset;
+
+void end_emulation()   { pending_event = pending_end_emulation = true; }
+void frame_completed() { pending_event = pending_frame_completion = true; }
+void soft_reset()      { pending_event = pending_reset = true; }
 
 // Set true if interrupt polling detects a pending IRQ or NMI. The next
 // "instruction" executed is the interrupt sequence.
 static bool pending_irq;
 static bool pending_nmi;
-
-void end_emulation() {
-    pending_event = pending_end_emulation = true;
-}
-
-void frame_completed() {
-    pending_event = pending_frame_completion = true;
-}
-
-void soft_reset() {
-    pending_event = pending_reset = true;
-}
 
 #ifdef RUN_TESTS
 // The system is soft-reset when this goes from 1 to 0. Used by test ROMs.
@@ -77,7 +59,7 @@ static unsigned ticks_till_reset;
 // RAM, registers, status flags, and misc. state
 //
 
-static uint8_t  ram[0x800];
+static uint8_t ram[0x800];
 
 // Possible optimization: Making some of the variables a natural size for the
 // implementation architecture might be faster. CPU emulation is already
@@ -85,7 +67,7 @@ static uint8_t  ram[0x800];
 
 // Registers
 static uint16_t pc;
-static uint8_t  a, s, x, y;
+static uint8_t a, s, x, y;
 
 // Status flags
 
@@ -100,38 +82,33 @@ static uint8_t  a, s, x, y;
 // when pulling flags from the stack.
 static unsigned zn;
 
-static bool     carry;
-static bool     irq_disable;
-static bool     decimal;
-static bool     overflow;
-
+static bool carry;
+static bool irq_disable;
+static bool decimal;
+static bool overflow;
 
 // The byte after the opcode byte. Always fetched, so factoring out the fetch
 // saves logic.
-static uint8_t  op_1;
+static uint8_t op_1;
 
-// Current CPU read/write state. Needed to get the timing for APU DMC sample
-// loading right (tested by the sprdma_and_dmc_dma tests).
-bool            cpu_is_reading;
-// Last value put on the CPU data bus. Used to implement open bus reads.
-uint8_t         cpu_data_bus;
+bool cpu_is_reading;
+uint8_t cpu_data_bus;
 
 //
 // PPU and APU interface
 //
 
-// Offset in CPU cycles within the current frame. Used for audio generation.
-unsigned        frame_offset;
+unsigned frame_offset;
 
-// Down-counter for adding an extra PPU tick for PAL
+// Down counter for adding an extra PPU tick for PAL
 static unsigned pal_extra_tick;
 
-// Called once per CPU cycle. For NTSC, there are exactly three PPU ticks per
-// CPU cycle. For PAL the number is 3.2, which is emulated by adding an extra
-// PPU tick every fifth call. (This isn't perfect, but about as good as we can
-// do without getting into super-obscure hardware behavior, including PPU
-// half-ticks and analog effects.)
 void tick() {
+    // For NTSC, there are exactly three PPU ticks per CPU cycle. For PAL the
+    // number is 3.2, which is emulated by adding an extra PPU tick every fifth
+    // call. (This isn't perfect, but about as good as we can do without getting
+    // into super-obscure hardware behavior, including PPU half-ticks and analog
+    // effects.)
     if (is_pal) {
         if (--pal_extra_tick == 0) {
             pal_extra_tick = 5;
@@ -179,9 +156,6 @@ uint8_t read_mem(uint16_t addr) {
 
     uint8_t res;
 
-    // Possible optimization: Checking for the most commonly read areas first
-    // might be faster
-
     switch (addr) {
     case 0x0000 ... 0x1FFF: res = ram[addr & 0x07FF];     break;
     case 0x2000 ... 0x3FFF: res = read_ppu_reg(addr & 7); break;
@@ -194,7 +168,6 @@ uint8_t read_mem(uint16_t addr) {
         res = prg_ram_6000_page ? prg_ram_6000_page[addr & 0x1FFF] : cpu_data_bus;
         break;
     case 0x8000 ... 0xFFFF: res = read_prg(addr);         break;
-
     default:                res = cpu_data_bus;           break; // Open bus
     }
 

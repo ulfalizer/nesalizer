@@ -1,5 +1,8 @@
 void init_timing();
 void init_timing_for_rom();
+
+// Sleeps until the end of the frame if we manage to emulate it faster than
+// realtime (which should hopefully be the case)
 void sleep_till_end_of_frame();
 
 extern unsigned long cpu_clock_rate;

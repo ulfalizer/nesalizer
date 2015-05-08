@@ -1,14 +1,12 @@
 #include <SDL.h>
 
-// Initialization and de-initialization
-
 void init_sdl();
 void deinit_sdl();
 
-// Main loop and signalling of SDL thread
-
+// SDL rendering thread. Runs separately from the emulation thread.
 void sdl_thread();
-// Called from the emulation thread to cause the SDL thread to exit.
+
+// Called from the emulation thread to cause the SDL thread to exit
 void exit_sdl_thread();
 
 // Video
@@ -20,9 +18,12 @@ void draw_frame();
 
 int const sample_rate = 44100;
 
+// Protect the audio buffer from concurrent access by the emulation thread and
+// SDL
 void lock_audio();
 void unlock_audio();
 
+// Stop and start audio playback in SDL
 void start_audio_playback();
 void stop_audio_playback();
 

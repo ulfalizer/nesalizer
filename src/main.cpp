@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
     install_fatal_signal_handlers();
 
-    // One-time initialization of various components.
+    // One-time initialization of various components
     init_apu();
     init_input();
     init_mappers();
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     // Create a separate emulation thread and use this thread as the rendering
-    // thread.
+    // thread
 
     init_sdl();
     SDL_Thread *emu_thread;

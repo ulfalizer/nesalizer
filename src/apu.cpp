@@ -1,7 +1,3 @@
-// APU (audio circuitry) implementation
-//
-// http://wiki.nesdev.com/w/index.php/APU
-
 #include "common.h"
 
 #include "apu.h"
@@ -72,11 +68,7 @@ void do_oam_dma(uint8_t addr) {
 // step most of the time.
 static bool channel_updated;
 
-void begin_audio_frame() {
-    // Invalidate the cached signal level as outlined in
-    // set_audio_signal_level()
-    channel_updated = true;
-}
+void begin_audio_frame() { channel_updated = true; }
 
 // Length counter look-up table
 uint8_t const len_table[] = {
@@ -154,7 +146,6 @@ static void update_pulse_output_level(unsigned n) {
         channel_updated = true;
 }
 
-// $4000/$4004
 void write_pulse_reg_0(unsigned n, uint8_t val) {
     pulse[n].duty              = val >> 6;
     pulse[n].halt_len_loop_env = val & 0x20;
@@ -164,7 +155,6 @@ void write_pulse_reg_0(unsigned n, uint8_t val) {
     update_pulse_output_level(n);
 }
 
-// $4001/$4005
 void write_pulse_reg_1(unsigned n, uint8_t val) {
     pulse[n].sweep_enabled = val & 0x80;
     pulse[n].sweep_period  = (val >> 4) & 7;
@@ -177,7 +167,6 @@ void write_pulse_reg_1(unsigned n, uint8_t val) {
     update_pulse_output_level(n);
 }
 
-// $4002/$4006
 void write_pulse_reg_2(unsigned n, uint8_t val) {
     pulse[n].period = (pulse[n].period & ~0x0FF) | val;
 
@@ -185,7 +174,6 @@ void write_pulse_reg_2(unsigned n, uint8_t val) {
     update_pulse_output_level(n);
 }
 
-// $4003/$4007
 void write_pulse_reg_3(unsigned n, uint8_t val) {
     if (pulse[n].enabled)
         pulse[n].len_cnt = len_table[val >> 3];
@@ -230,18 +218,15 @@ static unsigned tri_lin_cnt_load;
 static unsigned tri_lin_cnt;
 static bool     tri_lin_cnt_reload_flag;
 
-// $4008
 void write_triangle_reg_0(uint8_t val) {
     tri_halt_flag    = val & 0x80;
     tri_lin_cnt_load = val & 0x7F;
 }
 
-// $400A
 void write_triangle_reg_1(uint8_t val) {
     tri_period = (tri_period & ~0x0FF) | val;
 }
 
-// $400B
 void write_triangle_reg_2(uint8_t val) {
     tri_lin_cnt_reload_flag = true;
     if (tri_enabled)
@@ -388,7 +373,6 @@ uint16_t const pal_dmc_periods[] =
  { 398, 354, 316, 298, 276, 236, 210, 198, 176, 148, 132, 118,  98,  78,  66,  50 };
 static uint16_t const *dmc_periods;
 
-// $4010
 void write_dmc_reg_0(uint8_t val) {
     if (!(dmc_irq_enabled = val & 0x80))
         set_dmc_irq(false);
@@ -396,7 +380,6 @@ void write_dmc_reg_0(uint8_t val) {
     dmc_period      = dmc_periods[val & 0x0F];
 }
 
-// $4011
 void write_dmc_reg_1(uint8_t val) {
     unsigned const old_dmc_counter = dmc_counter;
 
@@ -406,12 +389,10 @@ void write_dmc_reg_1(uint8_t val) {
         channel_updated = true;
 }
 
-// $4012
 void write_dmc_reg_2(uint8_t val) {
     dmc_sample_start_addr = 0x4000 | (val << 6);
 }
 
-// $4013
 void write_dmc_reg_3(uint8_t val) {
     dmc_sample_len = (val << 4) + 1;
 }
@@ -600,7 +581,6 @@ static void clock_len_and_sweep() {
     }
 }
 
-// $4017
 void write_frame_counter(uint8_t val) {
     frame_counter_mode = (Frame_counter_mode)(val >> 7);
     if ((inhibit_frame_irq = val & 0x40))
@@ -697,7 +677,6 @@ static void (*clock_frame_counter)();
 // Status
 //
 
-// $4015
 uint8_t read_apu_status() {
     uint8_t const res =
       (dmc_irq                   << 7) |
@@ -714,7 +693,6 @@ uint8_t read_apu_status() {
     return res;
 }
 
-// $4015
 void write_apu_status(uint8_t val) {
     for (unsigned n = 0; n < 2; ++n) {
         if (!(pulse[n].enabled = val & (1 << n))) {

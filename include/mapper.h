@@ -1,28 +1,52 @@
-void init_mappers();
+// Common mapper-related functionality
 
+// Table of mapper-specific functions
 extern struct Mapper_fns {
     void    (*init)();
+
+    // Reacting to CPU reads and writes
     uint8_t (*read)(uint16_t addr);
     void    (*write)(uint8_t val, uint16_t addr);
+
+    // For mappers with custom nametable mirroring modes (e.g., MMC5)
     uint8_t (*read_nt)(uint16_t addr);
     void    (*write_nt)(uint8_t val, uint16_t addr);
+
+    // Called each PPU tick. For mappers that snoop on PPU activity (the VRAM
+    // address bus).
     void    (*ppu_tick_callback)();
 
+    // Saving and loading of mapper-specific state
     size_t  (*state_size)(uint8_t*&);
     size_t  (*save_state)(uint8_t*&);
     size_t  (*load_state)(uint8_t*&);
 } mapper_fns_table[256];
 
-extern uint8_t *prg_pages[4];
-extern bool    prg_page_is_ram[4];
+void init_mappers();
+
+//
+// Memory mapping
+//
+
+// 8 KB page mapped at $6000-$7FFF. Often called SRAM or WRAM and used for
+// saving and/or extra work RAM. MMC5 can remap this.
 extern uint8_t *prg_ram_6000_page;
 
+// For accessing the $8000+ range. Takes an ordinary CPU address.
 uint8_t read_prg(uint16_t addr);
 void write_prg(uint16_t addr, uint8_t val);
 
+// Memory remapping functions. 'n' specifies the slot, 'bank' the bank to map
+// there. Both are in units corresponding to the function.
+//
+// Negative bank numbers to set_prg_16/8k_bank() assign banks from the end, so
+// that e.g. set_prg_16k_bank(0, -2) assigns the second-to-last 16 KB bank to
+// the first 16 KB slot (0x8000-0xBFFF).
+//
+// MMC5 can map writeable RAM into the $8000+ range - hence the 'is_rom'
+// argument.
+
 void set_prg_32k_bank(unsigned bank);
-// MMC5 can map writeable PRG RAM into the $8000+ range - hence the 'is_rom'
-// argument
 void set_prg_16k_bank(unsigned n, int bank, bool is_rom = true);
 void set_prg_8k_bank (unsigned n, int bank, bool is_rom = true);
 // PRG RAM mapped at $6000-$7FFF
@@ -38,7 +62,7 @@ void set_chr_1k_bank(unsigned n, unsigned bank);
 extern uint8_t *prg_ram;
 
 // Updating this will require updating mirroring_to_str as well
-enum Mirroring {
+extern enum Mirroring {
     HORIZONTAL      = 0,
     VERTICAL        = 1,
     ONE_SCREEN_LOW  = 2,
@@ -47,8 +71,7 @@ enum Mirroring {
     SPECIAL         = 5, // Mapper-specific special mirroring
 
     N_MIRRORING_MODES
-};
-extern Mirroring mirroring;
+} mirroring;
 
 void set_mirroring(Mirroring m);
 
