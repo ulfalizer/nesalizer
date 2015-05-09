@@ -1,5 +1,3 @@
-// Video, audio, and input backend. Uses SDL2.
-
 #include "common.h"
 
 #include "audio.h"
