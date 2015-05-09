@@ -43,12 +43,12 @@ void write_prg(uint16_t addr, uint8_t val);
 // that e.g. set_prg_16k_bank(0, -2) assigns the second-to-last 16 KB bank to
 // the first 16 KB slot (0x8000-0xBFFF).
 //
-// MMC5 can map writeable RAM into the $8000+ range - hence the 'is_rom'
+// MMC5 can map writeable RAM into the $8000+ range - hence the 'is_ram'
 // argument.
 
 void set_prg_32k_bank(unsigned bank);
-void set_prg_16k_bank(unsigned n, int bank, bool is_rom = true);
-void set_prg_8k_bank (unsigned n, int bank, bool is_rom = true);
+void set_prg_16k_bank(unsigned n, int bank, bool is_ram = false);
+void set_prg_8k_bank (unsigned n, int bank, bool is_ram = false);
 // PRG RAM mapped at $6000-$7FFF
 void set_prg_6000_bank(unsigned bank);
 

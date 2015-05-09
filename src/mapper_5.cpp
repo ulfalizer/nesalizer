@@ -90,7 +90,6 @@ static unsigned split_y_scroll;
 // $5202
 static unsigned split_chr_page;
 
-
 static void use_bg_chr() {
     using_bg_chr = true;
 
@@ -162,20 +161,20 @@ static void apply_state() {
         break;
 
     case 1:
-        set_prg_16k_bank(0, (prg_banks[1] & 0x7F) >> 1, prg_banks[1] & 0x80);
+        set_prg_16k_bank(0, (prg_banks[1] & 0x7F) >> 1, !(prg_banks[1] & 0x80));
         set_prg_16k_bank(1, prg_banks[3] >> 1);
         break;
 
     case 2:
-        set_prg_16k_bank(0, (prg_banks[1] & 0x7F) >> 1, prg_banks[1] & 0x80);
-        set_prg_8k_bank(2, prg_banks[2] & 0x7F, prg_banks[2] & 0x80);
+        set_prg_16k_bank(0, (prg_banks[1] & 0x7F) >> 1, !(prg_banks[1] & 0x80));
+        set_prg_8k_bank(2, prg_banks[2] & 0x7F, !(prg_banks[2] & 0x80));
         set_prg_8k_bank(3, prg_banks[3]);
         break;
 
     case 3:
-        set_prg_8k_bank(0, prg_banks[0] & 0x7F, prg_banks[0] & 0x80);
-        set_prg_8k_bank(1, prg_banks[1] & 0x7F, prg_banks[1] & 0x80);
-        set_prg_8k_bank(2, prg_banks[2] & 0x7F, prg_banks[2] & 0x80);
+        set_prg_8k_bank(0, prg_banks[0] & 0x7F, !(prg_banks[0] & 0x80));
+        set_prg_8k_bank(1, prg_banks[1] & 0x7F, !(prg_banks[1] & 0x80));
+        set_prg_8k_bank(2, prg_banks[2] & 0x7F, !(prg_banks[2] & 0x80));
         set_prg_8k_bank(3, prg_banks[3]);
         break;
 

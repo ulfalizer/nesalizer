@@ -144,7 +144,7 @@ void set_prg_32k_bank(unsigned bank) {
         prg_page_is_ram[i] = false;
 }
 
-void set_prg_16k_bank(unsigned n, int bank, bool is_rom /* = true */) {
+void set_prg_16k_bank(unsigned n, int bank, bool is_ram /* = false */) {
     assert(n < 2);
 
     if (bank < 0)
@@ -152,7 +152,7 @@ void set_prg_16k_bank(unsigned n, int bank, bool is_rom /* = true */) {
 
     uint8_t *base;
     unsigned mask;
-    if (!is_rom && prg_ram_base) {
+    if (is_ram && prg_ram_base) {
         base = prg_ram_base;
         mask = 2*prg_ram_8k_banks - 1;
     }
@@ -164,11 +164,11 @@ void set_prg_16k_bank(unsigned n, int bank, bool is_rom /* = true */) {
     uint8_t *const bank_ptr = base + 0x4000*(bank & mask);
     for (unsigned i = 0; i < 2; ++i) {
         prg_pages[2*n + i] = bank_ptr + 0x2000*i;
-        prg_page_is_ram[2*n + i] = !is_rom;
+        prg_page_is_ram[2*n + i] = is_ram;
     }
 }
 
-void set_prg_8k_bank(unsigned n, int bank, bool is_rom /* = true */) {
+void set_prg_8k_bank(unsigned n, int bank, bool is_ram /* = false */) {
     assert(n < 4);
 
     if (bank < 0)
@@ -176,7 +176,7 @@ void set_prg_8k_bank(unsigned n, int bank, bool is_rom /* = true */) {
 
     uint8_t *base;
     unsigned mask;
-    if (!is_rom && prg_ram_base) {
+    if (is_ram && prg_ram_base) {
         base = prg_ram_base;
         mask = prg_ram_8k_banks - 1;
     }
@@ -186,7 +186,7 @@ void set_prg_8k_bank(unsigned n, int bank, bool is_rom /* = true */) {
     }
 
     prg_pages[n] = base + 0x2000*(bank & mask);
-    prg_page_is_ram[n] = !is_rom;
+    prg_page_is_ram[n] = is_ram;
 }
 
 void set_prg_6000_bank(unsigned bank) {
