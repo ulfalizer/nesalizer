@@ -147,18 +147,6 @@ void transfer_p(T *ptr, size_t len, uint8_t *&bufp) {
 #define TRANSFER_P(x, len) transfer_p<calculating_size, is_save>(x, len, buf);
 
 //
-// Logging
-//
-
-//#define LOG_MAPPER_OPERATIONS
-
-#ifdef LOG_MAPPER_OPERATIONS
-#    define LOG_MAPPER(...) printf(__VA_ARGS__)
-#else
-#    define LOG_MAPPER(...)
-#endif
-
-//
 // Error reporting
 //
 

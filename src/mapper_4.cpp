@@ -60,52 +60,18 @@ void mapper_4_init() {
 
 void mapper_4_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
-    LOG_MAPPER("MMC3: Writing %02X to $%04X, at (%u,%u)\n", val, addr, scanline, dot);
 
     switch (((addr >> 12) & 6) | (addr & 1)) {
-
-    case 0: // 0x8000
-        LOG_MAPPER("8000\n");
-        reg_8000 = val;
-        break;
-
-    case 1: // 0x8001
-        LOG_MAPPER("8001\n");
-        regs[reg_8000 & 7] = val;
-        break;
-
-    case 2: // 0xA000
-        LOG_MAPPER("A000\n");
-        horizontal_mirroring = val & 1;
-        break;
-
-    case 3: // 0xA001
-        LOG_MAPPER("A001\n");
-        // WRAM stuff...
-        // Is PRG-RAM and WRAM/SRAM always into the same region?
-        break;
-
-    case 4: // 0xC000
-        LOG_MAPPER("MMC3: Setting IRQ period to %d, at scanline = %u, dot = %u\n", val, scanline, dot);
-        irq_period = val;
-        break;
-
-    case 5: // 0xC001
-        LOG_MAPPER("MMC3: Setting IRQ period counter to 0, at scanline = %u, dot = %u\n", scanline, dot);
-        // This causes the period to be reloaded at the next rising edge
-        irq_period_cnt = 0;
-        break;
-
-    case 6: // 0xE000
-        LOG_MAPPER("MMC3: Clearing IRQ enabled flag and IRQ line, at scanline = %u, dot = %u\n", scanline, dot);
-        set_cart_irq((irq_enabled = false));
-        break;
-
-    case 7: // 0xE001
-        LOG_MAPPER("MMC3: Enabling IRQs, at scanline = %u, dot = %u\n", scanline, dot);
-        irq_enabled = true;
-        break;
-
+    case 0: reg_8000 = val;                      break; // 0x8000
+    case 1: regs[reg_8000 & 7] = val;            break; // 0x8001
+    case 2: horizontal_mirroring = val & 1;      break; // 0xA000
+    // WRAM write protection
+    case 3:                                      break; // 0xA001
+    case 4: irq_period = val;                    break; // 0xC000
+    // This causes the period to be reloaded at the next rising edge
+    case 5: irq_period_cnt = 0;                  break; // 0xC001
+    case 6: set_cart_irq((irq_enabled = false)); break; // 0xE000
+    case 7: irq_enabled = true;                  break; // 0xE001
     default: UNREACHABLE
     }
 
@@ -122,17 +88,12 @@ static void clock_scanline_counter() {
     // Revision A: assert IRQ when transitioning from non-zero to zero
     // Revision B: assert IRQ when is zero
     // Revision B implemented here
-    if (irq_period_cnt == 0) {
-        LOG_MAPPER("MMC3: Reloading IRQ period counter with %u, at scanline = %u, dot = %u\n", irq_period, scanline, dot);
+    if (irq_period_cnt == 0)
         irq_period_cnt = irq_period;
-    }
-    else {
-        LOG_MAPPER("MMC3: Decrementing IRQ period counter from %u to %u, at scanline = %u, dot = %u\n", irq_period_cnt, irq_period_cnt - 1, scanline, dot);
+    else
         --irq_period_cnt;
-    }
 
     if (irq_period_cnt == 0 && irq_enabled) {
-        LOG_MAPPER("MMC3: Asserting IRQ at scanline = %u, dot = %u\n", scanline, dot);
         //delayed_irq = 3;
         set_cart_irq(true);
     }

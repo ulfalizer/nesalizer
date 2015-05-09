@@ -53,7 +53,6 @@ void mapper_1_init() {
 void mapper_1_write(uint8_t val, uint16_t addr) {
     // static uint64_t last_write_cycle;
     if (!(addr & 0x8000)) return;
-    LOG_MAPPER("MMC1: Writing $%02X to $%04X\n", val, addr);
 
     // Writes after the first write are ignored for writes on consecutive CPU
     // cycles. Bill & Ted's Excellent Adventure needs this.
@@ -71,14 +70,6 @@ void mapper_1_write(uint8_t val, uint16_t addr) {
     else {
         temp_reg = ((val & 1) << 4) | (temp_reg >> 1);
         if (++nth_write == 5) {
-            switch ((addr >> 13) & 3) {
-            case 0: LOG_MAPPER("MMC1: setting flags");      break;
-            case 1: LOG_MAPPER("MMC1: setting CHR page 1"); break;
-            case 2: LOG_MAPPER("MMC1: setting CHR page 2"); break;
-            case 3: LOG_MAPPER("MMC1: setting PRG page");   break;
-            }
-            LOG_MAPPER(" to $%02X\n", temp_reg);
-
             regs[(addr >> 13) & 3] = temp_reg;
             nth_write = 0;
             temp_reg = 0;

@@ -1301,7 +1301,7 @@ void run() {
 }
 
 //
-// Tracing and logging
+// Debugging and tracing
 //
 
 #ifdef INCLUDE_DEBUGGER
