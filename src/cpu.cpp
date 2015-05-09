@@ -764,6 +764,8 @@ static void do_interrupt(Interrupt_type type) {
 // where all instructions poll interrupts in the same location we do the
 // polling in the addressing mode routine to save code. Same goes for
 // read-modify-write instructions, which all poll in the same location.
+//
+// See http://wiki.nesdev.com/w/index.php/CPU_interrupts as well.
 static void poll_for_interrupt() {
     // If both NMI and IRQ have been asserted, the IRQ assertion is lost at
     // this polling point (as if IRQ had never been asserted). IRQ might still
