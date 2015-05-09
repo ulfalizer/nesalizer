@@ -49,11 +49,11 @@ static void do_rom_specific_overrides();
 void load_rom(char const *filename, bool print_info) {
     #define PRINT_INFO(...) do { if (print_info) printf(__VA_ARGS__); } while(0)
 
-    is_pal = strstr(filename, "(E)") || strstr(filename, "PAL");
-    PRINT_INFO("Guessing %s based on filename\n", is_pal ? "PAL" : "NTSC");
-
     size_t rom_buf_size;
     rom_buf = get_file_buffer(filename, rom_buf_size);
+
+    is_pal = strstr(filename, "(E)") || strstr(filename, "PAL");
+    PRINT_INFO("Guessing %s based on filename\n", is_pal ? "PAL" : "NTSC");
 
     fail_if(rom_buf_size < 16,
       "'%s' is too short to be a valid iNES file "
