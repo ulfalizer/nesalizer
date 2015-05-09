@@ -109,7 +109,6 @@ void init_mappers() {
 // finest granularity switched by any mapper. These pointers point to the
 // beginning of each page.
 static uint8_t *prg_pages[4];
-// MMC5 can map RAM into the $8000+ range
 static bool prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
 
 uint8_t *prg_ram_6000_page;
