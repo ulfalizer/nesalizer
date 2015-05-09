@@ -1313,8 +1313,7 @@ static int read_without_side_effects(uint16_t addr) {
     case 0x0000 ... 0x1FFF: return ram[addr & 0x07FF];
     case 0x6000 ... 0x7FFF: return prg_ram_6000_page ? prg_ram_6000_page[addr & 0x1FFF] : 0;
     case 0x8000 ... 0xFFFF: return read_prg(addr);
-
-    default: return -1;
+    default:                return -1;
     }
 }
 
