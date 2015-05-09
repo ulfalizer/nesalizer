@@ -117,8 +117,8 @@ uint8_t read_prg(uint16_t addr) {
     return prg_pages[(addr >> 13) & 3][addr & 0x1FFF];
 }
 
-// MMC5 can put PRG RAM into the $8000+ range
 void write_prg(uint16_t addr, uint8_t val) {
+    // MMC5 can put PRG RAM into the $8000+ range
     if (prg_page_is_ram[(addr >> 13) & 3])
         prg_pages[(addr >> 13) & 3][addr & 0x1FFF] = val;
 }
