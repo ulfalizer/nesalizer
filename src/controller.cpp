@@ -1,5 +1,3 @@
-// Emulation of standard NES controller
-
 #include "common.h"
 
 #include "controller.h"
