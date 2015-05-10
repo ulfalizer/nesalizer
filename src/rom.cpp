@@ -60,7 +60,7 @@ void load_rom(char const *filename, bool print_info) {
       "(is %zu bytes - not even enough to hold the 16-byte header)",
       filename, rom_buf_size);
 
-    fail_if(memcmp(rom_buf, "NES\x1A", 4),
+    fail_if(!MEM_EQ(rom_buf, "NES\x1A"),
       "the iNES header in '%s' does not start with the expected byte sequence 'N', 'E', 'S', 0x1A "
       "(the corresponding bytes are instead 0x%02X, 0x%02X, 0x%02X, 0x%02X)",
       filename, rom_buf[0], rom_buf[1], rom_buf[2], rom_buf[3]);
@@ -101,7 +101,7 @@ void load_rom(char const *filename, bool print_info) {
     // Assume we're dealing with a corrupted header (e.g. one containing
     // "DiskDude!" in bytes 7-15) if the ROM is not in NES 2.0 format and bytes
     // 12-15 are not all zero
-    if (!in_nes_2_0_format && memcmp(rom_buf + 12, "\0\0\0\0", 4))
+    if (!in_nes_2_0_format && !MEM_EQ(rom_buf + 12, "\0\0\0\0"))
         PRINT_INFO("header looks corrupted (bytes 12-15 not all zero) - ignoring byte 7\n");
     else {
         is_vs_unisystem  = rom_buf[7] & 1;
@@ -239,13 +239,13 @@ static void do_rom_specific_overrides() {
     putchar('\n');
 #endif
 
-    if (!memcmp(md5, "\xAC\x5F\x53\x53\x59\x87\x58\x45\xBC\xBD\x1B\x6F\x31\x30\x7D\xEC", 16))
+    if (MEM_EQ(md5, "\xAC\x5F\x53\x53\x59\x87\x58\x45\xBC\xBD\x1B\x6F\x31\x30\x7D\xEC"))
         // Cybernoid
         enable_bus_conflicts();
-    else if (!memcmp(md5, "\x60\xC6\x21\xF5\xB5\x09\xD4\x14\xBB\x4A\xFB\x9B\x56\x95\xC0\x73", 16))
+    else if (MEM_EQ(md5, "\x60\xC6\x21\xF5\xB5\x09\xD4\x14\xBB\x4A\xFB\x9B\x56\x95\xC0\x73"))
         // High hopes
         set_pal();
-    else if (!memcmp(md5, "\x44\x6F\xCD\x30\x75\x61\x00\xA9\x94\x35\x9A\xD4\xC5\xF8\x76\x67", 16))
+    else if (MEM_EQ(md5, "\x44\x6F\xCD\x30\x75\x61\x00\xA9\x94\x35\x9A\xD4\xC5\xF8\x76\x67"))
         // Rad Racer 2
         correct_mirroring(FOUR_SCREEN);
 }

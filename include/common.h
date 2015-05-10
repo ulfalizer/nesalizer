@@ -51,6 +51,10 @@ void swap(T &x, T &y) {
     y = temp;
 }
 
+// True if 'x' starts with the byte sequence in 'str' (excluding the
+// terminating null)
+#define MEM_EQ(x, str) !memcmp(x, str, sizeof (str) - 1)
+
 #define NTH_BIT(x, n) (((x) >> (n)) & 1)
 
 // Returns the next power of two greater than or equal to 'n'. Meant to be used
