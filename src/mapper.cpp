@@ -111,8 +111,6 @@ void init_mappers() {
 static uint8_t *prg_pages[4];
 static bool prg_page_is_ram[4]; // MMC5 can map PRG RAM into the $8000+ range
 
-uint8_t *prg_ram_6000_page;
-
 uint8_t read_prg(uint16_t addr) {
     return prg_pages[(addr >> 13) & 3][addr & 0x1FFF];
 }
@@ -151,9 +149,9 @@ void set_prg_16k_bank(unsigned n, int bank, bool is_ram /* = false */) {
 
     uint8_t *base;
     unsigned mask;
-    if (is_ram && prg_ram_base) {
-        base = prg_ram_base;
-        mask = 2*prg_ram_8k_banks - 1;
+    if (is_ram && wram_base) {
+        base = wram_base;
+        mask = 2*wram_8k_banks - 1;
     }
     else {
         base = prg_base;
@@ -175,9 +173,9 @@ void set_prg_8k_bank(unsigned n, int bank, bool is_ram /* = false */) {
 
     uint8_t *base;
     unsigned mask;
-    if (is_ram && prg_ram_base) {
-        base = prg_ram_base;
-        mask = prg_ram_8k_banks - 1;
+    if (is_ram && wram_base) {
+        base = wram_base;
+        mask = wram_8k_banks - 1;
     }
     else {
         base = prg_base;
@@ -186,10 +184,6 @@ void set_prg_8k_bank(unsigned n, int bank, bool is_ram /* = false */) {
 
     prg_pages[n] = base + 0x2000*(bank & mask);
     prg_page_is_ram[n] = is_ram;
-}
-
-void set_prg_6000_bank(unsigned bank) {
-    prg_ram_6000_page = prg_ram_base + 0x2000*(bank & (prg_ram_8k_banks - 1));
 }
 
 void set_chr_8k_bank(unsigned bank) {
@@ -215,6 +209,12 @@ void set_chr_2k_bank(unsigned n, unsigned bank) {
 void set_chr_1k_bank(unsigned n, unsigned bank) {
     assert(n < 8);
     chr_pages[n] = chr_base + 0x400*(bank & (8*chr_8k_banks - 1));
+}
+
+uint8_t *wram_6000_page;
+
+void set_wram_6000_bank(unsigned bank) {
+    wram_6000_page = wram_base + 0x2000*(bank & (wram_8k_banks - 1));
 }
 
 //

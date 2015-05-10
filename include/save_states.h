@@ -16,7 +16,7 @@ void handle_rewind(bool do_rewind);
 // already run the frame.)
 unsigned get_frame_len();
 
-// True if the current frame should appear to run in reverse (e.g. w.r.t.
+// True if the current frame should appear to run in reverse (e.g., w.r.t.
 // audio)
 extern bool is_backwards_frame;
 

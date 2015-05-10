@@ -28,10 +28,6 @@ void init_mappers();
 // Memory mapping
 //
 
-// 8 KB page mapped at $6000-$7FFF. Often called SRAM or WRAM and used for
-// saving and/or extra work RAM. MMC5 can remap this.
-extern uint8_t *prg_ram_6000_page;
-
 // For accessing the $8000+ range. Takes an ordinary CPU address.
 uint8_t read_prg(uint16_t addr);
 void write_prg(uint16_t addr, uint8_t val);
@@ -49,8 +45,6 @@ void write_prg(uint16_t addr, uint8_t val);
 void set_prg_32k_bank(unsigned bank);
 void set_prg_16k_bank(unsigned n, int bank, bool is_ram = false);
 void set_prg_8k_bank (unsigned n, int bank, bool is_ram = false);
-// PRG RAM mapped at $6000-$7FFF
-void set_prg_6000_bank(unsigned bank);
 
 extern uint8_t *chr_pages[8];
 
@@ -59,7 +53,11 @@ void set_chr_4k_bank(unsigned n, unsigned bank);
 void set_chr_2k_bank(unsigned n, unsigned bank);
 void set_chr_1k_bank(unsigned n, unsigned bank);
 
-extern uint8_t *prg_ram;
+// 8 KB page mapped at $6000-$7FFF. Used for extra work RAM (WRAM) and/or
+// saving (SRAM). MMC5 can remap this.
+extern uint8_t *wram_6000_page;
+
+void set_wram_6000_bank(unsigned bank);
 
 // Updating this will require updating mirroring_to_str as well
 extern enum Mirroring {
@@ -75,8 +73,8 @@ extern enum Mirroring {
 
 void set_mirroring(Mirroring m);
 
-// Helper macros for declaring mapper state that needs to be included in and
-// loaded from save states
+// Helper macros for declaring mapper state that needs to be included in save
+// states.
 //
 // A declaration like
 //

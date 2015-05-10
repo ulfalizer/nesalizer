@@ -44,10 +44,11 @@ static unsigned exram_mode;
 static unsigned prg_mode;
 static unsigned chr_mode;
 
-static unsigned prg_6000_bank;
 static unsigned prg_banks[4];
 static unsigned sprite_chr_banks[8];
 static unsigned bg_chr_banks[4];
+
+static unsigned wram_6000_bank;
 
 static unsigned high_chr_bits; // $5130, pre-shifted by 6
 
@@ -181,7 +182,7 @@ static void apply_state() {
     default: UNREACHABLE
     }
 
-    set_prg_6000_bank(prg_6000_bank);
+    set_wram_6000_bank(wram_6000_bank);
 
     // Update the currently active CHR mapping
     if (using_bg_chr) {
@@ -200,7 +201,7 @@ void mapper_5_init() {
     init_array(bg_chr_banks, 0xFFu);
 
     prg_mode       = chr_mode = 3;
-    prg_6000_bank  = 7;
+    wram_6000_bank = 7;
     set_mirroring(SPECIAL);
     mmc5_mirroring = 0xFF;
     high_chr_bits  = 0;
@@ -257,7 +258,7 @@ void mapper_5_write(uint8_t val, uint16_t addr) {
         break;
     }
 
-    case 0x5113: prg_6000_bank = val & 7; break;
+    case 0x5113: wram_6000_bank = val & 7; break;
 
     case 0x5114 ... 0x5117:
         prg_banks[addr - 0x5114] = val;
@@ -467,10 +468,10 @@ MAPPER_STATE_START(5)
   TRANSFER(exram_mode)
   TRANSFER(prg_mode)
   TRANSFER(chr_mode)
-  TRANSFER(prg_6000_bank)
   TRANSFER(prg_banks)
   TRANSFER(sprite_chr_banks)
   TRANSFER(bg_chr_banks)
+  TRANSFER(wram_6000_bank)
   TRANSFER(high_chr_bits)
   TRANSFER(multiplicand)
   TRANSFER(multiplier)

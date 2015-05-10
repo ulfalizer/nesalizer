@@ -6,8 +6,8 @@ extern unsigned prg_16k_banks;
 
 // Points to a dynamically allocated buffer for SRAM/WRAM. We usually have to
 // assume the cart has SRAM/WRAM due to iNES ickiness.
-extern uint8_t *prg_ram_base;
-extern unsigned prg_ram_8k_banks;
+extern uint8_t *wram_base;
+extern unsigned wram_8k_banks;
 
 // Points to the start of the CHR data within the ROM image, or to a
 // dynamically allocated buffer if the cart uses RAM for CHR

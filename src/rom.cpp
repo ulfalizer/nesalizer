@@ -15,8 +15,8 @@
 uint8_t *prg_base;
 unsigned prg_16k_banks;
 
-uint8_t *prg_ram_base;
-unsigned prg_ram_8k_banks;
+uint8_t *wram_base;
+unsigned wram_8k_banks;
 
 uint8_t *chr_base;
 bool uses_chr_ram;
@@ -136,20 +136,20 @@ void load_rom(char const *filename, bool print_info) {
         ciram = alloc_array_init<uint8_t>(0x1000, 0xFF);
         // Assume no PRG RAM when four-screen, per
         // http://wiki.nesdev.com/w/index.php/INES_Mapper_004
-        prg_ram_base = prg_ram_6000_page = 0;
+        wram_base = wram_6000_page = 0;
     }
     else {
         ciram = alloc_array_init<uint8_t>(0x800, 0xFF);
 
         // Original iNES assumes all carts have 8 KB of PRG RAM. For MMC5,
         // assume the cart has 64 KB.
-        prg_ram_8k_banks = (mapper == 5) ? 8 : 1;
+        wram_8k_banks = (mapper == 5) ? 8 : 1;
 
-        fail_if(!(prg_ram_base = alloc_array_init<uint8_t>(0x2000*prg_ram_8k_banks, 0xFF)),
-                "failed to allocate %u KB of PRG RAM", 8*prg_ram_8k_banks);
+        fail_if(!(wram_base = alloc_array_init<uint8_t>(0x2000*wram_8k_banks, 0xFF)),
+                "failed to allocate %u KB of PRG RAM", 8*wram_8k_banks);
         // Default to mapping the first page to $6000-$7FFF, which will do the right thing
         // in the usual case of there only being a single page
-        prg_ram_6000_page = prg_ram_base;
+        wram_6000_page = wram_base;
     }
     fail_if(!ciram,
             "failed to allocate %u bytes of nametable memory",
@@ -202,7 +202,7 @@ void unload_rom() {
     free_array_set_null(ciram);
     if (uses_chr_ram)
         free_array_set_null(chr_base);
-    free_array_set_null(prg_ram_base);
+    free_array_set_null(wram_base);
 
     deinit_audio_for_rom();
     deinit_save_states_for_rom();

@@ -164,8 +164,8 @@ uint8_t read_mem(uint16_t addr) {
     case 0x4017           : res = read_controller(1);     break;
     case 0x4018 ... 0x5FFF: res = mapper_fns.read(addr);  break; // General enough?
     case 0x6000 ... 0x7FFF:
-        // SRAM/WRAM/PRG RAM. Returns open bus if none present.
-        res = prg_ram_6000_page ? prg_ram_6000_page[addr & 0x1FFF] : cpu_data_bus;
+        // WRAM/SRAM. Returns open bus if none present.
+        res = wram_6000_page ? wram_6000_page[addr & 0x1FFF] : cpu_data_bus;
         break;
     case 0x8000 ... 0xFFFF: res = read_prg(addr);         break;
     default:                res = cpu_data_bus;           break; // Open bus
@@ -224,14 +224,14 @@ static void write_mem(uint8_t val, uint16_t addr) {
         // corresponding text string to $6004
         if (addr == 0x6000) {
             if (val < 0x80)
-                report_status_and_end_test(val, (char*)prg_ram_6000_page + 4);
+                report_status_and_end_test(val, (char*)wram_6000_page + 4);
             else if (val == 0x81)
                 // Wait 150 ms before resetting
                 ticks_till_reset = 0.15*cpu_clock_rate;
         }
 #endif
 
-        if (prg_ram_6000_page) prg_ram_6000_page[addr & 0x1FFF] = val;
+        if (wram_6000_page) wram_6000_page[addr & 0x1FFF] = val;
         break;
 
     case 0x8000 ... 0xFFFF: write_prg(addr, val); break;
@@ -1311,7 +1311,7 @@ void run() {
 static int read_without_side_effects(uint16_t addr) {
     switch (pc) {
     case 0x0000 ... 0x1FFF: return ram[addr & 0x07FF];
-    case 0x6000 ... 0x7FFF: return prg_ram_6000_page ? prg_ram_6000_page[addr & 0x1FFF] : 0;
+    case 0x6000 ... 0x7FFF: return wram_6000_page ? wram_6000_page[addr & 0x1FFF] : 0;
     case 0x8000 ... 0xFFFF: return read_prg(addr);
     default:                return -1;
     }
@@ -1686,7 +1686,7 @@ static void reset_cpu() {
 template<bool calculating_size, bool is_save>
 void transfer_cpu_state(uint8_t *&buf) {
     TRANSFER(ram)
-    if (prg_ram_base) TRANSFER_P(prg_ram_base, 0x2000*prg_ram_8k_banks)
+    if (wram_base) TRANSFER_P(wram_base, 0x2000*wram_8k_banks)
     TRANSFER(pc)
     TRANSFER(a) TRANSFER(s) TRANSFER(x) TRANSFER(y)
     TRANSFER(zn) TRANSFER(carry) TRANSFER(irq_disable) TRANSFER(decimal)
