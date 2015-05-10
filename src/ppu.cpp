@@ -814,7 +814,7 @@ static void write_vram(uint8_t val) {
     switch (v & 0x3FFF) {
 
     // Pattern tables
-    case 0x0000 ... 0x1FFF: if (uses_chr_ram) chr_ref(v) = val; break;
+    case 0x0000 ... 0x1FFF: if (chr_is_ram) chr_ref(v) = val; break;
     // Nametables
     case 0x2000 ... 0x3EFF: write_nt(v, val); break;
     // Palettes
@@ -1140,7 +1140,7 @@ void reset_ppu() {
 
 template<bool calculating_size, bool is_save>
 void transfer_ppu_state(uint8_t *&buf) {
-    if (uses_chr_ram) TRANSFER_P(chr_base, 0x2000);
+    if (chr_is_ram) TRANSFER_P(chr_base, 0x2000);
     TRANSFER_P(ciram, mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
     TRANSFER(palettes)
     TRANSFER(oam) TRANSFER(sec_oam)

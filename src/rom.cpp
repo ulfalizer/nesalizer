@@ -15,12 +15,12 @@
 uint8_t *prg_base;
 unsigned prg_16k_banks;
 
+uint8_t *chr_base;
+unsigned chr_8k_banks;
+bool chr_is_ram;
+
 uint8_t *wram_base;
 unsigned wram_8k_banks;
-
-uint8_t *chr_base;
-bool uses_chr_ram;
-unsigned chr_8k_banks;
 
 bool is_pal;
 
@@ -136,7 +136,7 @@ void load_rom(char const *filename, bool print_info) {
         ciram = alloc_array_init<uint8_t>(0x1000, 0xFF);
         // Assume no PRG RAM when four-screen, per
         // http://wiki.nesdev.com/w/index.php/INES_Mapper_004
-        wram_base = wram_6000_page = 0;
+        wram_base = wram_6000_page = NULL;
     }
     else {
         ciram = alloc_array_init<uint8_t>(0x800, 0xFF);
@@ -155,7 +155,7 @@ void load_rom(char const *filename, bool print_info) {
             "failed to allocate %u bytes of nametable memory",
             mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
 
-    if ((uses_chr_ram = (chr_8k_banks == 0))) {
+    if ((chr_is_ram = (chr_8k_banks == 0))) {
         // Cart uses 8 KB of CHR RAM. Not sure about the initialization value
         // here.
         chr_8k_banks = 1;
@@ -200,7 +200,7 @@ void unload_rom() {
 
     free_array_set_null(rom_buf);
     free_array_set_null(ciram);
-    if (uses_chr_ram)
+    if (chr_is_ram)
         free_array_set_null(chr_base);
     free_array_set_null(wram_base);
 

@@ -4,16 +4,16 @@
 extern uint8_t *prg_base;
 extern unsigned prg_16k_banks;
 
+// Points to the start of the CHR data within the ROM image, or to a
+// dynamically allocated buffer if the cart uses RAM for CHR
+extern uint8_t *chr_base;
+extern unsigned chr_8k_banks;
+extern bool chr_is_ram;
+
 // Points to a dynamically allocated buffer for SRAM/WRAM. We usually have to
 // assume the cart has SRAM/WRAM due to iNES ickiness.
 extern uint8_t *wram_base;
 extern unsigned wram_8k_banks;
-
-// Points to the start of the CHR data within the ROM image, or to a
-// dynamically allocated buffer if the cart uses RAM for CHR
-extern uint8_t *chr_base;
-extern bool uses_chr_ram;
-extern unsigned chr_8k_banks;
 
 // True if this is a PAL ROM
 extern bool is_pal;
