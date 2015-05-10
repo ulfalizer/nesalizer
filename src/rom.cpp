@@ -52,56 +52,48 @@ void load_rom(char const *filename, bool print_info) {
     size_t rom_buf_size;
     rom_buf = get_file_buffer(filename, rom_buf_size);
 
+    //
+    // Parse header
+    //
+
     is_pal = strstr(filename, "(E)") || strstr(filename, "PAL");
-    PRINT_INFO("Guessing %s based on filename\n", is_pal ? "PAL" : "NTSC");
+    PRINT_INFO("guessing %s based on filename\n", is_pal ? "PAL" : "NTSC");
 
     fail_if(rom_buf_size < 16,
-      "'%s' is too short to be a valid iNES file "
-      "(is %zu bytes - not even enough to hold the 16-byte header)",
-      filename, rom_buf_size);
+            "'%s' is too short to be a valid iNES file (is %zu bytes - not even enough to hold the 16-byte "
+            "header)", filename, rom_buf_size);
 
     fail_if(!MEM_EQ(rom_buf, "NES\x1A"),
-      "the iNES header in '%s' does not start with the expected byte sequence 'N', 'E', 'S', 0x1A "
-      "(the corresponding bytes are instead 0x%02X, 0x%02X, 0x%02X, 0x%02X)",
-      filename, rom_buf[0], rom_buf[1], rom_buf[2], rom_buf[3]);
+            "the iNES header in '%s' does not start with the expected byte sequence 'N', 'E', 'S', 0x1A "
+            "(the corresponding bytes are instead 0x%02X, 0x%02X, 0x%02X, 0x%02X)",
+            filename, rom_buf[0], rom_buf[1], rom_buf[2], rom_buf[3]);
 
     prg_16k_banks = rom_buf[4];
     chr_8k_banks  = rom_buf[5];
     PRINT_INFO("PRG ROM size: %u KB\nCHR ROM size: %u KB\n", 16*prg_16k_banks, 8*chr_8k_banks);
 
-    fail_if(prg_16k_banks == 0, // TODO: This makes sense for NES 2.0.
-      "the iNES header specifies zero banks of PRG ROM (program storage), which makes no sense");
+    fail_if(prg_16k_banks == 0, // TODO: This makes sense for NES 2.0
+            "the iNES header specifies zero banks of PRG ROM (program storage), which makes no sense");
     fail_if(!is_pow_2_or_0(prg_16k_banks) || !is_pow_2_or_0(chr_8k_banks),
-      "non-power-of-two PRG and CHR sizes are not supported yet");
-
-    // Check if the ROM is large enough to hold all the banks
+            "non-power-of-two PRG and CHR sizes are not supported yet");
 
     size_t const min_size = 16 + 512*has_trainer + 0x4000*prg_16k_banks + 0x2000*chr_8k_banks;
-    if (rom_buf_size < min_size) {
-        char chr_msg[sizeof(" + xxx*8192 (CHR)")];
-        if (chr_8k_banks)
-            sprintf(chr_msg, " + %u*8192 (CHR)", chr_8k_banks);
-        else
-            chr_msg[0] = '\0';
-        fail("'%s' is too short to hold the specified number of PRG (program data) and CHR (graphics data) "
-          "banks - is %zu bytes, expected at least %zu bytes (16 (header) + %s%u*16384 (PRG)%s)",
-          filename, rom_buf_size, min_size,
-          has_trainer ? "512 (trainer) + " : "",
-          prg_16k_banks,
-          chr_msg);
-    }
+    fail_if(rom_buf_size < min_size,
+            "'%s' is too short to hold the specified amount of PRG (program data) and CHR (graphics data) "
+            "ROM - is %zu bytes, expected at least %zu bytes (16 (header) + %s%u*16384 (PRG) + %u*8192 (CHR))",
+            filename, rom_buf_size, min_size, has_trainer ? "512 (trainer) + " : "", prg_16k_banks, chr_8k_banks);
 
     unsigned mapper;
 
     // Possibly updated with the high nibble below
     mapper = rom_buf[6] >> 4;
 
-    bool const in_nes_2_0_format = (rom_buf[7] & 0x0C) == 0x08;
-    PRINT_INFO(in_nes_2_0_format ? "in NES 2.0 format\n" : "in iNES format\n");
+    bool const is_nes_2_0 = (rom_buf[7] & 0x0C) == 0x08;
+    PRINT_INFO(is_nes_2_0 ? "in NES 2.0 format\n" : "in iNES format\n");
     // Assume we're dealing with a corrupted header (e.g. one containing
     // "DiskDude!" in bytes 7-15) if the ROM is not in NES 2.0 format and bytes
     // 12-15 are not all zero
-    if (!in_nes_2_0_format && !MEM_EQ(rom_buf + 12, "\0\0\0\0"))
+    if (!is_nes_2_0 && !MEM_EQ(rom_buf + 12, "\0\0\0\0"))
         PRINT_INFO("header looks corrupted (bytes 12-15 not all zero) - ignoring byte 7\n");
     else {
         is_vs_unisystem  = rom_buf[7] & 1;
@@ -111,9 +103,9 @@ void load_rom(char const *filename, bool print_info) {
 
     PRINT_INFO("mapper: %u\n", mapper);
 
-    // If bit 3 of flag byte 6 is set, the cart contains 2 KB of additional
-    // CIRAM (nametable memory) and uses four-screen (linear) addressing
     if (rom_buf[6] & 8)
+        // The cart contains 2 KB of additional CIRAM (nametable memory) and uses
+        // four-screen (linear) addressing
         mirroring = FOUR_SCREEN;
     else
         mirroring = rom_buf[6] & 1 ? VERTICAL : HORIZONTAL;
@@ -121,39 +113,36 @@ void load_rom(char const *filename, bool print_info) {
     if ((has_battery = rom_buf[6] & 2)) PRINT_INFO("has battery\n");
     if ((has_trainer = rom_buf[6] & 4)) PRINT_INFO("has trainer\n");
 
+    //
+    // Set pointers, allocate memory areas, and do misc. setup
+    //
+
     prg_base = rom_buf + 16 + 512*has_trainer;
 
     // Default
     has_bus_conflicts = false;
 
     do_rom_specific_overrides();
+
     // Needs to come after a possible override
     prerender_line = is_pal ? 311 : 261;
 
     PRINT_INFO("mirroring: %s\n", mirroring_to_str[mirroring]);
 
-    if (mirroring == FOUR_SCREEN) {
-        ciram = alloc_array_init<uint8_t>(0x1000, 0xFF);
+    fail_if(!(ciram = alloc_array_init<uint8_t>(mirroring == FOUR_SCREEN ? 0x1000 : 0x800, 0xFF)),
+            "failed to allocate %u bytes of nametable memory", mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
+
+    if (mirroring == FOUR_SCREEN)
         // Assume no WRAM when four-screen, per
         // http://wiki.nesdev.com/w/index.php/INES_Mapper_004
         wram_base = wram_6000_page = NULL;
-    }
     else {
-        ciram = alloc_array_init<uint8_t>(0x800, 0xFF);
-
         // iNES assumes all carts have 8 KB of WRAM. For MMC5, assume the cart
         // has 64 KB.
         wram_8k_banks = (mapper == 5) ? 8 : 1;
-
-        fail_if(!(wram_base = alloc_array_init<uint8_t>(0x2000*wram_8k_banks, 0xFF)),
+        fail_if(!(wram_6000_page = wram_base = alloc_array_init<uint8_t>(0x2000*wram_8k_banks, 0xFF)),
                 "failed to allocate %u KB of WRAM", 8*wram_8k_banks);
-        // Default to mapping the first page to $6000-$7FFF, which will do the right thing
-        // in the usual case of there only being a single page
-        wram_6000_page = wram_base;
     }
-    fail_if(!ciram,
-            "failed to allocate %u bytes of nametable memory",
-            mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
 
     if ((chr_is_ram = (chr_8k_banks == 0))) {
         // Cart uses 8 KB of CHR RAM
@@ -165,8 +154,7 @@ void load_rom(char const *filename, bool print_info) {
 
     #undef PRINT_INFO
 
-    if (in_nes_2_0_format)
-        fail("NES 2.0 not yet supported");
+    fail_if(is_nes_2_0, "NES 2.0 not yet supported");
 
     fail_if(!mapper_fns_table[mapper].init, "mapper %u not supported\n", mapper);
 
