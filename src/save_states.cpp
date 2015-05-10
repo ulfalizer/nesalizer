@@ -12,7 +12,7 @@
 
 // Number of seconds of rewind to support. The rewind buffer is a ring buffer
 // where a new state will overwrite the oldest state when the buffer is full.
-unsigned const  n_rewind_seconds = 30;
+unsigned const n_rewind_seconds = 30;
 
 static bool has_save;
 static size_t state_size;
