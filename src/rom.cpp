@@ -132,9 +132,11 @@ void load_rom(char const *filename, bool print_info) {
     fail_if(!(ciram = alloc_array_init<uint8_t>(mirroring == FOUR_SCREEN ? 0x1000 : 0x800, 0xFF)),
             "failed to allocate %u bytes of nametable memory", mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
 
-    if (mirroring == FOUR_SCREEN)
+    if (mirroring == FOUR_SCREEN || mapper == 7)
         // Assume no WRAM when four-screen, per
-        // http://wiki.nesdev.com/w/index.php/INES_Mapper_004
+        // http://wiki.nesdev.com/w/index.php/INES_Mapper_004. Also assume no
+        // WRAM for AxROM (mapper 7) as having it breaks Battletoads & Double
+        // Dragon. No AxROM games use WRAM.
         wram_base = wram_6000_page = NULL;
     else {
         // iNES assumes all carts have 8 KB of WRAM. For MMC5, assume the cart
