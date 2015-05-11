@@ -1579,7 +1579,7 @@ static void log_instruction() {
                     debug_mode = RUN;
                     free(line);
 
-                    // Process input events to avoid another D press being
+                    // Process input events to avoid another <F8> being
                     // detected immediately
                     SDL_LockMutex(event_lock);
                     SDL_PumpEvents();
