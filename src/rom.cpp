@@ -64,9 +64,7 @@ void load_rom(char const *filename, bool print_info) {
             "header)", filename, rom_buf_size);
 
     fail_if(!MEM_EQ(rom_buf, "NES\x1A"),
-            "the iNES header in '%s' does not start with the expected byte sequence 'N', 'E', 'S', 0x1A "
-            "(the corresponding bytes are instead 0x%02X, 0x%02X, 0x%02X, 0x%02X)",
-            filename, rom_buf[0], rom_buf[1], rom_buf[2], rom_buf[3]);
+            "'%s' does not start with the expected byte sequence 'N', 'E', 'S', 0x1A", filename);
 
     prg_16k_banks = rom_buf[4];
     chr_8k_banks  = rom_buf[5];
