@@ -9,25 +9,31 @@
 #include "mapper.h"
 #include "rom.h"
 #include "save_states.h"
+#include "timing.h"
 
 // Number of seconds of rewind to support. The rewind buffer is a ring buffer
 // where a new state will overwrite the oldest state when the buffer is full.
-unsigned const n_rewind_seconds = 30;
+unsigned const rewind_seconds = 60;
 
-static bool has_save;
-static size_t state_size;
 // Buffer for a single plain old save state. Not related to rewinding.
 static uint8_t *state;
+// Total state size. Varies depending on the mapper.
+static size_t state_size;
+// For the plain old save state
+static bool has_save;
 
-// TODO: This is approximate for NTSC and incorrect for PAL
-unsigned const  n_rewind_frames = 60*n_rewind_seconds;
-static uint8_t  *rewind_buf;
-static unsigned rewind_buf_i;
-// frame_len[n] is the length of frame n in CPU ticks. Used to cleanly reverse
-// audio.
+static uint8_t *rewind_buf;
+// frame_len[n] is the length of frame n in CPU ticks, which is used to cleanly
+// reverse audio. The length varies since we always process finished frames at
+// instruction boundaries to simplify things, and since actual frames vary in
+// length by +-1 PPU tick on NTSC. It would also be possible to store the
+// length directly in the rewind buffer together with the frame's data.
 static unsigned *frame_len;
+static unsigned rewind_buf_i;
+static unsigned n_rewind_frames;
 static unsigned n_recorded_frames;
-bool            is_backwards_frame;
+
+bool is_backwards_frame;
 
 template<bool calculating_size, bool is_save>
 static size_t transfer_system_state(uint8_t *buf) {
@@ -138,6 +144,8 @@ void handle_rewind(bool do_rewind) {
 }
 
 void init_save_states_for_rom() {
+    n_rewind_frames = rewind_seconds*ppu_fps;
+
     state_size = transfer_system_state<true, false>(0);
     size_t const rewind_buf_size = state_size*n_rewind_frames;
 #ifndef RUN_TESTS

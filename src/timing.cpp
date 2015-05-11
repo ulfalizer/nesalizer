@@ -4,35 +4,29 @@
 #include "rom.h"
 #include "timing.h"
 
-unsigned long const ntsc_master_clock_rate = 21477272;
-double const        ntsc_cpu_clock_rate    = ntsc_master_clock_rate/12.0; // ~1.179 MHz
-double const        ntsc_ppu_clock_rate    = ntsc_master_clock_rate/4.0;  // ~5.369 MHz
-unsigned long const ntsc_nanos_per_frame   = 1000000000/(ntsc_ppu_clock_rate/(341*261 + 340.5)); // ~16 ms
-
-unsigned long const pal_master_clock_rate  = 26601712;
-double const        pal_cpu_clock_rate     = pal_master_clock_rate/16.0; // ~1.663 MHz
-double const        pal_ppu_clock_rate     = pal_master_clock_rate/5.0;  // ~5.320 MHz
-unsigned long const pal_nanos_per_frame    = 1000000000/(pal_ppu_clock_rate/(341*312)); // ~20 ms
-
-unsigned long cpu_clock_rate;
-unsigned long ppu_clock_rate;
-static unsigned long nanos_per_frame;
+double cpu_clock_rate;
+double ppu_clock_rate;
+double ppu_fps;
 
 void init_timing_for_rom() {
     if (is_pal) {
-        cpu_clock_rate  = pal_cpu_clock_rate;
-        ppu_clock_rate  = pal_ppu_clock_rate;
-        nanos_per_frame = pal_nanos_per_frame;
+        double master_clock_rate = 26601712.0;
+        cpu_clock_rate           = master_clock_rate/16.0; // ~1.66 MHz
+        ppu_clock_rate           = master_clock_rate/5.0; // ~5.32 MHz
+        ppu_fps                  = ppu_clock_rate/(341*312); // ~50.0 FPS
     }
     else {
-        cpu_clock_rate  = ntsc_cpu_clock_rate;
-        ppu_clock_rate  = ntsc_ppu_clock_rate;
-        nanos_per_frame = ntsc_nanos_per_frame;
+        double master_clock_rate = 21477272.0;
+        cpu_clock_rate           = master_clock_rate/12.0; // ~1.79 MHz
+        ppu_clock_rate           = master_clock_rate/4.0; // ~5.37 MHz
+        ppu_fps                  = ppu_clock_rate/(341*261 + 340.5); // ~60.1 FPS
     }
 }
 
-// SDL's timing functions only have millisecond precision, which doesn't seem
-// good enough (60 FPS is approx. 16 ms per frame). Roll our own.
+// TODO: Use SDL_Delay() instead? Higher sleep precision is good for audio
+// buffer management, but that needs to be quantified, and whether
+// clock_nanosleep() gives a noticeable precision improvement depends on OS
+// scheduling.
 
 // Used for main loop synchronization
 static timespec clock_previous;
@@ -49,7 +43,7 @@ void init_timing() {
 }
 
 void sleep_till_end_of_frame() {
-    add_to_timespec(clock_previous, nanos_per_frame);
+    add_to_timespec(clock_previous, 1e9/ppu_fps);
 again:
     int const res =
       clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &clock_previous, 0);
