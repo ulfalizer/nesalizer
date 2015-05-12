@@ -101,7 +101,7 @@ If you spot stuff that can be improved (or sucks), tell me (or contribute :). I 
 
 ## Contact ##
 
-moc.liamg[ta]rezilaflu in reverse.
+moc.liamg[ta]rezilaflu in reverse. I'm currently [looking for a job](https://linkedin.com/in/magnussonulf), so feel free to e-mail regarding that too. :)
 
 ## Other stuff ##
 
