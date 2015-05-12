@@ -13,7 +13,7 @@ See [this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI) for a demo
 
 Uses a low-level renderer that simulates the rendering pipeline in the real PPU (NES graphics processor), following the model in [this timing diagram](http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png) that I put together with help from the NesDev community. (It won't make much sense without some prior knowledge of how graphics work on the NES. :)
 
-Most prediction and catch-up (two popular emulator optimization techniques) is omitted in favor of straightforward and robust code. This makes many effects that require special handling in some other emulators work automagically. The emulator currently manages about 6x emulation speed on a single core my old 2600K Core i7 CPU.
+Most prediction and catch-up (two popular emulator optimization techniques) is omitted in favor of straightforward and robust code. This makes many effects that require special handling in some other emulators work automagically. The emulator currently manages about 6x emulation speed on a single core on my old 2600K Core i7 CPU.
 
 The current state is appended to a ring buffer once per frame. During rewinding, states are loaded in the reverse order from the buffer. Individual frames still run "forwards" during rewinding, but audio is added in reverse from the end of the audio buffer instead of from the beginning. Getting things to line up properly at frame boundaries requires some care.
 
