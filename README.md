@@ -17,13 +17,13 @@ Most prediction and catch-up (two popular emulator optimization techniques) is o
 
 The current state is appended to a ring buffer once per frame. During rewinding, states are loaded in the reverse order from the buffer. Individual frames still run "forwards" during rewinding, but audio is added in reverse from the end of the audio buffer instead of from the beginning. Getting things to line up properly at frame boundaries requires some care.
 
-A thirty-minute rewind buffer uses around 1.3 GB of memory for most games. There's no attempt to compress states yet, so a lot of memory is wasted. The length of the rewind buffer can be set by changing *n_rewind_seconds* in [*src/save\_states.cpp*](src/save_states.cpp) and rebuilding.
+A thirty-minute rewind buffer uses around 1.3 GB of memory for most games. There's no attempt to compress states yet, so a lot of memory is wasted. The length of the rewind buffer can be set by changing *n_rewind_seconds* in [**src/save\_states.cpp**](src/save_states.cpp) and rebuilding.
 
 ## Building ##
 
 SDL2 is used for the final output and is the only dependency. You currently need a \*nix system.
 
-The only \*nix/POSIX dependencies are the timing functions in [*src/timing.cpp*](src/timing.cpp), which should be trivial to port. A quick-and-dirty experimental port to Windows was already been done by miker00lz, but contributions are welcome. One GCC extension (case ranges) is used currently.
+The only \*nix/POSIX dependencies are the timing functions in [**src/timing.cpp**](src/timing.cpp), which should be trivial to port. A quick-and-dirty experimental port to Windows was already been done by miker00lz, but contributions are welcome. One GCC extension (case ranges) is used currently.
 
 Commands for building on Ubuntu:
 
@@ -38,7 +38,7 @@ See the *Makefile* for other options. The built-in movie recording support has s
 
     $ ./nes <ROM file>
 
-Controls are currently hardcoded (in <b>input.cpp</b> and <b>sdl_backend.cpp</b>) as follows:
+Controls are currently hardcoded (in [**src/input.cpp**](src/input.cpp) and [**src/sdl_backend.cpp**](src/sdl_backend.cpp)) as follows:
 
 <table>
   <tr><td>D-pad       </td><td>Arrow keys   </td></tr>
@@ -125,4 +125,4 @@ moc.liamg[ta]rezilaflu in reverse.
 
 ## License ##
 
-![GPLv2](http://www.gnu.org/licenses/gpl-2.0.html)
+[GPLv2](http://www.gnu.org/licenses/gpl-2.0.html)
