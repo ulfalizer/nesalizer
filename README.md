@@ -13,7 +13,7 @@ See [this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI) for a demo
 
 SDL2 is used for the final output and is the only dependency. You currently need a \*nix system.
 
-The only \*nix/POSIX dependencies are the timing functions in [**src/timing.cpp**](src/timing.cpp), which should be trivial to port. A quick-and-dirty experimental port to Windows was already been done by miker00lz, but contributions are welcome. One GCC extension (case ranges) is used currently.
+The only \*nix/POSIX dependencies are the timing functions in [**src/timing.cpp**](src/timing.cpp), which should be trivial to port. A quick-and-dirty experimental port to Windows has already been done by miker00lz, but contributions are welcome. One GCC extension (case ranges) is used currently.
 
 Commands for building on Ubuntu:
 
