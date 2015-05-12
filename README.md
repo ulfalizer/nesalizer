@@ -97,11 +97,15 @@ If you spot stuff that can be improved (or sucks), tell me (or contribute :). I 
 
  * Quietust for the Visual 2A03 and Visual 2C02 simulators.
 
- * beannaich, cpow, Disch, kevtris, Movax21, lidnariq, loopy, thefox, Tepples, and lots of other people on the [NesDev](http://nesdev.com) forums and wiki and in #nesdev for help, docs, tests, and discussion.
+ * beannaich, cpow, Disch, kevtris, Movax21, Lidnariq, loopy, thefox, Tepples, and lots of other people on the [NesDev](http://nesdev.com) forums and wiki and in #nesdev for help, docs, tests, and discussion.
 
 ## Contact ##
 
 moc.liamg[ta]rezilaflu in reverse.
+
+## Other stuff ##
+
+[A tutorial I wrote on reading circuits in Visual 6502 and other simulators based on the same framework](http://wiki.nesdev.com/w/index.php/Visual_circuit_tutorial), with help from Lidnariq and Quietust. Some obscure behaviors were reverse-engineered from studying circuits and running simulations.
 
 ## Screenshots ##
 
