@@ -105,7 +105,7 @@ moc.liamg[ta]rezilaflu in reverse.
 
 ## Other stuff ##
 
-[A tutorial I wrote on reading circuits in Visual 6502 and other simulators based on the same framework](http://wiki.nesdev.com/w/index.php/Visual_circuit_tutorial), with help from Lidnariq and Quietust. Some obscure behaviors were reverse-engineered from studying circuits and running simulations.
+A tutorial I wrote (with help from Lidnariq and Quietust) on reading circuits in Visual 6502 and other simulators based on the same framework can be found [here](http://wiki.nesdev.com/w/index.php/Visual_circuit_tutorial). Some obscure behaviors were reverse-engineered from studying circuits and running simulations.
 
 ## Screenshots ##
 
