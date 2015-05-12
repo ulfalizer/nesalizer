@@ -1,8 +1,15 @@
-# Nesalizer #
+Nesalizer
+=========
 
-A work-in-progress NES emulator with a real-time rewind feature that correctly reverses sound (see [this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI)). It should hopefully include some other cool features later on :). Still lacks a GUI and persistent (on-disk) save states.
+A work-in-progress NES emulator with a real-time rewind feature that correctly reverses sound.
 
-See the end of the README for some screenshot.
+Some other cool features are planned :). Still lacks a GUI and persistent (on-disk) save states.
+
+## Demo ##
+
+See [this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI) for a demonstration of rewinding.
+
+The channel has some other videos as well.
 
 ## Technical ##
 
