@@ -5,6 +5,8 @@
 #include "mapper.h"
 #include "ppu.h"
 
+static uint8_t prg_bank;
+
 static unsigned chr_bank_0FDx, chr_bank_0FEx;
 static unsigned chr_bank_1FDx, chr_bank_1FEx;
 
@@ -18,6 +20,8 @@ static unsigned previous_magic_bits;
 static bool horizontal_mirroring;
 
 static void apply_state() {
+    set_prg_8k_bank(0, prg_bank);
+
     set_chr_4k_bank(0, low_bank_uses_0FDx  ? chr_bank_0FDx : chr_bank_0FEx);
     set_chr_4k_bank(1, high_bank_uses_1FDx ? chr_bank_1FDx : chr_bank_1FEx);
 
@@ -31,42 +35,24 @@ void mapper_9_init() {
     set_prg_8k_bank(3, -1);
 
     // Guess at defaults
-    set_prg_8k_bank(0, 0);
-    set_chr_8k_bank(0);
     chr_bank_0FDx = chr_bank_0FEx = 0;
     chr_bank_1FDx = chr_bank_1FEx = 0;
     low_bank_uses_0FDx = high_bank_uses_1FDx = true;
-
     previous_magic_bits = 0;
+
+    apply_state();
 }
 
 void mapper_9_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
 
     switch ((addr >> 12) & 7) {
-    case 2: // 0xA000
-        set_prg_8k_bank(0, val & 0x0F);
-        break;
-
-    case 3: // 0xB000
-        chr_bank_0FDx = val & 0x1F;
-        break;
-
-    case 4: // 0xC000
-        chr_bank_0FEx = val & 0x1F;
-        break;
-
-    case 5: // 0xD000
-        chr_bank_1FDx = val & 0x1F;
-        break;
-
-    case 6: // 0xE000
-        chr_bank_1FEx = val & 0x1F;
-        break;
-
-    case 7: // 0xF000
-        horizontal_mirroring = val & 1;
-        break;
+    case 2: prg_bank = val & 0x0F;          break; // 0xA000
+    case 3: chr_bank_0FDx = val & 0x1F;     break; // 0xB000
+    case 4: chr_bank_0FEx = val & 0x1F;     break; // 0xC000
+    case 5: chr_bank_1FDx = val & 0x1F;     break; // 0xD000
+    case 6: chr_bank_1FEx = val & 0x1F;     break; // 0xE000
+    case 7: horizontal_mirroring = val & 1; break; // 0xF000
     }
 
     apply_state();
@@ -91,6 +77,7 @@ void mapper_9_ppu_tick_callback() {
 }
 
 MAPPER_STATE_START(9)
+  TRANSFER(prg_bank)
   TRANSFER(chr_bank_0FDx) TRANSFER(chr_bank_0FEx)
   TRANSFER(chr_bank_1FDx) TRANSFER(chr_bank_1FEx)
   TRANSFER(low_bank_uses_0FDx) TRANSFER(high_bank_uses_1FDx)
