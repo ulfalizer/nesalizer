@@ -29,6 +29,8 @@ Commands for building on Ubuntu:
 
     $ apt-get install libsdl2-dev
     $ make CONF=release
+    
+Parallel builds (e.g., `make CONF=release -j8`) are supported too.
 
 See the *Makefile* for other options. The built-in movie recording support has sadly bitrotted due to libav changes.
 
