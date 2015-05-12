@@ -7,9 +7,7 @@ Some other cool features are planned :). Still lacks a GUI and persistent (on-di
 
 ## Demo ##
 
-See [this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI) for a demonstration of rewinding.
-
-The channel has some other videos as well.
+See [this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI) for a demonstration of rewinding. The channel has some other videos as well.
 
 ## Technical ##
 
