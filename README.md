@@ -9,16 +9,6 @@ Some other cool features are planned :). Still lacks a GUI and persistent (on-di
 
 See [this YouTube video](https://www.youtube.com/watch?v=qCQkYrQo9fI) for a demonstration of rewinding. The channel has some other videos as well.
 
-## Technical ##
-
-Uses a low-level renderer that simulates the rendering pipeline in the real PPU (NES graphics processor), following the model in [this timing diagram](http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png) that I put together with help from the NesDev community. (It won't make much sense without some prior knowledge of how graphics work on the NES. :)
-
-Most prediction and catch-up (two popular emulator optimization techniques) is omitted in favor of straightforward and robust code. This makes many effects that require special handling in some other emulators work automagically. The emulator currently manages about 6x emulation speed on a single core on my old 2600K Core i7 CPU.
-
-The current state is appended to a ring buffer once per frame. During rewinding, states are loaded in the reverse order from the buffer. Individual frames still run "forwards" during rewinding, but audio is added in reverse from the end of the audio buffer instead of from the beginning. Getting things to line up properly at frame boundaries requires some care.
-
-A thirty-minute rewind buffer uses around 1.3 GB of memory for most games. There's no attempt to compress states yet, so a lot of memory is wasted. The length of the rewind buffer can be set by changing *rewind_seconds* in [**src/save\_states.cpp**](src/save_states.cpp) and rebuilding.
-
 ## Building ##
 
 SDL2 is used for the final output and is the only dependency. You currently need a \*nix system.
@@ -54,6 +44,16 @@ Controls are currently hardcoded (in [**src/input.cpp**](src/input.cpp) and [**s
 
 The save state is in-memory and not saved to disk yet.
 
+## Technical ##
+
+Uses a low-level renderer that simulates the rendering pipeline in the real PPU (NES graphics processor), following the model in [this timing diagram](http://wiki.nesdev.com/w/images/d/d1/Ntsc_timing.png) that I put together with help from the NesDev community. (It won't make much sense without some prior knowledge of how graphics work on the NES. :)
+
+Most prediction and catch-up (two popular emulator optimization techniques) is omitted in favor of straightforward and robust code. This makes many effects that require special handling in some other emulators work automagically. The emulator currently manages about 6x emulation speed on a single core on my old 2600K Core i7 CPU.
+
+The current state is appended to a ring buffer once per frame. During rewinding, states are loaded in the reverse order from the buffer. Individual frames still run "forwards" during rewinding, but audio is added in reverse from the end of the audio buffer instead of from the beginning. Getting things to line up properly at frame boundaries requires some care.
+
+A thirty-minute rewind buffer uses around 1.3 GB of memory for most games. There's no attempt to compress states yet, so a lot of memory is wasted. The length of the rewind buffer can be set by changing *rewind_seconds* in [**src/save\_states.cpp**](src/save_states.cpp) and rebuilding.
+
 ## Compatibility ##
 
 iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3, 4, 5 (including ExGrafix, split screen, and PRG RAM swapping), 7, 9, 11, 71, 232. This covers the majority of ROMs.
@@ -61,15 +61,6 @@ iNES mappers (support circuitry inside cartridges) supported so far: 0, 1, 2, 3,
 Supports tricky-to-emulate games like Mig-29 Soviet Fighter, Bee 52, Uchuu Keibitai SDF, Just Breed, and Battletoads.
 
 Supports both PAL and NTSC. NTSC ROMs are recommended due to 10 extra FPS and PAL conversions often being half-assed. PAL roms can usually be recognized from having "(E)" in their name. (This is often the only way for the emulator to detect them without using a database, as very few ROMs specify the TV system in the header.)
-
-## Automatic testing ##
-
-A set of test ROMs listed in *test.cpp* can be run automatically with
-
-    $ make TEST=1
-    $ ./nes
-
-This requires https://github.com/christopherpow/nes-test-roms to first be cloned into a directory called *tests*. All tests listed in *test.cpp* are expected to pass.
 
 ## Coding style ##
 
@@ -90,6 +81,15 @@ All .cpp files include headers according to this scheme:
 The above setup allows most headers to assume that common.h has been included, which simplifies headers and often makes include guards redundant.
 
 If you spot stuff that can be improved (or sucks), tell me (or contribute :). I appreciate reports for small nits too.
+
+## Automatic testing ##
+
+A set of test ROMs listed in *test.cpp* can be run automatically with
+
+    $ make TEST=1
+    $ ./nes
+
+This requires https://github.com/christopherpow/nes-test-roms to first be cloned into a directory called *tests*. All tests listed in *test.cpp* are expected to pass.
 
 ## Thanks ##
 
