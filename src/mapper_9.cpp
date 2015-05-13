@@ -13,9 +13,9 @@ static unsigned chr_bank_1FDx, chr_bank_1FEx;
 static bool low_bank_uses_0FDx, high_bank_uses_1FDx;
 
 // Assume the CHR switch-over happens when the PPU address bus goes from one of
-// the magic values to some other value (probably not perfectly accurate, but
+// the magic values to some other value (maybe not perfectly accurate, but
 // captures observed behavior)
-static unsigned previous_magic_bits;
+static unsigned prev_ppu_addr_bus;
 
 static bool horizontal_mirroring;
 
@@ -29,7 +29,7 @@ static void apply_state() {
 }
 
 void mapper_9_init() {
-    // Last three 8K PRG banks fixed
+    // Last three 8 KB PRG banks fixed
     set_prg_8k_bank(1, -3);
     set_prg_8k_bank(2, -2);
     set_prg_8k_bank(3, -1);
@@ -38,7 +38,7 @@ void mapper_9_init() {
     chr_bank_0FDx = chr_bank_0FEx = 0;
     chr_bank_1FDx = chr_bank_1FEx = 0;
     low_bank_uses_0FDx = high_bank_uses_1FDx = true;
-    previous_magic_bits = 0;
+    prev_ppu_addr_bus = 0;
 
     apply_state();
 }
@@ -59,21 +59,21 @@ void mapper_9_write(uint8_t val, uint16_t addr) {
 }
 
 void mapper_9_ppu_tick_callback() {
-    unsigned const magic_bits = ppu_addr_bus & 0xFFF0;
+    unsigned const magic_bits = ppu_addr_bus & 0x3FF8;
 
-    if (magic_bits != 0x0FD0 && magic_bits != 0x0FE0 &&
-        magic_bits != 0x1FD0 && magic_bits != 0x1FE0) {
+    if (magic_bits != 0x0FD8 && magic_bits != 0x0FE8 &&
+        magic_bits != 0x1FD8 && magic_bits != 0x1FE8) {
         // ppu_addr_bus is non-magic
 
-        switch (previous_magic_bits) {
-        case 0x0FD0: low_bank_uses_0FDx  = true ; apply_state(); break;
-        case 0x0FE0: low_bank_uses_0FDx  = false; apply_state(); break;
-        case 0x1FD0: high_bank_uses_1FDx = true ; apply_state(); break;
-        case 0x1FE0: high_bank_uses_1FDx = false; apply_state(); break;
+        switch (prev_ppu_addr_bus) {
+        case 0x0FD8:            low_bank_uses_0FDx  = true ; apply_state(); break;
+        case 0x0FE8:            low_bank_uses_0FDx  = false; apply_state(); break;
+        case 0x1FD8 ... 0x1FDF: high_bank_uses_1FDx = true ; apply_state(); break;
+        case 0x1FE8 ... 0x1FEF: high_bank_uses_1FDx = false; apply_state(); break;
         }
     }
 
-    previous_magic_bits = magic_bits;
+    prev_ppu_addr_bus = ppu_addr_bus;
 }
 
 MAPPER_STATE_START(9)
@@ -81,6 +81,6 @@ MAPPER_STATE_START(9)
   TRANSFER(chr_bank_0FDx) TRANSFER(chr_bank_0FEx)
   TRANSFER(chr_bank_1FDx) TRANSFER(chr_bank_1FEx)
   TRANSFER(low_bank_uses_0FDx) TRANSFER(high_bank_uses_1FDx)
-  TRANSFER(previous_magic_bits)
+  TRANSFER(prev_ppu_addr_bus)
   TRANSFER(horizontal_mirroring)
 MAPPER_STATE_END(9)
