@@ -1140,7 +1140,7 @@ void reset_ppu() {
 
 template<bool calculating_size, bool is_save>
 void transfer_ppu_state(uint8_t *&buf) {
-    if (chr_is_ram) TRANSFER_P(chr_base, 0x2000);
+    if (chr_is_ram) TRANSFER_P(chr_base, chr_8k_banks*0x2000);
     TRANSFER_P(ciram, mirroring == FOUR_SCREEN ? 0x1000 : 0x800);
     TRANSFER(palettes)
     TRANSFER(oam) TRANSFER(sec_oam)
