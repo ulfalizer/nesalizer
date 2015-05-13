@@ -18,7 +18,7 @@ Mapper_fns mapper_fns_table[256];
 DECLARE_STATE_FNS(  0) DECLARE_STATE_FNS(  1) DECLARE_STATE_FNS(  2)
 DECLARE_STATE_FNS(  3) DECLARE_STATE_FNS(  4) DECLARE_STATE_FNS(  5)
 DECLARE_STATE_FNS(  7) DECLARE_STATE_FNS(  9) DECLARE_STATE_FNS( 11)
-DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS(232)
+DECLARE_STATE_FNS( 13) DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS(232)
 #undef DECLARE_STATE_FNS
 
 void init_mappers() {
@@ -89,6 +89,8 @@ void init_mappers() {
     MAPPER_WP(       9)
     // Color Dreams
     MAPPER_W(       11)
+    // NES-CPROM - only used by Videomation
+    MAPPER_W(       13)
     // Mapper-2-ish
     MAPPER_W(       71)
     // Camerica/Capcom mapper used by the Quattro * games

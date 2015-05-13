@@ -145,10 +145,10 @@ void load_rom(char const *filename, bool print_info) {
     }
 
     if ((chr_is_ram = (chr_8k_banks == 0))) {
-        // Cart uses 8 KB of CHR RAM
-        chr_8k_banks = 1;
-        fail_if(!(chr_base = alloc_array_init<uint8_t>(0x2000, 0xFF)),
-                "failed to allocate 8 KB of CHR RAM");
+        // Assume cart has 8 KB of CHR RAM, except for Videomation which has 16 KB
+        chr_8k_banks = (mapper == 13) ? 2 : 1;
+        fail_if(!(chr_base = alloc_array_init<uint8_t>(0x2000*chr_8k_banks, 0xFF)),
+                "failed to allocate %u KB of CHR RAM", 8*chr_8k_banks);
     }
     else chr_base = prg_base + 16*1024*prg_16k_banks;
 
