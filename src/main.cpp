@@ -1,11 +1,9 @@
 #include "common.h"
 
-#include "audio.h"
 #include "apu.h"
 #include "cpu.h"
 #include "input.h"
 #include "mapper.h"
-#include "ppu.h"
 #include "rom.h"
 #include "sdl_backend.h"
 #ifdef RUN_TESTS
