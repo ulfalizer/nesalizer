@@ -22,7 +22,7 @@ uint8_t read_controller(unsigned n) {
         return (cpu_data_bus & 0xE0) | (get_button_states(n) & 1);
 
     uint8_t const result = (cpu_data_bus & 0xE0) | (controller_bits[n] & 1);
-    // 1's are shifted in on an official Nintendo controller, so emulate that
+    // 1s are shifted in on an official Nintendo controller, so emulate that
     controller_bits[n] = 0x80 | (controller_bits[n] >> 1);
     return result;
 }
