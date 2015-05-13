@@ -157,7 +157,7 @@ uint8_t read_mem(uint16_t addr) {
     uint8_t res;
 
     switch (addr) {
-    case 0x0000 ... 0x1FFF: res = ram[addr & 0x07FF];     break;
+    case 0x0000 ... 0x1FFF: res = ram[addr & 0x7FF];      break;
     case 0x2000 ... 0x3FFF: res = read_ppu_reg(addr & 7); break;
     case 0x4015           : res = read_apu_status();      break;
     case 0x4016           : res = read_controller(0);     break;
@@ -239,7 +239,7 @@ static void write_mem(uint8_t val, uint16_t addr) {
 
     // An alternative to letting the mapper see all writes would be to have
     // separate functions for common address ranges that trigger mapper
-    // operations.
+    // operations
     mapper_fns.write(val, addr);
 }
 
