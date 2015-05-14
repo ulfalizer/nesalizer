@@ -18,8 +18,8 @@ Mapper_fns mapper_fns_table[256];
 DECLARE_STATE_FNS(  0) DECLARE_STATE_FNS(  1) DECLARE_STATE_FNS(  2)
 DECLARE_STATE_FNS(  3) DECLARE_STATE_FNS(  4) DECLARE_STATE_FNS(  5)
 DECLARE_STATE_FNS(  7) DECLARE_STATE_FNS(  9) DECLARE_STATE_FNS( 10)
-DECLARE_STATE_FNS( 11) DECLARE_STATE_FNS( 13) DECLARE_STATE_FNS( 71)
-DECLARE_STATE_FNS(232)
+DECLARE_STATE_FNS( 11) DECLARE_STATE_FNS( 13) DECLARE_STATE_FNS( 28)
+DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS(232)
 #undef DECLARE_STATE_FNS
 
 void init_mappers() {
@@ -71,33 +71,35 @@ void init_mappers() {
       mapper_fns_table[n].write_nt          = mapper_##n##_write_nt;          \
 
     // NROM
-    MAPPER_NONE(     0)
+    MAPPER_NONE(  0)
     // SxROM, all of which use the Nintendo MMC1
-    MAPPER_W(        1)
+    MAPPER_W(     1)
     // Most common configuration of the UxROM boardset
-    MAPPER_W(        2)
+    MAPPER_W(     2)
     // CNROM board and a very similar board used for Panesian games
-    MAPPER_W(        3)
+    MAPPER_W(     3)
     // "iNES Mapper 004 is a wide abstraction that can represent boards using the
     // Nintendo MMC3, Nintendo MMC6, or functional clones of any of the above. Most
     // games utilizing TxROM, DxROM, and HKROM boards use this designation."
-    MAPPER_WP(       4)
+    MAPPER_WP(    4)
     // MMC5/ExROM - Used by Castlevania III
-    MAPPER_RWPN(     5)
+    MAPPER_RWPN(  5)
     // AxROM - Rare games often use this one
-    MAPPER_W(        7)
+    MAPPER_W(     7)
     // MMC2 - only used by Punch-Out!!
-    MAPPER_WP(       9)
+    MAPPER_WP(    9)
     // MMC4 - very similar to MMC2
-    MAPPER_WP(      10)
+    MAPPER_WP(   10)
     // Color Dreams
-    MAPPER_W(       11)
+    MAPPER_W(    11)
     // NES-CPROM - only used by Videomation
-    MAPPER_W(       13)
+    MAPPER_W(    13)
+    // Action 53 multicart
+    MAPPER_W(    28)
     // Mapper-2-ish
-    MAPPER_W(       71)
+    MAPPER_W(    71)
     // Camerica/Capcom mapper used by the Quattro * games
-    MAPPER_W(      232)
+    MAPPER_W(   232)
 
     #undef MAPPER_COMMON
     #undef MAPPER_NONE
