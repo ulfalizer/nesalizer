@@ -17,8 +17,9 @@ Mapper_fns mapper_fns_table[256];
   size_t transfer_mapper_##n##_state(uint8_t*&);
 DECLARE_STATE_FNS(  0) DECLARE_STATE_FNS(  1) DECLARE_STATE_FNS(  2)
 DECLARE_STATE_FNS(  3) DECLARE_STATE_FNS(  4) DECLARE_STATE_FNS(  5)
-DECLARE_STATE_FNS(  7) DECLARE_STATE_FNS(  9) DECLARE_STATE_FNS( 11)
-DECLARE_STATE_FNS( 13) DECLARE_STATE_FNS( 71) DECLARE_STATE_FNS(232)
+DECLARE_STATE_FNS(  7) DECLARE_STATE_FNS(  9) DECLARE_STATE_FNS( 10)
+DECLARE_STATE_FNS( 11) DECLARE_STATE_FNS( 13) DECLARE_STATE_FNS( 71)
+DECLARE_STATE_FNS(232)
 #undef DECLARE_STATE_FNS
 
 void init_mappers() {
@@ -87,6 +88,8 @@ void init_mappers() {
     MAPPER_W(        7)
     // MMC2 - only used by Punch-Out!!
     MAPPER_WP(       9)
+    // MMC4 - very similar to MMC2
+    MAPPER_WP(      10)
     // Color Dreams
     MAPPER_W(       11)
     // NES-CPROM - only used by Videomation

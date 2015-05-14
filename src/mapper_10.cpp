@@ -1,4 +1,4 @@
-// MMC2 - only used by Punch-Out!!
+// MMC4 - Very similar to MMC2
 
 #include "common.h"
 
@@ -20,7 +20,7 @@ static uint16_t prev_ppu_addr_bus;
 static bool horizontal_mirroring;
 
 static void apply_state() {
-    set_prg_8k_bank(0, prg_bank);
+    set_prg_16k_bank(0, prg_bank);
 
     set_chr_4k_bank(0, low_bank_uses_0FDx  ? chr_bank_0FDx : chr_bank_0FEx);
     set_chr_4k_bank(1, high_bank_uses_1FDx ? chr_bank_1FDx : chr_bank_1FEx);
@@ -28,11 +28,9 @@ static void apply_state() {
     set_mirroring(horizontal_mirroring ? HORIZONTAL : VERTICAL);
 }
 
-void mapper_9_init() {
-    // Last three 8 KB PRG banks fixed
-    set_prg_8k_bank(1, -3);
-    set_prg_8k_bank(2, -2);
-    set_prg_8k_bank(3, -1);
+void mapper_10_init() {
+    // Last 16 KB PRG bank fixed
+    set_prg_16k_bank(1, -1);
 
     // Guess at defaults
     prg_bank = 0;
@@ -44,7 +42,7 @@ void mapper_9_init() {
     apply_state();
 }
 
-void mapper_9_write(uint8_t val, uint16_t addr) {
+void mapper_10_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
 
     switch ((addr >> 12) & 7) {
@@ -59,7 +57,7 @@ void mapper_9_write(uint8_t val, uint16_t addr) {
     apply_state();
 }
 
-void mapper_9_ppu_tick_callback() {
+void mapper_10_ppu_tick_callback() {
     unsigned const magic_bits = ppu_addr_bus & 0x3FF8;
 
     if (magic_bits != 0x0FD8 && magic_bits != 0x0FE8 &&
@@ -67,8 +65,8 @@ void mapper_9_ppu_tick_callback() {
         // ppu_addr_bus is non-magic
 
         switch (prev_ppu_addr_bus) {
-        case 0x0FD8:            low_bank_uses_0FDx  = true ; apply_state(); break;
-        case 0x0FE8:            low_bank_uses_0FDx  = false; apply_state(); break;
+        case 0x0FD8 ... 0x0FDF: low_bank_uses_0FDx  = true ; apply_state(); break;
+        case 0x0FE8 ... 0x0FEF: low_bank_uses_0FDx  = false; apply_state(); break;
         case 0x1FD8 ... 0x1FDF: high_bank_uses_1FDx = true ; apply_state(); break;
         case 0x1FE8 ... 0x1FEF: high_bank_uses_1FDx = false; apply_state(); break;
         }
@@ -77,11 +75,11 @@ void mapper_9_ppu_tick_callback() {
     prev_ppu_addr_bus = ppu_addr_bus;
 }
 
-MAPPER_STATE_START(9)
+MAPPER_STATE_START(10)
   TRANSFER(prg_bank)
   TRANSFER(chr_bank_0FDx) TRANSFER(chr_bank_0FEx)
   TRANSFER(chr_bank_1FDx) TRANSFER(chr_bank_1FEx)
   TRANSFER(low_bank_uses_0FDx) TRANSFER(high_bank_uses_1FDx)
   TRANSFER(prev_ppu_addr_bus)
   TRANSFER(horizontal_mirroring)
-MAPPER_STATE_END(9)
+MAPPER_STATE_END(10)
