@@ -58,10 +58,9 @@ void mapper_10_write(uint8_t val, uint16_t addr) {
 }
 
 void mapper_10_ppu_tick_callback() {
-    unsigned const magic_bits = ppu_addr_bus & 0x3FF8;
+    unsigned const magic_bits = ppu_addr_bus & 0x2FF8;
 
-    if (magic_bits != 0x0FD8 && magic_bits != 0x0FE8 &&
-        magic_bits != 0x1FD8 && magic_bits != 0x1FE8) {
+    if (magic_bits != 0x0FD8 && magic_bits != 0x0FE8) {
         // ppu_addr_bus is non-magic
 
         switch (prev_ppu_addr_bus) {
