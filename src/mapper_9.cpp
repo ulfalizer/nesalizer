@@ -7,10 +7,11 @@
 
 static uint8_t prg_bank;
 
-static unsigned chr_bank_0FDx, chr_bank_0FEx;
-static unsigned chr_bank_1FDx, chr_bank_1FEx;
+// Index 0 is from $B000/$D000, index 1 from $C000/$E000
+static uint8_t chr_low_bank[2];
+static uint8_t chr_high_bank[2];
 
-static bool low_bank_uses_0FDx, high_bank_uses_1FDx;
+static bool chr_low_uses_C000, chr_high_uses_E000;
 
 // Assume the CHR switch-over happens when the PPU address bus goes from one of
 // the magic values to some other value (maybe not perfectly accurate, but
@@ -22,8 +23,8 @@ static bool horizontal_mirroring;
 static void apply_state() {
     set_prg_8k_bank(0, prg_bank);
 
-    set_chr_4k_bank(0, low_bank_uses_0FDx  ? chr_bank_0FDx : chr_bank_0FEx);
-    set_chr_4k_bank(1, high_bank_uses_1FDx ? chr_bank_1FDx : chr_bank_1FEx);
+    set_chr_4k_bank(0, chr_low_bank[chr_low_uses_C000]);
+    set_chr_4k_bank(1, chr_high_bank[chr_high_uses_E000]);
 
     set_mirroring(horizontal_mirroring ? HORIZONTAL : VERTICAL);
 }
@@ -36,9 +37,9 @@ void mapper_9_init() {
 
     // Guess at defaults
     prg_bank = 0;
-    chr_bank_0FDx = chr_bank_0FEx = 0;
-    chr_bank_1FDx = chr_bank_1FEx = 0;
-    low_bank_uses_0FDx = high_bank_uses_1FDx = true;
+    chr_low_bank[0] = chr_low_bank[1] = 0;
+    chr_high_bank[0] = chr_high_bank[1] = 0;
+    chr_low_uses_C000 = chr_high_uses_E000 = false;
     prev_ppu_addr_bus = 0;
 
     apply_state();
@@ -48,12 +49,12 @@ void mapper_9_write(uint8_t val, uint16_t addr) {
     if (!(addr & 0x8000)) return;
 
     switch ((addr >> 12) & 7) {
-    case 2: prg_bank = val & 0x0F;          break; // 0xA000
-    case 3: chr_bank_0FDx = val & 0x1F;     break; // 0xB000
-    case 4: chr_bank_0FEx = val & 0x1F;     break; // 0xC000
-    case 5: chr_bank_1FDx = val & 0x1F;     break; // 0xD000
-    case 6: chr_bank_1FEx = val & 0x1F;     break; // 0xE000
-    case 7: horizontal_mirroring = val & 1; break; // 0xF000
+    case 2: prg_bank             = val & 0x0F; break; // 0xA000
+    case 3: chr_low_bank[0]      = val & 0x1F; break; // 0xB000
+    case 4: chr_low_bank[1]      = val & 0x1F; break; // 0xC000
+    case 5: chr_high_bank[0]     = val & 0x1F; break; // 0xD000
+    case 6: chr_high_bank[1]     = val & 0x1F; break; // 0xE000
+    case 7: horizontal_mirroring = val & 1;    break; // 0xF000
     }
 
     apply_state();
@@ -66,10 +67,10 @@ void mapper_9_ppu_tick_callback() {
         // ppu_addr_bus is non-magic
 
         switch (prev_ppu_addr_bus) {
-        case 0x0FD8:            low_bank_uses_0FDx  = true ; apply_state(); break;
-        case 0x0FE8:            low_bank_uses_0FDx  = false; apply_state(); break;
-        case 0x1FD8 ... 0x1FDF: high_bank_uses_1FDx = true ; apply_state(); break;
-        case 0x1FE8 ... 0x1FEF: high_bank_uses_1FDx = false; apply_state(); break;
+        case 0x0FD8:            chr_low_uses_C000  = false; apply_state(); break;
+        case 0x0FE8:            chr_low_uses_C000  = true;  apply_state(); break;
+        case 0x1FD8 ... 0x1FDF: chr_high_uses_E000 = false; apply_state(); break;
+        case 0x1FE8 ... 0x1FEF: chr_high_uses_E000 = true;  apply_state(); break;
         }
     }
 
@@ -78,9 +79,8 @@ void mapper_9_ppu_tick_callback() {
 
 MAPPER_STATE_START(9)
   TRANSFER(prg_bank)
-  TRANSFER(chr_bank_0FDx) TRANSFER(chr_bank_0FEx)
-  TRANSFER(chr_bank_1FDx) TRANSFER(chr_bank_1FEx)
-  TRANSFER(low_bank_uses_0FDx) TRANSFER(high_bank_uses_1FDx)
+  TRANSFER(chr_low_bank) TRANSFER(chr_high_bank)
+  TRANSFER(chr_low_uses_C000) TRANSFER(chr_high_uses_E000)
   TRANSFER(prev_ppu_addr_bus)
   TRANSFER(horizontal_mirroring)
 MAPPER_STATE_END(9)
