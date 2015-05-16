@@ -166,7 +166,7 @@ static uint8_t &chr_ref(unsigned chr_addr) {
 // Nametable reading and writing
 
 // Returns the physical CIRAM address after mirroring
-static uint16_t get_mirrored_address(uint16_t addr) {
+static uint16_t get_mirrored_addr(uint16_t addr) {
     switch (mirroring) {
     case VERTICAL:        return addr & 0x07FF;
     case HORIZONTAL:      return ((addr >> 1) & 0x0400) + (addr & 0x03FF);
@@ -180,14 +180,14 @@ static uint16_t get_mirrored_address(uint16_t addr) {
 static uint8_t read_nt(uint16_t addr) {
     return (mirroring == SPECIAL) ?
       mapper_fns.read_nt(addr) :
-      ciram[get_mirrored_address(addr)];
+      ciram[get_mirrored_addr(addr)];
 }
 
 static void write_nt(uint16_t addr, uint8_t val) {
     if (mirroring == SPECIAL)
         mapper_fns.write_nt(val, addr);
     else
-        ciram[get_mirrored_address(addr)] = val;
+        ciram[get_mirrored_addr(addr)] = val;
 }
 
 // Bumps the horizontal bits in v every eight pixels during rendering
@@ -492,7 +492,7 @@ static void do_sprite_evaluation() {
 }
 
 // Returns 'true' if the sprite is in range
-static bool calc_sprite_tile_address(uint8_t y, uint8_t index, uint8_t attrib, bool is_high) {
+static bool calc_sprite_tile_addr(uint8_t y, uint8_t index, uint8_t attrib, bool is_high) {
     // Internal sprite address calculation in the PPU (ab = VRAM address bus):
     //
     //   ab12  : low bit of sprite index if using 8x16 sprites, otherwise
@@ -571,7 +571,7 @@ static void do_sprite_loading() {
 
     case 4:
         sprite_in_range =
-          calc_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[sprite_n], false);
+          calc_sprite_tile_addr(sprite_y, sprite_index, sprite_attribs[sprite_n], false);
         break;
     case 5:
         sprite_pat_l[sprite_n] = sprite_in_range ? chr_ref(ppu_addr_bus) : 0;
@@ -584,7 +584,7 @@ static void do_sprite_loading() {
 
     case 6:
         sprite_in_range =
-          calc_sprite_tile_address(sprite_y, sprite_index, sprite_attribs[sprite_n], true);
+          calc_sprite_tile_addr(sprite_y, sprite_index, sprite_attribs[sprite_n], true);
         break;
     case 7:
         sprite_pat_h[sprite_n] = sprite_in_range ? chr_ref(ppu_addr_bus) : 0;
