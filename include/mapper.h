@@ -66,7 +66,6 @@ extern enum Mirroring {
     ONE_SCREEN_LOW  = 2,
     ONE_SCREEN_HIGH = 3,
     FOUR_SCREEN     = 4,
-    SPECIAL         = 5, // Mapper-specific special mirroring
 
     N_MIRRORING_MODES
 } mirroring;

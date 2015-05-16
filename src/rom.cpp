@@ -41,8 +41,7 @@ char const *const mirroring_to_str[N_MIRRORING_MODES] =
     "vertical",
     "one-screen, low",
     "one-screen, high",
-    "four-screen",
-    "special (internal error - should never get this here)" };
+    "four-screen" };
 
 static void do_rom_specific_overrides();
 

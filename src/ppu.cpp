@@ -178,13 +178,13 @@ static uint16_t get_mirrored_addr(uint16_t addr) {
 }
 
 static uint8_t read_nt(uint16_t addr) {
-    return (mirroring == SPECIAL) ?
-      mapper_fns.read_nt(addr) :
-      ciram[get_mirrored_addr(addr)];
+    return mapper_fns.read_nt ?
+             mapper_fns.read_nt(addr) :
+             ciram[get_mirrored_addr(addr)];
 }
 
 static void write_nt(uint16_t addr, uint8_t val) {
-    if (mirroring == SPECIAL)
+    if (mapper_fns.write_nt)
         mapper_fns.write_nt(val, addr);
     else
         ciram[get_mirrored_addr(addr)] = val;
