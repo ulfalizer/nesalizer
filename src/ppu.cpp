@@ -116,10 +116,11 @@ static bool               initial_frame;
 
 unsigned                  ppu_addr_bus;
 
-// Open bus for reads from PPU $2000-$2007 (tested by ppu_open_bus.nes)
+// Open bus for reads from PPU $2000-$2007 (tested by ppu_open_bus.nes).
+// "wcycle" is short for "write cycle".
 
 static uint8_t            ppu_open_bus;
-static uint64_t           ppu_bit_7_to_6_write_cycle, ppu_bit_5_write_cycle, ppu_bit_4_to_0_write_cycle;
+static uint64_t           bit_7_6_wcycle, bit_5_wcycle, bit_4_0_wcycle;
 
 static unsigned           open_bus_decay_cycles;
 
@@ -130,33 +131,32 @@ void init_ppu_for_rom() {
 }
 
 static void open_bus_refreshed() {
-    ppu_bit_7_to_6_write_cycle = ppu_bit_5_write_cycle = ppu_bit_4_to_0_write_cycle = ppu_cycle;
+    bit_7_6_wcycle = bit_5_wcycle = bit_4_0_wcycle = ppu_cycle;
 }
 
 static void open_bus_bits_7_to_5_refreshed() {
-    ppu_bit_7_to_6_write_cycle = ppu_bit_5_write_cycle = ppu_cycle;
+    bit_7_6_wcycle = bit_5_wcycle = ppu_cycle;
 }
 
 static void open_bus_bits_5_to_0_refreshed() {
-    ppu_bit_5_write_cycle = ppu_bit_4_to_0_write_cycle = ppu_cycle;
+    bit_5_wcycle = bit_4_0_wcycle = ppu_cycle;
 }
 
 static uint8_t get_open_bus_bits_7_to_6() {
-    return (ppu_cycle - ppu_bit_7_to_6_write_cycle > open_bus_decay_cycles) ?
-      0 : ppu_open_bus & 0xC0;
+    return (ppu_cycle - bit_7_6_wcycle > open_bus_decay_cycles) ?
+             0 : ppu_open_bus & 0xC0;
 }
 
 static uint8_t get_open_bus_bits_4_to_0() {
-    return (ppu_cycle - ppu_bit_4_to_0_write_cycle > open_bus_decay_cycles) ?
-      0 : ppu_open_bus & 0x1F;
+    return (ppu_cycle - bit_4_0_wcycle > open_bus_decay_cycles) ?
+             0 : ppu_open_bus & 0x1F;
 }
 
 static uint8_t get_all_open_bus_bits() {
-    return
-      get_open_bus_bits_7_to_6() |
-      ((ppu_cycle - ppu_bit_5_write_cycle > open_bus_decay_cycles) ?
-         0 : ppu_open_bus & 0x20) |
-      get_open_bus_bits_4_to_0();
+    return get_open_bus_bits_7_to_6() |
+           ((ppu_cycle - bit_5_wcycle > open_bus_decay_cycles) ?
+             0 : ppu_open_bus & 0x20) |
+           get_open_bus_bits_4_to_0();
 }
 
 static uint8_t &chr_ref(unsigned chr_addr) {
@@ -1099,7 +1099,7 @@ void set_ppu_cold_boot_state() {
     // Open bus
 
     ppu_open_bus = 0;
-    ppu_bit_7_to_6_write_cycle = ppu_bit_5_write_cycle = ppu_bit_4_to_0_write_cycle = 0;
+    bit_7_6_wcycle = bit_5_wcycle = bit_4_0_wcycle = 0;
 
     // Render pipeline buffers and shift registers and sprite output units
 
@@ -1199,8 +1199,7 @@ void transfer_ppu_state(uint8_t *&buf) {
     TRANSFER(ppu_addr_bus)
 
     TRANSFER(ppu_open_bus)
-    TRANSFER(ppu_bit_7_to_6_write_cycle) TRANSFER(ppu_bit_5_write_cycle)
-    TRANSFER(ppu_bit_4_to_0_write_cycle)
+    TRANSFER(bit_7_6_wcycle) TRANSFER(bit_5_wcycle) TRANSFER(bit_4_0_wcycle)
 }
 
 // Explicit instantiations
