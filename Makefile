@@ -69,7 +69,7 @@ endif
 #
 
 ifeq ($(is_clang),1)
-	# Older Clang versions barf on some of the optimizations below
+    # Older Clang versions barf on some of the optimizations below
     optimizations := -O3 -ffast-math
 else
     # Assume GCC
