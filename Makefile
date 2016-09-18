@@ -5,8 +5,12 @@
 EXECUTABLE        = nesalizer
 # Separate build directory
 BUILD_DIR         = build
-CXX               ?= g++
-CC                ?= gcc
+ifeq ($(origin CXX), default)
+  CXX             = g++
+endif
+ifeq ($(origin CC), default)
+  CC              = gcc
+endif
 # Extra flags passed during compilation and linking
 EXTRA             =
 EXTRA_LINK        =
