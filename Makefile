@@ -2,30 +2,30 @@
 # Configuration variables
 #
 
-EXECUTABLE        := nesalizer
+EXECUTABLE        = nesalizer
 # Separate build directory
-BUILD_DIR         := build
-CXX               := g++
-CC                := gcc
+BUILD_DIR         = build
+CXX               ?= g++
+CC                ?= gcc
 # Extra flags passed during compilation and linking
-EXTRA             :=
-EXTRA_LINK        :=
+EXTRA             =
+EXTRA_LINK        =
 # "debug", "release", or "release-debug". "release-debug" adds debugging
 # information in addition to optimizing.
-CONF              := debug
+CONF              = debug
 # If "1", includes a simple debugger (see cpu.cpp) for internal use. Has
 # readline dependency.
-INCLUDE_DEBUGGER  := 0
+INCLUDE_DEBUGGER  = 0
 # If "1", a movie is recorded to movie.mp4 using libav (movie.cpp)
-RECORD_MOVIE      := 0
+RECORD_MOVIE      = 0
 # If "1", passes -rdynamic to add symbols for backtraces
-BACKTRACE_SUPPORT := 1
+BACKTRACE_SUPPORT = 1
 # If "1", configures for automatic test ROM running
-TEST              := 0
+TEST              = 0
 
 # If V is "1", commands are printed as they are executed
 ifneq ($(V),1)
-    q := @
+    q = @
 endif
 
 # 1 if "clang" occurs in the output of CXX -v, otherwise 0
@@ -35,12 +35,12 @@ is_clang := $(if $(findstring clang,$(shell "$(CXX)" -v 2>&1)),1,0)
 # Source files and libraries
 #
 
-cpp_sources := audio apu blip_buf common controller cpu input main md5  \
+cpp_sources = audio apu blip_buf common controller cpu input main md5   \
   mapper mapper_0 mapper_1 mapper_2 mapper_3 mapper_4 mapper_5 mapper_7 \
   mapper_9 mapper_10 mapper_11 mapper_13 mapper_28 mapper_71 mapper_232 \
   ppu rom save_states sdl_backend timing
 # Use C99 for the handy designated initializers feature
-c_sources := tables
+c_sources = tables
 
 ifeq ($(RECORD_MOVIE),1)
     cpp_sources += movie
@@ -49,10 +49,10 @@ ifeq ($(TEST),1)
     cpp_sources += test
 endif
 
-cpp_objects := $(addprefix $(BUILD_DIR)/,$(cpp_sources:=.o))
-c_objects   := $(addprefix $(BUILD_DIR)/,$(c_sources:=.o))
-objects     := $(c_objects) $(cpp_objects)
-deps        := $(addprefix $(BUILD_DIR)/,$(c_sources:=.d) $(cpp_sources:=.d))
+cpp_objects = $(addprefix $(BUILD_DIR)/,$(cpp_sources:=.o))
+c_objects   = $(addprefix $(BUILD_DIR)/,$(c_sources:=.o))
+objects     = $(c_objects) $(cpp_objects)
+deps        = $(addprefix $(BUILD_DIR)/,$(c_sources:=.d) $(cpp_sources:=.d))
 
 LDLIBS := $(shell sdl2-config --libs) -lrt
 
@@ -70,15 +70,15 @@ endif
 
 ifeq ($(is_clang),1)
     # Older Clang versions barf on some of the optimizations below
-    optimizations := -O3 -ffast-math
+    optimizations = -O3 -ffast-math
 else
     # Assume GCC
-    optimizations := -Ofast -mfpmath=sse -funsafe-loop-optimizations
+    optimizations = -Ofast -mfpmath=sse -funsafe-loop-optimizations
 endif
 
 optimizations += -msse3 -flto -fno-exceptions -DNDEBUG
 
-warnings := -Wall -Wextra -Wdisabled-optimization -Wmissing-format-attribute \
+warnings = -Wall -Wextra -Wdisabled-optimization -Wmissing-format-attribute \
   -Wno-switch -Wredundant-decls -Wuninitialized
 
 ifeq ($(is_clang),0)
